@@ -278,13 +278,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div class="cw" style="height:210px"><canvas id="c-kritis-upt"></canvas></div></div>
       </div>
 
-      <div class="sl">Distribusi AHI per Penghantar (top 20 % kritis)</div>
-      <div class="cc"><div class="cc-title">% tower kritis per penghantar — top 20</div>
-        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-kritis"></canvas></div></div>
+      <div class="sl">Distribusi AHI per Penghantar — top 20 kritis</div>
+      <div class="cc"><div class="cc-title">Komposisi nilai AHI per penghantar (stacked)</div>
+        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-stacked"></canvas></div></div>
 
-      <div class="sl">Distribusi AHI per Penghantar (jumlah tower)</div>
-      <div class="cc"><div class="cc-title">Jumlah tower per penghantar — top 20</div>
-        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-total"></canvas></div></div>
+      <div class="sl">Kondisi pentanahan per Penghantar — top 20</div>
+      <div class="cc"><div class="cc-title">Pentanahan sesuai vs tidak sesuai SPLN per penghantar</div>
+        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-pentnh"></canvas></div></div>
+
+      <div class="sl">Kondisi struktur per Penghantar — top 20</div>
+      <div class="cc"><div class="cc-title">Struktur normal vs warning per penghantar</div>
+        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-strukt"></canvas></div></div>
+
+      <div class="sl">Pemasangan anti binatang per Penghantar — top 20</div>
+      <div class="cc"><div class="cc-title">Terpasang vs belum terpasang anti binatang per penghantar</div>
+        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-antib"></canvas></div></div>
 
       <div class="cc" style="margin-top:14px"><div class="cc-title">Total tower dimonitor per UPT</div>
         <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div></div>
@@ -623,7 +631,7 @@ function renderAHITab() {
   const phtMap={};
   F_AHI.forEach(r=>{
     const p=r[A_PHT]||'N/A';
-    if(!phtMap[p]) phtMap[p]={pht:p,total:0,ce2:0,ce3:0,ce4:0,ce5:0,pentnh:0,strukt:0};
+    if(!phtMap[p]) phtMap[p]={pht:p,total:0,ce2:0,ce3:0,ce4:0,ce5:0,pentnh:0,strukt:0,antib:0};
     const g=phtMap[p];
     g.total++;
     const ce=r[A_CE];
@@ -631,9 +639,10 @@ function renderAHITab() {
     else if(ce==='4') g.ce4++; else if(ce==='5') g.ce5++;
     if(r[A_PENTNH]===1) g.pentnh++;
     if(r[A_STRUKT]===1) g.strukt++;
+    if(r[A_ANTIB] ===1) g.antib++;
   });
   AHI_PHT_DATA = Object.values(phtMap).filter(g=>g.pht!=='N/A');
-  AHI_PHT_DATA.forEach(g=>{ g.kritis=g.ce4+g.ce5; g.pctKritis=pct(g.kritis,g.total); });
+  AHI_PHT_DATA.forEach(g=>{ g.kritis=g.ce4+g.ce5; g.pctKritis=pct(g.kritis,g.total); g.antiB=g.antib||0; });
 
   // Build dropdown Penghantar
   const sel=document.getElementById('f-pht');
@@ -699,27 +708,118 @@ function renderAHICharts(rows) {
     kKeys.map(k=>pct(ahiUPT[k].kritis,ahiUPT[k].total)),
     kKeys.map(k=>{ const p2=pct(ahiUPT[k].kritis,ahiUPT[k].total); return p2>50?'#e84040':p2>25?'#f5a623':'#3a9e75'; }), '%');
 
-  // Per-Penghantar — filter dari AHI_PHT_DATA bila ada filter UPT aktif
-  const fUPT=document.getElementById('f-upt')?.value||'';
-  let phtRows = fUPT
-    ? AHI_PHT_DATA.filter(g=> F_AHI.some(r=>r[A_PHT]===g.pht && r[A_UPT]===fUPT))
+  // Per-Penghantar — gunakan AHI_PHT_DATA (sudah ter-aggregate)
+  // Bila filter penghantar aktif, tampilkan hanya 1 penghantar itu
+  const fPHTsel = document.getElementById('f-pht')?.value||'';
+  let phtRows = fPHTsel
+    ? AHI_PHT_DATA.filter(g=>g.pht===fPHTsel)
     : AHI_PHT_DATA;
 
-  // top 20 % kritis
-  const top20kritis = [...phtRows].sort((a,b)=>b.pctKritis-a.pctKritis).slice(0,20);
-  makeBarColor('c-ahi-pht-kritis',
-    top20kritis.map(g=>g.pht), top20kritis.map(g=>g.pctKritis),
-    top20kritis.map(g=>g.pctKritis>50?'#e84040':g.pctKritis>25?'#f5a623':'#3a9e75'), '%');
+  // top 20 berdasarkan % kritis
+  const top20 = [...phtRows].sort((a,b)=>b.pctKritis-a.pctKritis).slice(0,20);
+  const phtLabels = top20.map(g=>g.pht);
 
-  // top 20 jumlah tower
-  const top20total = [...phtRows].sort((a,b)=>b.total-a.total).slice(0,20);
-  makeBarHoriz('c-ahi-pht-total',
-    top20total.map(g=>g.pht), top20total.map(g=>g.total), '#3b7aff');
+  // ── Stacked bar: komposisi AHI 2/3/4/5 ──────────────────
+  makeStackedBar('c-ahi-pht-stacked', phtLabels, [
+    { label:'AHI 2 (Baik)', data:top20.map(g=>g.ce2),  color:'#00d4aa' },
+    { label:'AHI 3',        data:top20.map(g=>g.ce3),  color:'#3b7aff' },
+    { label:'AHI 4',        data:top20.map(g=>g.ce4),  color:'#f5a623' },
+    { label:'AHI 5 (Kritis)',data:top20.map(g=>g.ce5), color:'#e84040' },
+  ]);
+
+  // ── Stacked bar: pentanahan sesuai vs tidak ──────────────
+  makeStackedBar('c-ahi-pht-pentnh', phtLabels, [
+    { label:'Sesuai SPLN',      data:top20.map(g=>g.total-g.pentnh), color:'#00d4aa' },
+    { label:'Tidak sesuai SPLN',data:top20.map(g=>g.pentnh),         color:'#e84040' },
+  ]);
+
+  // ── Stacked bar: struktur normal vs warning ──────────────
+  makeStackedBar('c-ahi-pht-strukt', phtLabels, [
+    { label:'Normal',  data:top20.map(g=>g.total-g.strukt), color:'#00d4aa' },
+    { label:'Warning', data:top20.map(g=>g.strukt),         color:'#f5a623' },
+  ]);
+
+  // ── Stacked bar: anti binatang terpasang vs belum ────────
+  makeStackedBar('c-ahi-pht-antib', phtLabels, [
+    { label:'Terpasang',    data:top20.map(g=>g.antiB),         color:'#00d4aa' },
+    { label:'Belum terpasang',data:top20.map(g=>g.total-g.antiB), color:'#4a5060' },
+  ]);
 
   // Total per UPT
   const byUPT=aggregate(rows,A_UPT);
   const uKeys=Object.keys(byUPT).sort((a,b)=>byUPT[b]-byUPT[a]);
   makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
+}
+
+// ─── STACKED BAR ──────────────────────────────────────────
+function makeStackedBar(id, labels, datasets) {
+  dc(id);
+  charts[id] = new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: datasets.map(d=>({
+        label:           d.label,
+        data:            d.data,
+        backgroundColor: d.color,
+        borderWidth:     0,
+      }))
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: TC, font:{ size:11 }, boxWidth:12, padding:14 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const total = ctx.chart.data.datasets.reduce((s,ds)=>s+(ds.data[ctx.dataIndex]||0),0);
+              return ` ${ctx.dataset.label}: ${ctx.raw} (${pct(ctx.raw,total)}%)`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked:true, ticks:{color:TC}, grid:{color:GC} },
+        y: { stacked:true, ticks:{color:TC, font:{size:10}}, grid:{color:GC} }
+      }
+    }
+  });
+}
+
+// ─── STACKED BAR ──────────────────────────────────────────
+function makeStackedBar(id, labels, datasets) {
+  dc(id);
+  charts[id] = new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: datasets.map(d=>({
+        label: d.label, data: d.data, backgroundColor: d.color, borderWidth: 0,
+      }))
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display:true, position:'top',
+          labels:{ color:TC, font:{size:11}, boxWidth:12, padding:14 } },
+        tooltip: { callbacks: { label: ctx => {
+          const total = ctx.chart.data.datasets.reduce((s,ds)=>s+(ds.data[ctx.dataIndex]||0),0);
+          return ` ${ctx.dataset.label}: ${ctx.raw} (${pct(ctx.raw,total)}%)`;
+        }}}
+      },
+      scales: {
+        x: { stacked:true, ticks:{color:TC}, grid:{color:GC} },
+        y: { stacked:true, ticks:{color:TC,font:{size:10}}, grid:{color:GC} }
+      }
+    }
+  });
 }
 
 // ─── CHART HELPERS ────────────────────────────────────────
