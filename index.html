@@ -421,7 +421,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <table class="bay-table">
         <thead>
           <tr>
-            <th style="cursor:pointer" onclick="sortModal('no')">No <span id="ms-no"></span></th>
+            <th style="color:var(--text3);font-size:10px;padding:7px 10px;font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0;white-space:nowrap;">#</th>
             <th style="cursor:pointer" onclick="sortModal('bay')">BAY <span id="ms-bay"></span></th>
             <th style="cursor:pointer" onclick="sortModal('tower')">Tower <span id="ms-tower"></span></th>
             <th style="cursor:pointer" onclick="sortModal('ce')">AHI <span id="ms-ce"></span></th>
@@ -1078,7 +1078,6 @@ function renderModalTable() {
   rows.sort((a,b) => {
     let av, bv;
     if (col==='ce')     { const o={'5':0,'4':1,'3':2,'2':3}; av=o[a[A_CE]]??4; bv=o[b[A_CE]]??4; }
-    else if (col==='no')     { av=Number(a[A_NO])||0;   bv=Number(b[A_NO])||0; }
     else if (col==='ohm')    { av=a[A_OHM]??999;        bv=b[A_OHM]??999; }
     else if (col==='pentnh') { av=a[A_PENTNH];          bv=b[A_PENTNH]; }
     else if (col==='strukt') { av=a[A_STRUKT];          bv=b[A_STRUKT]; }
@@ -1090,7 +1089,7 @@ function renderModalTable() {
   });
 
   // Update sort indicators
-  ['no','bay','tower','ce','ohm','pentnh','strukt','antib'].forEach(c => {
+  ['bay','tower','ce','ohm','pentnh','strukt','antib'].forEach(c => {
     const el = document.getElementById('ms-'+c);
     if (el) el.textContent = col===c ? (dir===1?'↑':'↓') : '';
   });
@@ -1111,7 +1110,7 @@ function renderModalTable() {
     const ce  = r[A_CE]||'–';
     const cls = ceColor[ce]||'';
     return `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
-      <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${r[A_NO]||'–'}</td>
+      <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
       <td style="font-family:var(--mono);font-size:12px;color:var(--text)">${r[A_BAY]||'–'}</td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${r[A_TWR]||'–'}</td>
       <td><span class="ahi-badge ${cls}">AHI ${ce}</span></td>
