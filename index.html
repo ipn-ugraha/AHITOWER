@@ -67,6 +67,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .fs{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;font-family:var(--mono);outline:none;cursor:pointer;transition:border-color .2s;}
 .fs:focus{border-color:var(--accent);}
 .btn-reset{background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text3);padding:6px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .2s;align-self:flex-end;}
+.tier-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:120px;transition:border-color .2s;}
+.tier-btn:hover{border-color:var(--accent);}
+.tier-dropdown{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:4px;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.tier-option{padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text2);cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px;transition:background .15s;}
+.tier-option:hover{background:var(--bg3);}
+.tier-option.selected{color:var(--accent);}
+.tier-option.tier-all{border-bottom:1px solid var(--border);margin-bottom:4px;padding-bottom:8px;}
+.tier-check{width:14px;height:14px;border:1px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;}
+.tier-option.selected .tier-check{background:var(--accent);border-color:var(--accent);color:#0d0f14;}
+.tier-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;font-family:var(--mono);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:120px;transition:border-color .2s;}
+.tier-btn:hover{border-color:var(--accent);}
+.tier-dropdown{position:absolute;top:calc(100% + 4px);left:0;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:4px;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.tier-option{padding:6px 10px;font-size:12px;font-family:var(--mono);color:var(--text2);cursor:pointer;border-radius:5px;display:flex;align-items:center;gap:8px;transition:background .15s;}
+.tier-option:hover{background:var(--bg3);}
+.tier-option.selected{color:var(--accent);}
+.tier-option.tier-all{border-bottom:1px solid var(--border);margin-bottom:4px;padding-bottom:8px;}
+.tier-check{width:14px;height:14px;border:1px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;}
+.tier-option.selected .tier-check{background:var(--accent);border-color:var(--accent);color:#0d0f14;}
 .btn-reset:hover{border-color:var(--text2);color:var(--text2);}
 .filter-info{font-size:11px;color:var(--accent);font-family:var(--mono);align-self:center;margin-left:auto;white-space:nowrap;}
 
@@ -238,10 +256,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <option value="tidak">Tidak</option>
         </select>
       </div>
-      <div class="fg"><span class="fl">TIER</span>
-        <select class="fs" id="f-tier" onchange="applyFilter()">
-          <option value="">Semua</option>
-        </select>
+      <div class="fg" style="position:relative">
+        <span class="fl">TIER</span>
+        <div class="tier-btn" id="tier-btn" onclick="toggleTierDropdown(event)">
+          <span id="tier-label">Semua</span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="tier-dropdown" id="tier-dropdown" style="display:none">
+          <div class="tier-option tier-all" onclick="selectAllTier()">Semua TIER</div>
+          <div id="tier-options"></div>
+        </div>
       </div>
       <div class="fg"><span class="fl">KTT</span>
         <select class="fs" id="f-ktt" onchange="applyFilter()">
@@ -269,7 +293,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="sl">Ringkasan kondisi AHI</div>
       <div class="metrics" id="m-overview-ahi"></div>
 
-      <div class="cc"><div class="cc-title">Jumlah tower per UPT</div>
+      <div class="cc"><div class="cc-title">Tower dimonitor per UPT</div>
         <div class="cw" style="height:200px"><canvas id="c-ov-upt"></canvas></div></div>
 
       <div class="sl">Komposisi kondisi AHI per UPT</div>
@@ -591,16 +615,60 @@ async function loadRef() {
   console.log('REF embedded:', Object.keys(REF).length, 'penghantar');
 }
 
+let SELECTED_TIERS = new Set(); // set of selected tier values
+
 function buildTierDropdown(tiers) {
-  const sel = document.getElementById('f-tier');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">Semua</option>';
+  const opts = document.getElementById('tier-options');
+  if (!opts) return;
+  opts.innerHTML = '';
   tiers.forEach(t => {
-    const o = document.createElement('option');
-    o.value = t; o.textContent = 'TIER ' + t;
-    sel.appendChild(o);
+    const div = document.createElement('div');
+    div.className = 'tier-option' + (SELECTED_TIERS.has(t) ? ' selected' : '');
+    div.dataset.tier = t;
+    div.onclick = (e) => { e.stopPropagation(); toggleTier(t); };
+    div.innerHTML = `<span class="tier-check">${SELECTED_TIERS.has(t)?'✓':''}</span>TIER ${t}`;
+    opts.appendChild(div);
   });
 }
+
+function toggleTierDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('tier-dropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+function toggleTier(t) {
+  if (SELECTED_TIERS.has(t)) SELECTED_TIERS.delete(t);
+  else SELECTED_TIERS.add(t);
+  updateTierUI();
+  applyFilter();
+}
+
+function selectAllTier() {
+  SELECTED_TIERS.clear();
+  updateTierUI();
+  applyFilter();
+}
+
+function updateTierUI() {
+  // Update checkmarks
+  document.querySelectorAll('.tier-option[data-tier]').forEach(el => {
+    const t = el.dataset.tier;
+    el.classList.toggle('selected', SELECTED_TIERS.has(t));
+    el.querySelector('.tier-check').textContent = SELECTED_TIERS.has(t) ? '✓' : '';
+  });
+  // Update button label
+  const label = document.getElementById('tier-label');
+  if (SELECTED_TIERS.size === 0) label.textContent = 'Semua';
+  else if (SELECTED_TIERS.size === 1) label.textContent = 'TIER ' + [...SELECTED_TIERS][0];
+  else label.textContent = SELECTED_TIERS.size + ' TIER dipilih';
+}
+
+// Tutup dropdown saat klik di luar
+document.addEventListener('click', () => {
+  const dd = document.getElementById('tier-dropdown');
+  if (dd) dd.style.display = 'none';
+});
 
 // ─── BUILD FILTER OPTIONS ─────────────────────────────────
 function buildFilterOptions() {
@@ -628,7 +696,7 @@ function applyFilter() {
   const fTipe     = document.getElementById('f-tipe').value;
   const fTeg      = document.getElementById('f-teg').value;
   const fKritikal = document.getElementById('f-kritikal').value;
-  const fTier     = document.getElementById('f-tier').value;
+  const fTier     = SELECTED_TIERS.size > 0 ? SELECTED_TIERS : null; // multi-select
   const fKTT      = document.getElementById('f-ktt').value;
 
   // ── Step 1: Filter penghantar dari REF (Kritikal/TIER/KTT) ──
@@ -637,7 +705,7 @@ function applyFilter() {
     Object.entries(REF)
       .filter(([,v]) =>
         (!fKritikal || v.kritikal === fKritikal) &&
-        (!fTier     || v.tier     === fTier)     &&
+        (!fTier     || fTier.has(v.tier))        &&
         (!fKTT      || v.ktt      === fKTT)
       ).map(([k]) => k)
   ) : null;
@@ -680,7 +748,7 @@ function applyFilter() {
     return true;
   });
 
-  const active = [fUPT,fStatus,fTipe,fTeg,fKritikal,fTier,fKTT].filter(Boolean).length;
+  const active = [fUPT,fStatus,fTipe,fTeg,fKritikal,fKTT].filter(Boolean).length + (SELECTED_TIERS.size>0?1:0);
   document.getElementById('filter-info').textContent =
     active ? `${active} filter aktif · ${fmtNum(F_ROWS.length)} tower · ${fmtNum(F_AHI.length)} AHI` : '';
 
@@ -688,7 +756,8 @@ function applyFilter() {
 }
 
 function resetFilter() {
-  ['f-upt','f-status','f-tipe','f-teg','f-kritikal','f-tier','f-ktt'].forEach(id=>document.getElementById(id).value='');
+  ['f-upt','f-status','f-tipe','f-teg','f-kritikal','f-ktt'].forEach(id=>document.getElementById(id).value='');
+  SELECTED_TIERS.clear(); updateTierUI();
   applyFilter();
 }
 
@@ -739,12 +808,12 @@ function renderOverview() {
     mc('Struktur ⚠',      fmtNum(strukt), pct(strukt,ahiTotal)+'% warning','warn') +
     mc('Anti Binatang ✅', fmtNum(antiB),  pct(antiB,ahiTotal)+'% terpasang','');
 
-  // Tower per UPT — hanya yang mengandung 'UPT', sort terbanyak
-  const byUPT = aggregate(F_ROWS, T_UPT);
-  const uptL  = Object.keys(byUPT)
+  // Tower dimonitor per UPT — dari F_AHI, hanya yang mengandung 'UPT'
+  const byUPTahi = aggregate(F_AHI, A_UPT);
+  const uptL = Object.keys(byUPTahi)
     .filter(k=>k.toUpperCase().includes('UPT'))
-    .sort((a,b)=>byUPT[b]-byUPT[a]);
-  makeBar('c-ov-upt', uptL.map(l=>l.replace('UPT ','')), uptL.map(k=>byUPT[k]), '#3b7aff');
+    .sort((a,b)=>byUPTahi[b]-byUPTahi[a]);
+  makeBar('c-ov-upt', uptL.map(l=>l.replace('UPT ','')), uptL.map(k=>byUPTahi[k]), '#00d4aa');
 
   // Agregat per UPT untuk semua kriteria AHI
   const uMap={};
