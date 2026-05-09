@@ -455,7 +455,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <tr>
             <th style="color:var(--text3);font-size:10px;padding:7px 10px;font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0;white-space:nowrap;">#</th>
             <th style="cursor:pointer" onclick="sortModal('bay')">BAY <span id="ms-bay"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('tower')">Tower <span id="ms-tower"></span></th>
+            <th style="cursor:pointer" onclick="sortModal('tower')">AHI Tower <span id="ms-tower"></span></th>
             <th style="cursor:pointer" onclick="sortModal('ce')">AHI <span id="ms-ce"></span></th>
             <th style="cursor:pointer" onclick="sortModal('ohm')">Tahanan (Ω) <span id="ms-ohm"></span></th>
             <th style="cursor:pointer" onclick="sortModal('pentnh')">Pentanahan <span id="ms-pentnh"></span></th>
@@ -891,24 +891,21 @@ function renderOverview() {
   ]);
 
   // TLA per UPT — cek apakah ada data
-  const tlaTotal = F_AHI.filter(r=>r[A_TLA]===1).length;
-  const tlaEmptyOv = tlaTotal === 0;
-  document.getElementById('ov-tla-empty').style.display = tlaEmptyOv ? 'block' : 'none';
-  document.getElementById('ov-tla-chart').style.display = tlaEmptyOv ? 'none' : 'block';
-  if (!tlaEmptyOv) {
-    const tlaMap={};
-    F_AHI.forEach(r=>{
-      const u=r[A_UPT]||'N/A';
-      if(!tlaMap[u]) tlaMap[u]={ya:0,tidak:0};
-      if(r[A_TLA]===1) tlaMap[u].ya++; else tlaMap[u].tidak++;
-    });
-    const tKeys=Object.keys(tlaMap).filter(k=>k.toUpperCase().includes('UPT'))
-      .sort((a,b)=>tlaMap[b].ya-tlaMap[a].ya);
-    makeStackedBar('c-ov-tla-stacked', tKeys.map(l=>l.replace('UPT ','')), [
-      { label:'Terpasang',      data:tKeys.map(k=>tlaMap[k].ya),    color:'#00d4aa' },
-      { label:'Belum terpasang',data:tKeys.map(k=>tlaMap[k].tidak), color:'#4a5060' },
-    ]);
-  }
+  // TLA per UPT — selalu tampilkan grafik
+  document.getElementById('ov-tla-empty').style.display = 'none';
+  document.getElementById('ov-tla-chart').style.display = 'block';
+  const tlaMap={};
+  F_AHI.forEach(r=>{
+    const u=r[A_UPT]||'N/A';
+    if(!tlaMap[u]) tlaMap[u]={ya:0,tidak:0};
+    if(r[A_TLA]===1) tlaMap[u].ya++; else tlaMap[u].tidak++;
+  });
+  const tKeys=Object.keys(tlaMap).filter(k=>k.toUpperCase().includes('UPT'))
+    .sort((a,b)=>tlaMap[b].ya-tlaMap[a].ya);
+  makeStackedBar('c-ov-tla-stacked', tKeys.map(l=>l.replace('UPT ','')), [
+    { label:'Terpasang',      data:tKeys.map(k=>tlaMap[k].ya),    color:'#00d4aa' },
+    { label:'Belum terpasang',data:tKeys.map(k=>tlaMap[k].tidak), color:'#4a5060' },
+  ]);
 }
 
 // ─── TOWER TAB ────────────────────────────────────────────
@@ -1070,15 +1067,10 @@ function renderAHICharts(rows) {
   renderAHIPage('antib');
   renderAHIPage('tahanan');
 
-  // TLA — cek apakah ada data
-  const tlaHasData = phtRows.some(g=>g.tla>0);
-  const noTlaMsg  = document.getElementById('no-tla-msg');
-  const tlaBar    = document.getElementById('pg-bar-tla');
-  const tlaCw     = document.getElementById('cw-ahi-pht-tla');
-  if (noTlaMsg) noTlaMsg.style.display  = tlaHasData ? 'none'  : 'block';
-  if (tlaBar)   tlaBar.style.display    = tlaHasData ? 'flex'  : 'none';
-  if (tlaCw)    tlaCw.style.display     = tlaHasData ? 'block' : 'none';
-  if (tlaHasData) renderAHIPage('tla');
+  // TLA — selalu tampilkan grafik (jika belum ada data, bar akan menunjukkan semua "belum")
+  const noTlaMsg = document.getElementById('no-tla-msg');
+  if (noTlaMsg) noTlaMsg.style.display = 'none';
+  renderAHIPage('tla');
 
   // Total per UPT — hanya UPT, sort terbanyak
   const byUPT=aggregate(rows,A_UPT);
