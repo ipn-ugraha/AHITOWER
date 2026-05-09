@@ -105,6 +105,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
 .loading-text{font-family:var(--mono);font-size:12px;color:var(--text2);}
 
+/* ACCORDION */
+.accordion{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:14px;}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.2rem;cursor:pointer;user-select:none;transition:background .2s;}
+.accordion-header:hover{background:var(--bg3);}
+.accordion-title{font-size:11px;color:var(--text2);font-family:var(--mono);letter-spacing:.04em;}
+.accordion-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-left:8px;}
+.accordion-icon{width:16px;height:16px;flex-shrink:0;color:var(--text3);transition:transform .3s;}
+.accordion-icon.open{transform:rotate(180deg);}
+.accordion-body{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1);}
+.accordion-body.open{max-height:9999px;}
+.accordion-inner{padding:1rem 1.2rem 1.2rem;}
+
 /* AHI TABLE */
 .th{padding:8px 12px;text-align:left;font-size:10px;color:var(--text2);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;border-right:1px solid var(--border);}
 .th:hover{color:var(--accent);}
@@ -285,29 +297,79 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="sl">Ringkasan AHI</div>
       <div class="metrics" id="m-ahi-detail"></div>
 
-      <div class="sl">Distribusi nilai AHI</div>
-      <div class="cc"><div class="cc-title">Distribusi AHI CE SUTT</div>
-        <div class="legend" id="leg-ahi"></div>
-        <div class="cw" style="height:220px"><canvas id="c-ahi-dist"></canvas></div></div>
+      <!-- Accordion grafik AHI -->
+      <div class="accordion" id="acc-ahi-dist">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-dist')">
+          <span><span class="accordion-title">Distribusi Nilai AHI CE SUTT</span></span>
+          <svg class="accordion-icon open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body open">
+          <div class="accordion-inner">
+            <div class="legend" id="leg-ahi"></div>
+            <div class="cw" style="height:220px"><canvas id="c-ahi-dist"></canvas></div>
+          </div>
+        </div>
+      </div>
 
-      <div class="sl">Distribusi AHI per Penghantar — top 20 kritis</div>
-      <div class="cc"><div class="cc-title">Komposisi nilai AHI per penghantar (stacked)</div>
-        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-stacked"></canvas></div></div>
+      <div class="accordion" id="acc-ahi-stacked">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-stacked')">
+          <span><span class="accordion-title">Komposisi AHI per Penghantar</span><span class="accordion-meta">top 20 kritis · stacked</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div class="cw" id="cw-ahi-pht-stacked" style="height:520px"><canvas id="c-ahi-pht-stacked"></canvas></div>
+          </div>
+        </div>
+      </div>
 
-      <div class="sl">Kondisi pentanahan per Penghantar — top 20</div>
-      <div class="cc"><div class="cc-title">Pentanahan sesuai vs tidak sesuai SPLN per penghantar</div>
-        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-pentnh"></canvas></div></div>
+      <div class="accordion" id="acc-ahi-pentnh">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-pentnh')">
+          <span><span class="accordion-title">Pentanahan per Penghantar</span><span class="accordion-meta">sesuai vs tidak sesuai SPLN · top 20</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div class="cw" id="cw-ahi-pht-pentnh" style="height:520px"><canvas id="c-ahi-pht-pentnh"></canvas></div>
+          </div>
+        </div>
+      </div>
 
-      <div class="sl">Kondisi struktur per Penghantar — top 20</div>
-      <div class="cc"><div class="cc-title">Struktur normal vs warning per penghantar</div>
-        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-strukt"></canvas></div></div>
+      <div class="accordion" id="acc-ahi-strukt">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-strukt')">
+          <span><span class="accordion-title">Kondisi Struktur per Penghantar</span><span class="accordion-meta">normal vs warning · top 20</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div class="cw" id="cw-ahi-pht-strukt" style="height:520px"><canvas id="c-ahi-pht-strukt"></canvas></div>
+          </div>
+        </div>
+      </div>
 
-      <div class="sl">Pemasangan anti binatang per Penghantar — top 20</div>
-      <div class="cc"><div class="cc-title">Terpasang vs belum terpasang anti binatang per penghantar</div>
-        <div class="cw" style="height:520px"><canvas id="c-ahi-pht-antib"></canvas></div></div>
+      <div class="accordion" id="acc-ahi-antib">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-antib')">
+          <span><span class="accordion-title">Anti Binatang per Penghantar</span><span class="accordion-meta">terpasang vs belum · top 20</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div class="cw" id="cw-ahi-pht-antib" style="height:520px"><canvas id="c-ahi-pht-antib"></canvas></div>
+          </div>
+        </div>
+      </div>
 
-      <div class="cc" style="margin-top:14px"><div class="cc-title">Total tower dimonitor per UPT</div>
-        <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div></div>
+      <div class="accordion" id="acc-ahi-upt">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-upt')">
+          <span><span class="accordion-title">Total Tower Dimonitor per UPT</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -823,6 +885,29 @@ function renderAHICharts(rows) {
   makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
 }
 
+// ─── ACCORDION ────────────────────────────────────────────
+function toggleAcc(id) {
+  const acc  = document.getElementById(id);
+  const body = acc.querySelector('.accordion-body');
+  const icon = acc.querySelector('.accordion-icon');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  icon.classList.toggle('open', !isOpen);
+
+  // Re-render canvas di dalam accordion yang baru dibuka
+  // supaya Chart.js mengukur ukuran dengan benar
+  if (!isOpen) {
+    setTimeout(() => {
+      const canvases = body.querySelectorAll('canvas');
+      canvases.forEach(c => {
+        if (charts[c.id]) {
+          charts[c.id].resize();
+        }
+      });
+    }, 360); // setelah animasi selesai
+  }
+}
+
 // ─── STACKED BAR ──────────────────────────────────────────
 function makeStackedBar(id, labels, datasets) {
   dc(id);
@@ -864,35 +949,29 @@ function makeStackedBar(id, labels, datasets) {
   });
 }
 
-// ─── STACKED BAR ──────────────────────────────────────────
-function makeStackedBar(id, labels, datasets) {
-  dc(id);
-  charts[id] = new Chart(document.getElementById(id), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: datasets.map(d=>({
-        label: d.label, data: d.data, backgroundColor: d.color, borderWidth: 0,
-      }))
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display:true, position:'top',
-          labels:{ color:TC, font:{size:11}, boxWidth:12, padding:14 } },
-        tooltip: { callbacks: { label: ctx => {
-          const total = ctx.chart.data.datasets.reduce((s,ds)=>s+(ds.data[ctx.dataIndex]||0),0);
-          return ` ${ctx.dataset.label}: ${ctx.raw} (${pct(ctx.raw,total)}%)`;
-        }}}
-      },
-      scales: {
-        x: { stacked:true, ticks:{color:TC}, grid:{color:GC} },
-        y: { stacked:true, ticks:{color:TC,font:{size:10}}, grid:{color:GC} }
-      }
-    }
-  });
+// ─── ACCORDION ────────────────────────────────────────────
+function toggleAcc(id) {
+  const acc  = document.getElementById(id);
+  const body = acc.querySelector('.accordion-body');
+  const icon = acc.querySelector('.accordion-icon');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  icon.classList.toggle('open', !isOpen);
+
+  // Re-render canvas di dalam accordion yang baru dibuka
+  // supaya Chart.js mengukur ukuran dengan benar
+  if (!isOpen) {
+    setTimeout(() => {
+      const canvases = body.querySelectorAll('canvas');
+      canvases.forEach(c => {
+        if (charts[c.id]) {
+          charts[c.id].resize();
+        }
+      });
+    }, 360); // setelah animasi selesai
+  }
 }
+
 
 // ─── CHART HELPERS ────────────────────────────────────────
 const TC='#8a90a0', GC='rgba(255,255,255,0.05)';
