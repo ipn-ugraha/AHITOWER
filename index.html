@@ -206,13 +206,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-pane active" id="tab-overview">
       <div class="sl">Ringkasan aset</div>
       <div class="metrics" id="m-overview-tower"></div>
-      <div class="sl">Kondisi inspeksi (AHI — tidak terpengaruh filter tower)</div>
+
+      <div class="sl">Ringkasan kondisi AHI</div>
       <div class="metrics" id="m-overview-ahi"></div>
+
       <div class="cg2">
         <div class="cc"><div class="cc-title">Jumlah tower per UPT</div>
           <div class="cw" style="height:220px"><canvas id="c-ov-upt"></canvas></div></div>
         <div class="cc"><div class="cc-title">% tower kritis AHI (4–5) per UPT</div>
           <div class="cw" style="height:220px"><canvas id="c-ov-kritis"></canvas></div></div>
+      </div>
+
+      <div class="sl">Komposisi kondisi AHI per UPT</div>
+      <div class="cg2">
+        <div class="cc"><div class="cc-title">Nilai AHI CE SUTT per UPT (stacked)</div>
+          <div class="cw" style="height:260px"><canvas id="c-ov-ahi-stacked"></canvas></div></div>
+        <div class="cc"><div class="cc-title">Pentanahan — sesuai vs tidak sesuai SPLN per UPT</div>
+          <div class="cw" style="height:260px"><canvas id="c-ov-pentnh-stacked"></canvas></div></div>
+      </div>
+      <div class="cg2">
+        <div class="cc"><div class="cc-title">Kondisi struktur — normal vs warning per UPT</div>
+          <div class="cw" style="height:260px"><canvas id="c-ov-strukt-stacked"></canvas></div></div>
+        <div class="cc"><div class="cc-title">Anti binatang — terpasang vs belum per UPT</div>
+          <div class="cw" style="height:260px"><canvas id="c-ov-antib-stacked"></canvas></div></div>
       </div>
     </div>
 
@@ -487,39 +503,90 @@ function renderOverview() {
   const total    = F_ROWS.length;
   const operasi  = byStatus['Operasi']||0;
   const tidakOp  = byStatus['Tidak Operasi']||0;
+  const ahiTotal = F_AHI.length;
 
-  const ce45  = F_AHI.filter(r=>r[A_CE]==='4'||r[A_CE]==='5').length;
-  const pentnh= F_AHI.filter(r=>r[A_PENTNH]===1).length;
+  // Hitung semua kriteria AHI
+  const ce2    = F_AHI.filter(r=>r[A_CE]==='2').length;
+  const ce3    = F_AHI.filter(r=>r[A_CE]==='3').length;
+  const ce4    = F_AHI.filter(r=>r[A_CE]==='4').length;
+  const ce5    = F_AHI.filter(r=>r[A_CE]==='5').length;
+  const ce45   = ce4+ce5;
+  const pentnh = F_AHI.filter(r=>r[A_PENTNH]===1).length;
+  const strukt = F_AHI.filter(r=>r[A_STRUKT]===1).length;
+  const antiB  = F_AHI.filter(r=>r[A_ANTIB] ===1).length;
 
   document.getElementById('m-overview-tower').innerHTML =
-    mc('Total Tower',    fmtNum(total),   'tower terpilih','good') +
-    mc('Operasi',        fmtNum(operasi), pct(operasi,total)+'% dari total','good') +
-    mc('Tidak Operasi',  fmtNum(tidakOp), pct(tidakOp,total)+'% dari total','warn') +
-    mc('Tower Dimonitor',fmtNum(F_AHI.length),'data AHI','');
+    mc('Total Tower',     fmtNum(total),    'tower terpilih','good') +
+    mc('Operasi',         fmtNum(operasi),  pct(operasi,total)+'% dari total','good') +
+    mc('Tidak Operasi',   fmtNum(tidakOp),  pct(tidakOp,total)+'% dari total','warn') +
+    mc('Tower Dimonitor', fmtNum(ahiTotal), 'data AHI tersedia','');
 
   document.getElementById('m-overview-ahi').innerHTML =
-    mc('AHI Kritis (4–5)',fmtNum(ce45),  pct(ce45,F_AHI.length)+'%','danger') +
-    mc('Pentanahan ⚠',   fmtNum(pentnh), 'tidak sesuai SPLN','warn') +
-    mc('Struktur ⚠',     fmtNum(F_AHI.filter(r=>r[A_STRUKT]===1).length),'warning','warn') +
-    mc('Anti Binatang ✅',fmtNum(F_AHI.filter(r=>r[A_ANTIB]===1).length),'terpasang','');
+    mc('AHI 2 (Baik)',    fmtNum(ce2),    pct(ce2,ahiTotal)+'%','good') +
+    mc('AHI 3',           fmtNum(ce3),    pct(ce3,ahiTotal)+'%','') +
+    mc('AHI 4–5 (Kritis)',fmtNum(ce45),   pct(ce45,ahiTotal)+'%','danger') +
+    mc('Pentanahan ⚠',    fmtNum(pentnh), pct(pentnh,ahiTotal)+'% tdk sesuai SPLN','warn') +
+    mc('Struktur ⚠',      fmtNum(strukt), pct(strukt,ahiTotal)+'% warning','warn') +
+    mc('Anti Binatang ✅', fmtNum(antiB),  pct(antiB,ahiTotal)+'% terpasang','');
 
   // Tower per UPT
   const byUPT = aggregate(F_ROWS, T_UPT);
   const uptL  = Object.keys(byUPT).sort((a,b)=>byUPT[b]-byUPT[a]);
   makeBar('c-ov-upt', uptL.map(l=>l.replace('UPT ','')), uptL.map(k=>byUPT[k]), '#3b7aff');
 
-  // Kritis % per UPT dari F_AHI
-  const ahiUPT={};
+  // Agregat per UPT untuk semua kriteria AHI
+  const uMap={};
   F_AHI.forEach(r=>{
     const u=r[A_UPT]||'N/A';
-    if(!ahiUPT[u]) ahiUPT[u]={total:0,kritis:0};
-    ahiUPT[u].total++;
-    if(r[A_CE]==='4'||r[A_CE]==='5') ahiUPT[u].kritis++;
+    if(!uMap[u]) uMap[u]={total:0,ce2:0,ce3:0,ce4:0,ce5:0,pentnh:0,strukt:0,antiB:0};
+    const g=uMap[u];
+    g.total++;
+    const ce=r[A_CE];
+    if(ce==='2') g.ce2++; else if(ce==='3') g.ce3++;
+    else if(ce==='4') g.ce4++; else if(ce==='5') g.ce5++;
+    if(r[A_PENTNH]===1) g.pentnh++;
+    if(r[A_STRUKT]===1) g.strukt++;
+    if(r[A_ANTIB] ===1) g.antiB++;
   });
-  const kKeys=Object.keys(ahiUPT).sort((a,b)=>(ahiUPT[b].kritis/ahiUPT[b].total)-(ahiUPT[a].kritis/ahiUPT[a].total));
-  const kPct=kKeys.map(k=>pct(ahiUPT[k].kritis,ahiUPT[k].total));
-  makeBarColor('c-ov-kritis', kKeys.map(l=>l.replace('UPT ','')), kPct,
+
+  // Sort UPT by % kritis
+  const uKeys = Object.keys(uMap).sort((a,b)=>{
+    const pa=(uMap[a].ce4+uMap[a].ce5)/uMap[a].total;
+    const pb=(uMap[b].ce4+uMap[b].ce5)/uMap[b].total;
+    return pb-pa;
+  });
+  const uLabels = uKeys.map(l=>l.replace('UPT ',''));
+
+  // % Kritis per UPT (bar warna)
+  const kPct=uKeys.map(k=>pct(uMap[k].ce4+uMap[k].ce5, uMap[k].total));
+  makeBarColor('c-ov-kritis', uLabels, kPct,
     kPct.map(v=>v>50?'#e84040':v>25?'#f5a623':'#3a9e75'), '%');
+
+  // Stacked: AHI CE per UPT
+  makeStackedBar('c-ov-ahi-stacked', uLabels, [
+    { label:'AHI 2 (Baik)', data:uKeys.map(k=>uMap[k].ce2),  color:'#00d4aa' },
+    { label:'AHI 3',        data:uKeys.map(k=>uMap[k].ce3),  color:'#3b7aff' },
+    { label:'AHI 4',        data:uKeys.map(k=>uMap[k].ce4),  color:'#f5a623' },
+    { label:'AHI 5 (Kritis)',data:uKeys.map(k=>uMap[k].ce5), color:'#e84040' },
+  ]);
+
+  // Stacked: Pentanahan per UPT
+  makeStackedBar('c-ov-pentnh-stacked', uLabels, [
+    { label:'Sesuai SPLN',       data:uKeys.map(k=>uMap[k].total-uMap[k].pentnh), color:'#00d4aa' },
+    { label:'Tidak sesuai SPLN', data:uKeys.map(k=>uMap[k].pentnh),               color:'#e84040' },
+  ]);
+
+  // Stacked: Struktur per UPT
+  makeStackedBar('c-ov-strukt-stacked', uLabels, [
+    { label:'Normal',  data:uKeys.map(k=>uMap[k].total-uMap[k].strukt), color:'#00d4aa' },
+    { label:'Warning', data:uKeys.map(k=>uMap[k].strukt),               color:'#f5a623' },
+  ]);
+
+  // Stacked: Anti binatang per UPT
+  makeStackedBar('c-ov-antib-stacked', uLabels, [
+    { label:'Terpasang',      data:uKeys.map(k=>uMap[k].antiB),               color:'#00d4aa' },
+    { label:'Belum terpasang',data:uKeys.map(k=>uMap[k].total-uMap[k].antiB), color:'#4a5060' },
+  ]);
 }
 
 // ─── TOWER TAB ────────────────────────────────────────────
