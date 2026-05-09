@@ -631,60 +631,56 @@ function applyFilter() {
   const fTier     = document.getElementById('f-tier').value;
   const fKTT      = document.getElementById('f-ktt').value;
 
-  // Kumpulkan penghantar yang lolos filter REF (Kritikal/TIER/KTT)
-  const refFilter = (fKritikal || fTier || fKTT) && Object.keys(REF).length > 0;
-  const validPHT = refFilter ? new Set(
+  // ── Step 1: Filter penghantar dari REF (Kritikal/TIER/KTT) ──
+  const refActive = (fKritikal || fTier || fKTT) && Object.keys(REF).length > 0;
+  const validPHT = refActive ? new Set(
     Object.entries(REF)
-      .filter(([, v]) =>
+      .filter(([,v]) =>
         (!fKritikal || v.kritikal === fKritikal) &&
         (!fTier     || v.tier     === fTier)     &&
         (!fKTT      || v.ktt      === fKTT)
       ).map(([k]) => k)
   ) : null;
 
-  // Dari validPHT → kumpulkan UPT yang relevan di ahiRows (untuk filter towerRows)
-  // Karena towerRows tidak punya kolom penghantar, kita filter towerRows via UPT
-  // yang muncul di ahiRows yang lolos filter penghantar
-  let validUPTfromPHT = null;
+  // ── Step 2: Filter towerRows ───────────────────────────────
+  F_ROWS = RAW.towerRows.filter(r =>
+    (!fUPT    || r[T_UPT]  === fUPT)   &&
+    (!fStatus || r[T_ST]   === fStatus) &&
+    (!fTipe   || r[T_TIPE] === fTipe)  &&
+    (!fTeg    || r[T_TEG]  === fTeg)
+  );
+
+  // ── Step 3: Dari F_ROWS → kumpulkan UPT yang lolos ─────────
+  // Dipakai untuk menyelaraskan F_AHI dengan filter tower
+  const uptFromRows = new Set(F_ROWS.map(r => r[T_UPT]));
+
+  // ── Step 4: Dari validPHT → kumpulkan UPT yang relevan ─────
+  // Karena towerRows tidak punya kolom penghantar,
+  // kita gunakan ahiRows sebagai jembatan PHT → UPT
+  let uptFromPHT = null;
   if (validPHT) {
-    validUPTfromPHT = new Set(
+    uptFromPHT = new Set(
       RAW.ahiRows
         .filter(r => validPHT.has(r[A_PHT]))
         .map(r => r[A_UPT])
     );
   }
 
-  // Filter towerRows — ikut semua filter termasuk REF (via UPT)
-  F_ROWS = RAW.towerRows.filter(r =>
-    (!fUPT             || r[T_UPT]  === fUPT)    &&
-    (!fStatus          || r[T_ST]   === fStatus) &&
-    (!fTipe            || r[T_TIPE] === fTipe)   &&
-    (!fTeg             || r[T_TEG]  === fTeg)    &&
-    (!validUPTfromPHT  || validUPTfromPHT.has(r[T_UPT]))
-  );
+  // ── Step 5: Filter ahiRows — semua filter berlaku ──────────
+  // Prinsip: ahiRows ikut filter UPT, tegangan, status, jenis tower
+  // via uptFromRows (yang sudah mencakup fUPT+fStatus+fTipe+fTeg)
+  // dan ikut filter REF via validPHT
+  F_AHI = RAW.ahiRows.filter(r => {
+    // Filter UPT dari towerRows (mencakup status, jenis, tegangan, UPT)
+    if (!uptFromRows.has(r[A_UPT])) return false;
+    // Filter penghantar dari REF
+    if (validPHT && !validPHT.has(r[A_PHT])) return false;
+    // Filter UPT dari REF penghantar
+    if (uptFromPHT && !uptFromPHT.has(r[A_UPT])) return false;
+    return true;
+  });
 
-  // Kumpulkan penghantar yang lolos filter tegangan (via towerRows)
-  // towerRows tidak punya penghantar, tapi ahiRows punya PHT
-  // Filter tegangan: ambil PHT yang muncul di ahiRows setelah filter teg via UPT yg sama
-  // Pendekatan: filter ahiRows berdasar UPT yang lolos filter tower (sudah di validUPTfromPHT)
-  // dan tambah filter tegangan via set UPT yang punya tower di teg tersebut
-  let validUPTfromTeg = null;
-  if (fTeg) {
-    validUPTfromTeg = new Set(
-      RAW.towerRows
-        .filter(r => r[T_TEG] === fTeg && (!fUPT || r[T_UPT] === fUPT))
-        .map(r => r[T_UPT])
-    );
-  }
-
-  // Filter ahiRows — UPT + REF filter + tegangan
-  F_AHI = RAW.ahiRows.filter(r =>
-    (!fUPT            || r[A_UPT] === fUPT) &&
-    (!validPHT        || validPHT.has(r[A_PHT])) &&
-    (!validUPTfromTeg || validUPTfromTeg.has(r[A_UPT]))
-  );
-
-  const active=[fUPT,fStatus,fTipe,fTeg,fKritikal,fTier,fKTT].filter(Boolean).length;
+  const active = [fUPT,fStatus,fTipe,fTeg,fKritikal,fTier,fKTT].filter(Boolean).length;
   document.getElementById('filter-info').textContent =
     active ? `${active} filter aktif · ${fmtNum(F_ROWS.length)} tower · ${fmtNum(F_AHI.length)} AHI` : '';
 
