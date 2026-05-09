@@ -1126,8 +1126,9 @@ function renderAHIPage(type) {
     ]);
   } else if (type === 'tla') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
-      { label:'Terpasang',      data:slice.map(g=>g.tla),            color:'#00d4aa' },
-      { label:'Belum terpasang',data:slice.map(g=>g.total-g.tla),    color:'#4a5060' },
+      { label:'Ada TLA',        data:slice.map(g=>g.tla),       color:'#00d4aa' },
+      { label:'Tidak Ada TLA',  data:slice.map(g=>g._tidak||0), color:'#e84040' },
+      { label:'Belum Ada Data', data:slice.map(g=>g._nodata||0),color:'#4a5060' },
     ]);
   }
 
@@ -1246,7 +1247,7 @@ function renderModalTable() {
   });
 
   // Update sort indicators
-  ['bay','tower','ce','ohm','pentnh','strukt','antib'].forEach(c => {
+  ['bay','ce','ohm','pentnh','strukt','antib'].forEach(c => {
     const el = document.getElementById('ms-'+c);
     if (el) el.textContent = col===c ? (dir===1?'↑':'↓') : '';
   });
@@ -1269,7 +1270,6 @@ function renderModalTable() {
     return `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
       <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
       <td style="font-family:var(--mono);font-size:12px;color:var(--text)">${r[A_BAY]||'–'}</td>
-      <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${r[A_TWR]||'–'}</td>
       <td><span class="ahi-badge ${cls}">AHI ${ce}</span></td>
       <td>${ohmFmt(r[A_OHM])}</td>
       <td>${yn(r[A_PENTNH])}</td>
