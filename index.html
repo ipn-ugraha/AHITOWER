@@ -182,6 +182,19 @@ body {
   transition: all 0.2s;
 }
 .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+.btn-rebuild {
+  background: transparent;
+  border: 1px solid rgba(245,166,35,0.4);
+  border-radius: var(--radius);
+  color: rgba(245,166,35,0.8);
+  padding: 5px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: var(--mono);
+  transition: all 0.2s;
+  display: none;
+}
+.btn-rebuild:hover { border-color: var(--warn); color: var(--warn); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -330,6 +343,7 @@ body {
         </svg>
         Refresh
       </button>
+      <button class="btn-rebuild" id="btn-rebuild" onclick="doRebuildCache()">⚙ Rebuild Cache</button>
       <button class="btn-logout" onclick="doLogout()">Keluar</button>
     </div>
   </nav>
@@ -424,6 +438,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwhOLp0_Jy0CuZuiCmY1z6C
 // ─────────────────────────────────────────────
 let TOKEN = localStorage.getItem('tower_token') || '';
 let USERNAME = localStorage.getItem('tower_user') || '';
+let ROLE = '';
 let charts = {};
 
 // ─────────────────────────────────────────────
@@ -433,6 +448,7 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('inp-pass').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
+  ROLE = localStorage.getItem('tower_role') || '';
   if (TOKEN) checkTokenAndLoad();
   else showLogin();
 });
@@ -443,7 +459,8 @@ async function checkTokenAndLoad() {
   if (res.ok) {
     USERNAME = res.name;
     localStorage.setItem('tower_user', USERNAME);
-    showDashboard();
+    localStorage.setItem('tower_role', res.role);
+    showDashboard(res.role);
     loadDashboard();
   } else {
     clearAuth();
@@ -472,7 +489,7 @@ async function doLogin() {
     USERNAME = res.name;
     localStorage.setItem('tower_token', TOKEN);
     localStorage.setItem('tower_user', USERNAME);
-    showDashboard();
+    showDashboard(res.role);
     loadDashboard();
   } else {
     showError(res.error || 'Login gagal');
@@ -487,9 +504,10 @@ async function doLogout() {
 }
 
 function clearAuth() {
-  TOKEN = ''; USERNAME = '';
+  TOKEN = ''; USERNAME = ''; ROLE = '';
   localStorage.removeItem('tower_token');
   localStorage.removeItem('tower_user');
+  localStorage.removeItem('tower_role');
 }
 
 function showError(msg) {
@@ -505,11 +523,12 @@ function showLogin() {
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('dashboard').style.display = 'none';
 }
-function showDashboard() {
+function showDashboard(role) {
   hideLoading();
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
   document.getElementById('nav-username').textContent = USERNAME;
+  if (role === 'admin') document.getElementById('btn-rebuild').style.display = 'flex';
 }
 function showLoading(msg = 'Memuat data...') {
   document.getElementById('loading-text').textContent = msg;
@@ -695,6 +714,22 @@ function mc(label, value, sub, type='') {
     <div class="mc-value${vcls}">${value}</div>
     <div class="mc-sub">${sub}</div>
   </div>`;
+}
+
+async function doRebuildCache() {
+  if (!confirm('Rebuild cache sekarang? Proses ini berjalan di background ±30-60 detik.')) return;
+  const btn = document.getElementById('btn-rebuild');
+  btn.textContent = '⏳ Building...';
+  btn.disabled = true;
+  const res = await api({ action: 'rebuild_cache', token: TOKEN });
+  btn.textContent = '⚙ Rebuild Cache';
+  btn.disabled = false;
+  if (res.ok) {
+    alert('Cache berhasil diperbarui! Dashboard akan refresh.');
+    loadDashboard();
+  } else {
+    alert('Gagal: ' + res.error);
+  }
 }
 
 function fmtNum(n) {
