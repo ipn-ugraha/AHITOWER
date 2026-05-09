@@ -701,14 +701,25 @@ function fmtNum(n) {
   return Number(n).toLocaleString('id-ID');
 }
 
-async function api(params) {
-  try {
-    const url = API_URL + '?' + new URLSearchParams(params).toString();
-    const res = await fetch(url);
-    return await res.json();
-  } catch (e) {
-    return { ok: false, error: 'Koneksi gagal: ' + e.message };
-  }
+function api(params) {
+  return new Promise((resolve) => {
+    const cbName = '_cb' + Date.now();
+    const script = document.createElement('script');
+    const timeout = setTimeout(() => {
+      cleanup();
+      resolve({ ok: false, error: 'Koneksi timeout' });
+    }, 15000);
+    window[cbName] = (data) => { cleanup(); resolve(data); };
+    function cleanup() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    params.callback = cbName;
+    script.src = API_URL + '?' + new URLSearchParams(params).toString();
+    script.onerror = () => { cleanup(); resolve({ ok: false, error: 'Koneksi gagal' }); };
+    document.head.appendChild(script);
+  });
 }
 </script>
 </body>
