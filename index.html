@@ -105,6 +105,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
 .loading-text{font-family:var(--mono);font-size:12px;color:var(--text2);}
 
+/* AHI TABLE */
+.th{padding:8px 12px;text-align:left;font-size:10px;color:var(--text2);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;border-right:1px solid var(--border);}
+.th:hover{color:var(--accent);}
+.th:last-child{border-right:none;}
+.td{padding:7px 12px;color:var(--text2);font-family:var(--mono);border-right:1px solid var(--border);white-space:nowrap;}
+.td:last-child{border-right:none;}
+.td.bold{color:var(--text);font-weight:500;}
+.td.danger{color:var(--danger);}
+.td.warn{color:var(--warn);}
+.td.good{color:var(--accent);}
+.tr-even{background:var(--bg2);}
+.tr-odd{background:var(--bg3);}
+.tr-even:hover,.tr-odd:hover{background:rgba(0,212,170,0.04);}
+
 /* GI TABLE */
 .gi-table{display:flex;flex-direction:column;gap:2px;max-height:400px;overflow-y:auto;border-radius:var(--radius);}
 .gi-row{display:flex;justify-content:space-between;padding:5px 10px;border-radius:4px;font-size:12px;font-family:var(--mono);}
@@ -233,18 +247,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="sl">Pilih level tegangan</div>
       <div class="filter-bar" style="margin-bottom:0">
         <div class="fg"><span class="fl">Level Tegangan</span>
-          <select class="fs" id="f-teg2" onchange="renderTegangan()"><option value="">Pilih tegangan...</option></select>
+          <select class="fs" id="f-teg2" onchange="renderTegangan()"><option value="">Semua Tegangan</option></select>
         </div>
         <span class="filter-info" id="teg-info"></span>
       </div>
       <div id="teg-content" style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:2rem 0;">
-        Pilih level tegangan untuk melihat distribusi per GI.
+        Pilih atau pilih &quot;Semua Tegangan&quot; untuk melihat distribusi per GI.
       </div>
     </div>
 
     <!-- TAB AHI -->
     <div class="tab-pane" id="tab-ahi">
-      <div class="sl">Nilai AHI CE SUTT (berdasarkan filter UPT)</div>
+      <div class="sl">Nilai AHI CE SUTT</div>
       <div class="metrics" id="m-ahi-detail"></div>
       <div class="cg2">
         <div class="cc"><div class="cc-title">Distribusi nilai AHI</div>
@@ -255,6 +269,43 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
       <div class="cc"><div class="cc-title">Total tower dimonitor per UPT</div>
         <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div></div>
+
+      <!-- TABEL AHI PER GI -->
+      <div class="sl">Rincian kondisi AHI per GI</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+        <div style="display:flex;gap:8px;padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;">
+          <input id="ahi-gi-search" type="text" placeholder="Cari nama GI..." oninput="filterAHITable()"
+            style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);outline:none;width:220px;"/>
+          <select id="ahi-gi-ce" onchange="filterAHITable()"
+            style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);outline:none;cursor:pointer;">
+            <option value="">Semua AHI</option>
+            <option value="2">AHI 2 (Baik)</option>
+            <option value="3">AHI 3</option>
+            <option value="4">AHI 4</option>
+            <option value="5">AHI 5 (Kritis)</option>
+          </select>
+          <span id="ahi-table-count" style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:auto;"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="ahi-gi-table" style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead>
+              <tr style="background:var(--bg3);position:sticky;top:0;z-index:1;">
+                <th class="th" onclick="sortAHITable('gi')">GI <span id="sort-gi"></span></th>
+                <th class="th" onclick="sortAHITable('upt')">UPT <span id="sort-upt"></span></th>
+                <th class="th" onclick="sortAHITable('total')">Total <span id="sort-total"></span></th>
+                <th class="th" onclick="sortAHITable('ce2')">AHI 2 <span id="sort-ce2"></span></th>
+                <th class="th" onclick="sortAHITable('ce3')">AHI 3 <span id="sort-ce3"></span></th>
+                <th class="th" onclick="sortAHITable('ce4')">AHI 4 <span id="sort-ce4"></span></th>
+                <th class="th" onclick="sortAHITable('ce5')">AHI 5 <span id="sort-ce5"></span></th>
+                <th class="th" onclick="sortAHITable('kritis')">% Kritis <span id="sort-kritis"></span></th>
+                <th class="th" onclick="sortAHITable('pentnh')">Pentanahan ⚠ <span id="sort-pentnh"></span></th>
+                <th class="th" onclick="sortAHITable('strukt')">Struktur ⚠ <span id="sort-strukt"></span></th>
+              </tr>
+            </thead>
+            <tbody id="ahi-gi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -266,7 +317,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwhOLp0_Jy0CuZuiCmY1z6C
 // Row index constants — tower: [upt,status,tipe,teg,gi,thn,mat]
 const T_UPT=0,T_ST=1,T_TIPE=2,T_TEG=3,T_GI=4,T_THN=5,T_MAT=6;
 // AHI row: [upt, ce, pentanahan, struktur, antiBinatang]
-const A_UPT=0,A_CE=1,A_PENTNH=2,A_STRUKT=3,A_ANTIB=4;
+const A_UPT=0,A_GI=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5;
 
 // ─── STATE ────────────────────────────────────────────────
 let TOKEN='', USERNAME='', ROLE='';
@@ -381,7 +432,7 @@ function buildFilterOptions() {
 
   // Tegangan tab
   const s=document.getElementById('f-teg2');
-  s.innerHTML='<option value="">Pilih tegangan...</option>';
+  s.innerHTML='<option value="">Semua Tegangan</option>';
   RAW.rawTeg.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v+' kV'; s.appendChild(o); });
 }
 
@@ -532,18 +583,21 @@ function renderTegangan() {
   const teg  = document.getElementById('f-teg2').value;
   const div  = document.getElementById('teg-content');
   const info = document.getElementById('teg-info');
-  if(!teg||!RAW){ div.innerHTML='<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:2rem 0;">Pilih level tegangan untuk melihat distribusi per GI.</div>'; info.textContent=''; return; }
+  if(!RAW){ info.textContent=''; return; }
 
-  // Filter towerRows berdasarkan tegangan yang dipilih DAN filter aktif lainnya
   const fUPT    = document.getElementById('f-upt').value;
   const fStatus = document.getElementById('f-status').value;
   const fTipe   = document.getElementById('f-tipe').value;
+
+  // Filter rows — tegangan optional (kosong = semua)
   const tegRows = RAW.towerRows.filter(r =>
-    r[T_TEG]===teg &&
-    (!fUPT    || r[T_UPT] ===fUPT) &&
+    (!teg     || r[T_TEG] ===teg)    &&
+    (!fUPT    || r[T_UPT] ===fUPT)   &&
     (!fStatus || r[T_ST]  ===fStatus) &&
     (!fTipe   || r[T_TIPE]===fTipe)
   );
+
+  const label = teg ? teg+' kV' : 'Semua Tegangan';
 
   // GI breakdown
   const giObj={};
@@ -554,19 +608,19 @@ function renderTegangan() {
 
   const top20=giSort.slice(0,20);
   div.innerHTML=`
-    <div class="sl">Ringkasan — ${teg} kV</div>
+    <div class="sl">Ringkasan — ${label}</div>
     <div class="metrics" id="m-teg-sum"></div>
-    <div class="cc"><div class="cc-title">Distribusi tower per GI (top 20) — ${teg} kV</div>
+    <div class="cc"><div class="cc-title">Distribusi tower per GI (top 20) — ${label}</div>
       <div class="cw" style="height:${Math.max(280,top20.length*26)}px"><canvas id="c-gi-bar"></canvas></div></div>
-    <div class="sl">Semua GI — ${teg} kV (${giSort.length} GI)</div>
+    <div class="sl">Semua GI — ${label} (${giSort.length} GI)</div>
     <div class="gi-table" id="gi-table-rows"></div>
   `;
 
   const top1=giSort[0]||['—',0];
   document.getElementById('m-teg-sum').innerHTML=
-    mc('Total Tower',  fmtNum(totalTeg),    teg+' kV','good') +
-    mc('Jumlah GI',    giSort.length,       'gardu induk','') +
-    mc('GI Terbanyak', fmtNum(top1[1]),     top1[0].split(' ').pop(),'') +
+    mc('Total Tower',  fmtNum(totalTeg),                    label,'good') +
+    mc('Jumlah GI',    giSort.length,                       'gardu induk','') +
+    mc('GI Terbanyak', fmtNum(top1[1]),                     top1[0].split(' ').pop(),'') +
     mc('Rata-rata/GI', Math.round(totalTeg/(giSort.length||1)),'tower per GI','');
 
   setTimeout(()=>{
@@ -579,6 +633,9 @@ function renderTegangan() {
 }
 
 // ─── AHI TAB ──────────────────────────────────────────────
+let AHI_GI_DATA = [];   // data agregat per GI untuk tabel
+let AHI_SORT = { col:'kritis', dir:-1 };
+
 function renderAHITab() {
   const rows  = F_AHI;
   const total = rows.length;
@@ -602,8 +659,7 @@ function renderAHITab() {
 
   // Distribusi CE
   const ceL=['2','3','4','5'], ceC={'2':'#00d4aa','3':'#3b7aff','4':'#f5a623','5':'#e84040'};
-  const ceVals=[ce2,ce3,ce4,ce5];
-  makeDoughnut('c-ahi-dist', ceL.map(k=>'AHI '+k), ceVals, ceL.map(k=>ceC[k]), 'leg-ahi');
+  makeDoughnut('c-ahi-dist', ceL.map(k=>'AHI '+k), [ce2,ce3,ce4,ce5], ceL.map(k=>ceC[k]), 'leg-ahi');
 
   // Kritis per UPT
   const ahiUPT={};
@@ -622,6 +678,90 @@ function renderAHITab() {
   const byUPT=aggregate(rows,A_UPT);
   const uKeys=Object.keys(byUPT).sort((a,b)=>byUPT[b]-byUPT[a]);
   makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
+
+  // Build GI aggregated data for table
+  const giMap={};
+  rows.forEach(r=>{
+    const gi  = r[A_GI]  || 'N/A';
+    const upt = r[A_UPT] || 'N/A';
+    const ce  = r[A_CE]  || 'N/A';
+    const key = gi+'|||'+upt;
+    if(!giMap[key]) giMap[key]={gi,upt,total:0,ce2:0,ce3:0,ce4:0,ce5:0,pentnh:0,strukt:0};
+    const g=giMap[key];
+    g.total++;
+    if(ce==='2') g.ce2++; else if(ce==='3') g.ce3++;
+    else if(ce==='4') g.ce4++; else if(ce==='5') g.ce5++;
+    if(r[A_PENTNH]===1) g.pentnh++;
+    if(r[A_STRUKT]===1) g.strukt++;
+  });
+  AHI_GI_DATA = Object.values(giMap);
+  AHI_GI_DATA.forEach(g=>{ g.kritis=g.ce4+g.ce5; g.pctKritis=pct(g.kritis,g.total); });
+
+  // Reset search/filter
+  const srch=document.getElementById('ahi-gi-search');
+  const cef =document.getElementById('ahi-gi-ce');
+  if(srch) srch.value='';
+  if(cef)  cef.value='';
+  AHI_SORT={col:'kritis',dir:-1};
+  renderAHITable();
+}
+
+// ─── AHI GI TABLE ─────────────────────────────────────────
+function renderAHITable() {
+  const search = (document.getElementById('ahi-gi-search')?.value||'').toLowerCase();
+  const ceF    = document.getElementById('ahi-gi-ce')?.value||'';
+  const tbody  = document.getElementById('ahi-gi-tbody');
+  if(!tbody) return;
+
+  let data = AHI_GI_DATA.filter(g=>{
+    if(search && !g.gi.toLowerCase().includes(search) && !g.upt.toLowerCase().includes(search)) return false;
+    if(ceF==='2' && g.ce2===0) return false;
+    if(ceF==='3' && g.ce3===0) return false;
+    if(ceF==='4' && g.ce4===0) return false;
+    if(ceF==='5' && g.ce5===0) return false;
+    return true;
+  });
+
+  // Sort
+  const col=AHI_SORT.col, dir=AHI_SORT.dir;
+  data.sort((a,b)=>{
+    const av = typeof a[col]==='string' ? a[col] : (a[col]||0);
+    const bv = typeof b[col]==='string' ? b[col] : (b[col]||0);
+    return av<bv ? -dir : av>bv ? dir : 0;
+  });
+
+  // Update sort indicators
+  ['gi','upt','total','ce2','ce3','ce4','ce5','kritis','pentnh','strukt'].forEach(c=>{
+    const el=document.getElementById('sort-'+c);
+    if(el) el.textContent = col===c ? (dir===1?'↑':'↓') : '';
+  });
+
+  document.getElementById('ahi-table-count').textContent = fmtNum(data.length)+' GI';
+
+  tbody.innerHTML = data.map((g,i)=>{
+    const pct5=pct(g.ce5,g.total);
+    const kCls=g.pctKritis>50?'danger':g.pctKritis>25?'warn':'good';
+    return `<tr class="${i%2===0?'tr-even':'tr-odd'}">
+      <td class="td bold">${g.gi}</td>
+      <td class="td">${g.upt.replace('UPT ','')}</td>
+      <td class="td">${fmtNum(g.total)}</td>
+      <td class="td good">${g.ce2}</td>
+      <td class="td">${g.ce3}</td>
+      <td class="td warn">${g.ce4}</td>
+      <td class="td danger">${g.ce5}</td>
+      <td class="td ${kCls}">${g.pctKritis}%</td>
+      <td class="td ${g.pentnh>0?'warn':''}">${g.pentnh}</td>
+      <td class="td ${g.strukt>0?'warn':''}">${g.strukt}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterAHITable() { renderAHITable(); }
+
+function sortAHITable(col) {
+  if(AHI_SORT.col===col) AHI_SORT.dir*=-1;
+  else { AHI_SORT.col=col; AHI_SORT.dir=-1; }
+  renderAHITable();
 }
 
 // ─── CHART HELPERS ────────────────────────────────────────
