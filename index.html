@@ -210,12 +210,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="sl">Ringkasan kondisi AHI</div>
       <div class="metrics" id="m-overview-ahi"></div>
 
-      <div class="cg2">
-        <div class="cc"><div class="cc-title">Jumlah tower per UPT</div>
-          <div class="cw" style="height:220px"><canvas id="c-ov-upt"></canvas></div></div>
-        <div class="cc"><div class="cc-title">% tower kritis AHI (4–5) per UPT</div>
-          <div class="cw" style="height:220px"><canvas id="c-ov-kritis"></canvas></div></div>
-      </div>
+      <div class="cc"><div class="cc-title">Jumlah tower per UPT</div>
+        <div class="cw" style="height:200px"><canvas id="c-ov-upt"></canvas></div></div>
 
       <div class="sl">Komposisi kondisi AHI per UPT</div>
       <div class="cg2">
@@ -445,7 +441,9 @@ function buildFilterOptions() {
 function fillSel(id, vals) {
   const s=document.getElementById(id), cur=s.value;
   s.innerHTML='<option value="">Semua</option>';
-  vals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });
+  // Untuk dropdown UPT, hanya tampilkan nilai yang mengandung kata 'UPT'
+  const filtered = id==='f-upt' ? vals.filter(v=>v.toUpperCase().includes('UPT')) : vals;
+  filtered.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });
   if(cur) s.value=cur;
 }
 
@@ -556,11 +554,6 @@ function renderOverview() {
     return pb-pa;
   });
   const uLabels = uKeys.map(l=>l.replace('UPT ',''));
-
-  // % Kritis per UPT (bar warna)
-  const kPct=uKeys.map(k=>pct(uMap[k].ce4+uMap[k].ce5, uMap[k].total));
-  makeBarColor('c-ov-kritis', uLabels, kPct,
-    kPct.map(v=>v>50?'#e84040':v>25?'#f5a623':'#3a9e75'), '%');
 
   // Stacked: AHI CE per UPT
   makeStackedBar('c-ov-ahi-stacked', uLabels, [
