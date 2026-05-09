@@ -113,8 +113,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .accordion-meta{font-size:10px;color:var(--text3);font-family:var(--mono);margin-left:8px;}
 .accordion-icon{width:16px;height:16px;flex-shrink:0;color:var(--text3);transition:transform .3s;}
 .accordion-icon.open{transform:rotate(180deg);}
-.accordion-body{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1);}
-.accordion-body.open{max-height:9999px;}
+.accordion-body{height:0;overflow:hidden;transition:height .35s cubic-bezier(.4,0,.2,1);}
 .accordion-inner{padding:1rem 1.2rem 1.2rem;}
 
 /* AHI TABLE */
@@ -303,7 +302,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <span><span class="accordion-title">Distribusi Nilai AHI CE SUTT</span></span>
           <svg class="accordion-icon open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="accordion-body open">
+        <div class="accordion-body" style="height:auto">
           <div class="accordion-inner">
             <div class="legend" id="leg-ahi"></div>
             <div class="cw" style="height:220px"><canvas id="c-ahi-dist"></canvas></div>
@@ -891,29 +890,6 @@ function renderAHICharts(rows) {
   makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
 }
 
-// ─── ACCORDION ────────────────────────────────────────────
-function toggleAcc(id) {
-  const acc  = document.getElementById(id);
-  const body = acc.querySelector('.accordion-body');
-  const icon = acc.querySelector('.accordion-icon');
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  icon.classList.toggle('open', !isOpen);
-
-  // Re-render canvas di dalam accordion yang baru dibuka
-  // supaya Chart.js mengukur ukuran dengan benar
-  if (!isOpen) {
-    setTimeout(() => {
-      const canvases = body.querySelectorAll('canvas');
-      canvases.forEach(c => {
-        if (charts[c.id]) {
-          charts[c.id].resize();
-        }
-      });
-    }, 360); // setelah animasi selesai
-  }
-}
-
 // ─── STACKED BAR ──────────────────────────────────────────
 function makeStackedBar(id, labels, datasets) {
   dc(id);
@@ -957,24 +933,25 @@ function makeStackedBar(id, labels, datasets) {
 
 // ─── ACCORDION ────────────────────────────────────────────
 function toggleAcc(id) {
-  const acc  = document.getElementById(id);
-  const body = acc.querySelector('.accordion-body');
-  const icon = acc.querySelector('.accordion-icon');
-  const isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  icon.classList.toggle('open', !isOpen);
+  const acc   = document.getElementById(id);
+  const body  = acc.querySelector('.accordion-body');
+  const inner = acc.querySelector('.accordion-inner');
+  const icon  = acc.querySelector('.accordion-icon');
+  const isOpen = body.style.height !== '' && body.style.height !== '0px';
 
-  // Re-render canvas di dalam accordion yang baru dibuka
-  // supaya Chart.js mengukur ukuran dengan benar
-  if (!isOpen) {
-    setTimeout(() => {
-      const canvases = body.querySelectorAll('canvas');
-      canvases.forEach(c => {
-        if (charts[c.id]) {
-          charts[c.id].resize();
-        }
+  if (isOpen) {
+    body.style.height = body.scrollHeight + 'px';
+    requestAnimationFrame(() => { body.style.height = '0px'; });
+    icon.classList.remove('open');
+  } else {
+    body.style.height = inner.scrollHeight + 'px';
+    icon.classList.add('open');
+    body.addEventListener('transitionend', () => {
+      body.style.height = 'auto';
+      acc.querySelectorAll('canvas').forEach(c => {
+        if (charts[c.id]) charts[c.id].resize();
       });
-    }, 360); // setelah animasi selesai
+    }, { once: true });
   }
 }
 
