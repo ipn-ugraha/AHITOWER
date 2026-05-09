@@ -105,6 +105,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
 .loading-text{font-family:var(--mono);font-size:12px;color:var(--text2);}
 
+/* PAGINATION */
+.pg-wrap{display:flex;align-items:center;justify-content:space-between;padding:.6rem 0 .2rem;gap:8px;flex-wrap:wrap;}
+.pg-info{font-size:11px;color:var(--text3);font-family:var(--mono);}
+.pg-btns{display:flex;gap:4px;}
+.pg-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:4px 10px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .2s;}
+.pg-btn:hover{border-color:var(--accent);color:var(--accent);}
+.pg-btn:disabled{opacity:.3;cursor:not-allowed;}
+.pg-btn.active{background:var(--accent);color:#0d0f14;border-color:var(--accent);}
+
 /* ACCORDION */
 .accordion{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:14px;}
 .accordion-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.2rem;cursor:pointer;user-select:none;transition:background .2s;}
@@ -317,7 +326,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div class="accordion-body">
           <div class="accordion-inner">
-            <div class="cw" id="cw-ahi-pht-stacked" style="height:300px"><canvas id="c-ahi-pht-stacked"></canvas></div>
+            <div id="pg-bar-stacked" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-stacked" style="height:520px"><canvas id="c-ahi-pht-stacked"></canvas></div>
           </div>
         </div>
       </div>
@@ -329,7 +339,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div class="accordion-body">
           <div class="accordion-inner">
-            <div class="cw" id="cw-ahi-pht-pentnh" style="height:300px"><canvas id="c-ahi-pht-pentnh"></canvas></div>
+            <div id="pg-bar-pentnh" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-pentnh" style="height:520px"><canvas id="c-ahi-pht-pentnh"></canvas></div>
           </div>
         </div>
       </div>
@@ -341,7 +352,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div class="accordion-body">
           <div class="accordion-inner">
-            <div class="cw" id="cw-ahi-pht-strukt" style="height:300px"><canvas id="c-ahi-pht-strukt"></canvas></div>
+            <div id="pg-bar-strukt" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-strukt" style="height:520px"><canvas id="c-ahi-pht-strukt"></canvas></div>
           </div>
         </div>
       </div>
@@ -353,7 +365,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div class="accordion-body">
           <div class="accordion-inner">
-            <div class="cw" id="cw-ahi-pht-antib" style="height:300px"><canvas id="c-ahi-pht-antib"></canvas></div>
+            <div id="pg-bar-antib" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-antib" style="height:520px"><canvas id="c-ahi-pht-antib"></canvas></div>
           </div>
         </div>
       </div>
@@ -766,6 +779,10 @@ function renderTowerTab() {
 // ─── AHI TAB ──────────────────────────────────────────────
 let AHI_PHT_DATA = [];  // agregat per Penghantar
 let F_AHI_PHT = null;   // ahiRows setelah filter Penghantar
+// Pagination per grafik AHI
+const PAGE_SIZE = 20;
+const AHI_PAGES = { stacked:0, pentnh:0, strukt:0, antib:0 };
+let AHI_SORTED = { stacked:[], pentnh:[], strukt:[], antib:[] };
 
 function renderAHITab() {
   // Build per-Penghantar aggregate dari F_AHI
@@ -842,52 +859,97 @@ function renderAHICharts(rows) {
 
   // Per-Penghantar dari AHI_PHT_DATA
   const fPHTsel = document.getElementById('f-pht')?.value||'';
-  let phtRows = fPHTsel
-    ? AHI_PHT_DATA.filter(g=>g.pht===fPHTsel)
-    : AHI_PHT_DATA;
+  const phtRows = fPHTsel ? AHI_PHT_DATA.filter(g=>g.pht===fPHTsel) : AHI_PHT_DATA;
 
-  // Sort masing-masing grafik berdasarkan kondisi jelek terbanyak
-  const top20ahi    = [...phtRows].sort((a,b)=>(b.ce4+b.ce5)-(a.ce4+a.ce5));
-  const top20pentnh = [...phtRows].sort((a,b)=>b.pentnh-a.pentnh);
-  const top20strukt = [...phtRows].sort((a,b)=>b.strukt-a.strukt);
-  const top20antib  = [...phtRows].sort((a,b)=>(b.total-b.antiB)-(a.total-a.antiB));
+  // Simpan data terurut ke state, reset ke halaman 0
+  AHI_SORTED.stacked = [...phtRows].sort((a,b)=>(b.ce4+b.ce5)-(a.ce4+a.ce5));
+  AHI_SORTED.pentnh  = [...phtRows].sort((a,b)=>b.pentnh-a.pentnh);
+  AHI_SORTED.strukt  = [...phtRows].sort((a,b)=>b.strukt-a.strukt);
+  AHI_SORTED.antib   = [...phtRows].sort((a,b)=>(b.total-b.antiB)-(a.total-a.antiB));
+  AHI_PAGES.stacked  = 0;
+  AHI_PAGES.pentnh   = 0;
+  AHI_PAGES.strukt   = 0;
+  AHI_PAGES.antib    = 0;
 
-  // ── Stacked: AHI — sort by ce4+ce5 terbanyak ────────────
-  // Tinggi dinamis: 26px per penghantar, minimum 300px
-  const setH = (id, n) => { const el=document.getElementById('cw-'+id); if(el) el.style.height=Math.max(300,n*26)+'px'; };
-  setH('ahi-pht-stacked', top20ahi.length);
-  setH('ahi-pht-pentnh',  top20pentnh.length);
-  setH('ahi-pht-strukt',  top20strukt.length);
-  setH('ahi-pht-antib',   top20antib.length);
-  makeStackedBar('c-ahi-pht-stacked', top20ahi.map(g=>g.pht), [
-    { label:'AHI 2 (Baik)',  data:top20ahi.map(g=>g.ce2), color:'#00d4aa' },
-    { label:'AHI 3',         data:top20ahi.map(g=>g.ce3), color:'#3b7aff' },
-    { label:'AHI 4',         data:top20ahi.map(g=>g.ce4), color:'#f5a623' },
-    { label:'AHI 5 (Kritis)',data:top20ahi.map(g=>g.ce5), color:'#e84040' },
-  ]);
-
-  // ── Stacked: pentanahan — sort by tidak sesuai terbanyak ─
-  makeStackedBar('c-ahi-pht-pentnh', top20pentnh.map(g=>g.pht), [
-    { label:'Sesuai SPLN',       data:top20pentnh.map(g=>g.total-g.pentnh), color:'#00d4aa' },
-    { label:'Tidak sesuai SPLN', data:top20pentnh.map(g=>g.pentnh),         color:'#e84040' },
-  ]);
-
-  // ── Stacked: struktur — sort by warning terbanyak ────────
-  makeStackedBar('c-ahi-pht-strukt', top20strukt.map(g=>g.pht), [
-    { label:'Normal',  data:top20strukt.map(g=>g.total-g.strukt), color:'#00d4aa' },
-    { label:'Warning', data:top20strukt.map(g=>g.strukt),         color:'#f5a623' },
-  ]);
-
-  // ── Stacked: anti binatang — sort by belum terpasang terbanyak ─
-  makeStackedBar('c-ahi-pht-antib', top20antib.map(g=>g.pht), [
-    { label:'Terpasang',      data:top20antib.map(g=>g.antiB),           color:'#00d4aa' },
-    { label:'Belum terpasang',data:top20antib.map(g=>g.total-g.antiB),   color:'#4a5060' },
-  ]);
+  renderAHIPage('stacked');
+  renderAHIPage('pentnh');
+  renderAHIPage('strukt');
+  renderAHIPage('antib');
 
   // Total per UPT — hanya UPT, sort terbanyak
   const byUPT=aggregate(rows,A_UPT);
   const uKeys=Object.keys(byUPT).filter(k=>k.toUpperCase().includes('UPT')).sort((a,b)=>byUPT[b]-byUPT[a]);
   makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
+}
+
+// ─── AHI PAGINATION ───────────────────────────────────────
+function renderAHIPage(type) {
+  const data    = AHI_SORTED[type];
+  const page    = AHI_PAGES[type];
+  const total   = data.length;
+  const pages   = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const start   = page * PAGE_SIZE;
+  const slice   = data.slice(start, start + PAGE_SIZE);
+  const canvasId= 'c-ahi-pht-' + type;
+  const cwId    = 'cw-ahi-pht-' + type;
+  const pgBarId = 'pg-bar-' + type;
+
+  // Tinggi tetap 520px
+  const cw = document.getElementById(cwId);
+  if (cw) cw.style.height = '520px';
+
+  // Render grafik sesuai type
+  if (type === 'stacked') {
+    makeStackedBar(canvasId, slice.map(g=>g.pht), [
+      { label:'AHI 2 (Baik)',  data:slice.map(g=>g.ce2), color:'#00d4aa' },
+      { label:'AHI 3',         data:slice.map(g=>g.ce3), color:'#3b7aff' },
+      { label:'AHI 4',         data:slice.map(g=>g.ce4), color:'#f5a623' },
+      { label:'AHI 5 (Kritis)',data:slice.map(g=>g.ce5), color:'#e84040' },
+    ]);
+  } else if (type === 'pentnh') {
+    makeStackedBar(canvasId, slice.map(g=>g.pht), [
+      { label:'Sesuai SPLN',       data:slice.map(g=>g.total-g.pentnh), color:'#00d4aa' },
+      { label:'Tidak sesuai SPLN', data:slice.map(g=>g.pentnh),         color:'#e84040' },
+    ]);
+  } else if (type === 'strukt') {
+    makeStackedBar(canvasId, slice.map(g=>g.pht), [
+      { label:'Normal',  data:slice.map(g=>g.total-g.strukt), color:'#00d4aa' },
+      { label:'Warning', data:slice.map(g=>g.strukt),         color:'#f5a623' },
+    ]);
+  } else if (type === 'antib') {
+    makeStackedBar(canvasId, slice.map(g=>g.pht), [
+      { label:'Terpasang',      data:slice.map(g=>g.antiB),           color:'#00d4aa' },
+      { label:'Belum terpasang',data:slice.map(g=>g.total-g.antiB),   color:'#4a5060' },
+    ]);
+  }
+
+  // Render pagination bar
+  const pgBar = document.getElementById(pgBarId);
+  if (!pgBar) return;
+  const from = total === 0 ? 0 : start + 1;
+  const to   = Math.min(start + PAGE_SIZE, total);
+  let html = `<span class="pg-info">${from}–${to} dari ${fmtNum(total)} penghantar</span><div class="pg-btns">`;
+  html += `<button class="pg-btn" onclick="gotoAHIPage('${type}',0)" ${page===0?'disabled':''}>«</button>`;
+  html += `<button class="pg-btn" onclick="gotoAHIPage('${type}',${page-1})" ${page===0?'disabled':''}>‹</button>`;
+  // Nomor halaman — tampilkan max 5 tombol di sekitar halaman aktif
+  const win = 2;
+  for (let i=0; i<pages; i++) {
+    if (i===0 || i===pages-1 || (i>=page-win && i<=page+win)) {
+      html += `<button class="pg-btn${i===page?' active':''}" onclick="gotoAHIPage('${type}',${i})">${i+1}</button>`;
+    } else if (i===page-win-1 || i===page+win+1) {
+      html += `<span style="color:var(--text3);padding:0 2px;font-size:12px">…</span>`;
+    }
+  }
+  html += `<button class="pg-btn" onclick="gotoAHIPage('${type}',${page+1})" ${page>=pages-1?'disabled':''}>›</button>`;
+  html += `<button class="pg-btn" onclick="gotoAHIPage('${type}',${pages-1})" ${page>=pages-1?'disabled':''}>»</button>`;
+  html += '</div>';
+  pgBar.innerHTML = html;
+}
+
+function gotoAHIPage(type, page) {
+  const pages = Math.ceil(AHI_SORTED[type].length / PAGE_SIZE);
+  AHI_PAGES[type] = Math.max(0, Math.min(page, pages-1));
+  renderAHIPage(type);
 }
 
 // ─── STACKED BAR ──────────────────────────────────────────
