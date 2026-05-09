@@ -854,12 +854,6 @@ function renderAHICharts(rows) {
   const top20antib  = [...phtRows].sort((a,b)=>(b.total-b.antiB)-(a.total-a.antiB));
 
   // ── Stacked: AHI — sort by ce4+ce5 terbanyak ────────────
-  // Tinggi dinamis: 26px per penghantar
-  const setH = (id, n) => { const el=document.getElementById('cw-'+id); if(el) el.style.height=Math.max(300,n*26)+'px'; };
-  setH('ahi-pht-stacked', top20ahi.length);
-  setH('ahi-pht-pentnh',  top20pentnh.length);
-  setH('ahi-pht-strukt',  top20strukt.length);
-  setH('ahi-pht-antib',   top20antib.length);
   // Tinggi dinamis: 26px per penghantar, minimum 300px
   const setH = (id, n) => { const el=document.getElementById('cw-'+id); if(el) el.style.height=Math.max(300,n*26)+'px'; };
   setH('ahi-pht-stacked', top20ahi.length);
