@@ -347,7 +347,7 @@ async function checkTokenAndLoad() {
   if (res.ok) {
     USERNAME=res.name; ROLE=res.role;
     localStorage.setItem('tower_user',USERNAME); localStorage.setItem('tower_role',ROLE);
-    showDashboard(); loadDashboard();
+    showDashboard(); loadRef(); loadDashboard();
   } else { clearAuth(); showLogin(); }
 }
 
@@ -366,7 +366,7 @@ async function doLogin() {
     localStorage.setItem('tower_user',USERNAME);
     localStorage.setItem('tower_role',ROLE);
     showDashboard();
-    await loadRef();
+    loadRef(); // non-blocking, jalan paralel
     loadDashboard();
   } else {
     showError(res.error||'Login gagal');
@@ -432,18 +432,22 @@ async function loadDashboard() {
 
 // ─── LOAD CSV REFERENSI ───────────────────────────────────
 async function loadRef() {
+  REF = {}; // default kosong agar filter tetap bisa jalan
   try {
+    if (!CSV_URL || CSV_URL.includes('GANTI_DENGAN')) return; // skip jika belum diisi
     const res = await fetch(CSV_URL);
-    if (!res.ok) throw new Error('CSV tidak ditemukan');
+    if (!res.ok) return;
     const text = await res.text();
-    const lines = text.trim().split('
-').slice(1); // skip header
-    REF = {};
+    const lines = text.trim().split(/\r?\n/).slice(1); // skip header, support CRLF/LF
     const tiers = new Set();
     lines.forEach(line => {
-      const [pht, kritikal, tier, ktt] = line.split(',').map(s => s.trim());
+      const parts = line.split(',');
+      const pht      = (parts[0]||'').trim();
+      const kritikal = (parts[1]||'tidak').trim().toLowerCase();
+      const tier     = (parts[2]||'').trim();
+      const ktt      = (parts[3]||'tidak').trim().toLowerCase();
       if (!pht) return;
-      REF[pht] = { kritikal: kritikal||'tidak', tier: tier||'', ktt: ktt||'tidak' };
+      REF[pht] = { kritikal, tier, ktt };
       if (tier) tiers.add(tier);
     });
     // Build TIER dropdown
@@ -451,13 +455,14 @@ async function loadRef() {
     if (sel) {
       sel.innerHTML = '<option value="">Semua</option>';
       [...tiers].sort((a,b)=>Number(a)-Number(b)).forEach(t => {
-        const o = document.createElement('option'); o.value=t; o.textContent='TIER '+t; sel.appendChild(o);
+        const o = document.createElement('option');
+        o.value = t; o.textContent = 'TIER ' + t;
+        sel.appendChild(o);
       });
     }
     console.log('REF loaded:', Object.keys(REF).length, 'penghantar');
   } catch(e) {
     console.warn('CSV referensi gagal dimuat:', e.message);
-    REF = {};
   }
 }
 
