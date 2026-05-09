@@ -8,15 +8,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 :root {
-  --bg:#0d0f14; --bg2:#13161e; --bg3:#1a1e28;
-  --border:rgba(255,255,255,0.07); --border2:rgba(255,255,255,0.13);
-  --accent:#00d4aa; --accent2:#3b7aff; --warn:#f5a623; --danger:#e84040;
-  --text:#e8eaf0; --text2:#8a90a0; --text3:#4a5060;
-  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
-  --radius:8px;
+  --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --accent:#00d4aa;--accent2:#3b7aff;--warn:#f5a623;--danger:#e84040;
+  --text:#e8eaf0;--text2:#8a90a0;--text3:#4a5060;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:8px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-html{scroll-behavior:smooth;}
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
 
 /* LOGIN */
@@ -26,14 +24,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem;}
 .login-logo-icon{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;}
 .login-logo-icon svg{width:20px;height:20px;}
-.login-title{font-size:16px;font-weight:600;color:var(--text);}
-.login-sub{font-size:11px;color:var(--text2);font-family:var(--mono);margin-top:1px;}
+.login-title{font-size:16px;font-weight:600;}
+.login-sub{font-size:11px;color:var(--text2);font-family:var(--mono);}
 .field{margin-bottom:1rem;}
 .field label{display:block;font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase;}
 .field input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;}
 .field input:focus{border-color:var(--accent);}
-.btn-login{width:100%;background:var(--accent);color:#0d0f14;border:none;border-radius:var(--radius);padding:11px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;margin-top:.5rem;transition:opacity .2s,transform .1s;}
-.btn-login:hover{opacity:.9;} .btn-login:active{transform:scale(.98);} .btn-login:disabled{opacity:.5;cursor:not-allowed;}
+.btn-login{width:100%;background:var(--accent);color:#0d0f14;border:none;border-radius:var(--radius);padding:11px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;margin-top:.5rem;transition:opacity .2s;}
+.btn-login:hover{opacity:.9;}.btn-login:disabled{opacity:.5;cursor:not-allowed;}
 .login-error{background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.3);border-radius:var(--radius);padding:8px 12px;font-size:12px;color:var(--danger);margin-top:1rem;display:none;}
 
 /* TOPBAR */
@@ -44,10 +42,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .topbar-icon svg{width:16px;height:16px;}
 .topbar-title{font-size:14px;font-weight:600;}
 .topbar-sub{font-size:10px;color:var(--text2);font-family:var(--mono);}
-.topbar-right{display:flex;align-items:center;gap:8px;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .user-chip{background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text2);font-family:var(--mono);}
 .user-chip span{color:var(--accent);}
-.btn-sm{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text2);padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--mono);transition:border-color .2s,color .2s;display:flex;align-items:center;gap:5px;}
+.btn-sm{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text2);padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--mono);transition:all .2s;display:flex;align-items:center;gap:5px;}
 .btn-sm:hover{border-color:var(--accent);color:var(--accent);}
 .btn-sm.loading svg{animation:spin 1s linear infinite;}
 .btn-warn{border-color:rgba(245,166,35,.4);color:rgba(245,166,35,.8);display:none;}
@@ -58,43 +56,38 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 /* MAIN */
 .main{max-width:1280px;margin:0 auto;padding:1.5rem;}
-.last-updated{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:1.25rem;display:flex;align-items:center;gap:6px;}
+.last-updated{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:1rem;display:flex;align-items:center;gap:6px;}
 .last-updated::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s ease-in-out infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
 /* FILTER BAR */
 .filter-bar{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1.1rem;margin-bottom:1.25rem;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
-.filter-group{display:flex;flex-direction:column;gap:4px;min-width:160px;}
-.filter-label{font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;}
-.filter-select{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;font-family:var(--mono);outline:none;cursor:pointer;transition:border-color .2s;}
-.filter-select:focus{border-color:var(--accent);}
+.fg{display:flex;flex-direction:column;gap:4px;min-width:155px;}
+.fl{font-size:10px;color:var(--text3);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;}
+.fs{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;font-family:var(--mono);outline:none;cursor:pointer;transition:border-color .2s;}
+.fs:focus{border-color:var(--accent);}
 .btn-reset{background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text3);padding:6px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;transition:all .2s;align-self:flex-end;}
 .btn-reset:hover{border-color:var(--text2);color:var(--text2);}
-.filter-info{font-size:11px;color:var(--accent);font-family:var(--mono);align-self:center;margin-left:auto;}
+.filter-info{font-size:11px;color:var(--accent);font-family:var(--mono);align-self:center;margin-left:auto;white-space:nowrap;}
 
 /* SECTION */
-.section-label{font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem;margin-top:1.75rem;padding-left:10px;border-left:2px solid var(--accent);}
+.sl{font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:.1.5rem 0 .75rem;padding-left:10px;border-left:2px solid var(--accent);margin-top:1.5rem;margin-bottom:.75rem;}
 
 /* METRICS */
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;}
-.mc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;transition:border-color .2s;}
-.mc:hover{border-color:var(--border2);}
-.mc.warn{border-left:3px solid var(--warn);}
-.mc.danger{border-left:3px solid var(--danger);}
-.mc.good{border-left:3px solid var(--accent);}
-.mc-label{font-size:10px;color:var(--text2);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;}
-.mc-value{font-size:24px;font-weight:600;color:var(--text);font-family:var(--mono);line-height:1;}
-.mc-value.warn{color:var(--warn);} .mc-value.danger{color:var(--danger);} .mc-value.good{color:var(--accent);}
+.mc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.1rem;}
+.mc.warn{border-left:3px solid var(--warn);}.mc.danger{border-left:3px solid var(--danger);}.mc.good{border-left:3px solid var(--accent);}
+.mc-lbl{font-size:10px;color:var(--text2);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;}
+.mc-val{font-size:24px;font-weight:600;color:var(--text);font-family:var(--mono);line-height:1;}
+.mc-val.warn{color:var(--warn);}.mc-val.danger{color:var(--danger);}.mc-val.good{color:var(--accent);}
 .mc-sub{font-size:11px;color:var(--text3);margin-top:4px;}
 
-/* CHART GRID */
+/* CHARTS */
 .cg2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .cg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
-.cg4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;}
-@media(max-width:900px){.cg3,.cg4{grid-template-columns:1fr 1fr;}}
-@media(max-width:600px){.cg2,.cg3,.cg4{grid-template-columns:1fr;}}
-.cc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;}
-.cc.span2{grid-column:span 2;}
+@media(max-width:900px){.cg3{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){.cg2,.cg3{grid-template-columns:1fr;}}
+.cc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-top:14px;}
 .cc-title{font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:.9rem;letter-spacing:.04em;}
 .cw{position:relative;width:100%;}
 .legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
@@ -105,12 +98,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .tab-nav{display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:1px solid var(--border);overflow-x:auto;}
 .tab-btn{background:none;border:none;border-bottom:2px solid transparent;color:var(--text2);font-family:var(--mono);font-size:12px;padding:8px 16px;cursor:pointer;transition:color .2s;margin-bottom:-1px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
 .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
-.tab-pane{display:none;} .tab-pane.active{display:block;}
+.tab-pane{display:none;}.tab-pane.active{display:block;}
 
 /* LOADING */
 #loading-overlay{position:fixed;inset:0;z-index:999;background:rgba(13,15,20,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
 .spinner{width:36px;height:36px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
 .loading-text{font-family:var(--mono);font-size:12px;color:var(--text2);}
+
+/* GI TABLE */
+.gi-table{display:flex;flex-direction:column;gap:2px;max-height:400px;overflow-y:auto;border-radius:var(--radius);}
+.gi-row{display:flex;justify-content:space-between;padding:5px 10px;border-radius:4px;font-size:12px;font-family:var(--mono);}
+.gi-row:nth-child(odd){background:var(--bg3);}
+.gi-row:nth-child(even){background:var(--bg2);}
 </style>
 </head>
 <body>
@@ -129,10 +128,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
         </svg>
       </div>
-      <div>
-        <div class="login-title">Tower Monitoring</div>
-        <div class="login-sub">PLN UIT JBM</div>
-      </div>
+      <div><div class="login-title">Tower Monitoring</div><div class="login-sub">PLN UIT JBM</div></div>
     </div>
     <div class="field"><label>Username</label><input type="text" id="inp-user" placeholder="username" autocomplete="username"/></div>
     <div class="field"><label>Password</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"/></div>
@@ -150,10 +146,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
         </svg>
       </div>
-      <div>
-        <div class="topbar-title">Tower Monitoring</div>
-        <div class="topbar-sub">Dashboard Inspeksi SUTT/SUTET</div>
-      </div>
+      <div><div class="topbar-title">Tower Monitoring</div><div class="topbar-sub">Dashboard Inspeksi SUTT/SUTET</div></div>
     </div>
     <div class="topbar-right">
       <div class="user-chip">Login: <span id="nav-username">-</span></div>
@@ -170,22 +163,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="last-updated" id="last-updated">Menunggu data...</div>
 
     <!-- FILTER BAR -->
-    <div class="filter-bar" id="filter-bar">
-      <div class="filter-group">
-        <span class="filter-label">UPT</span>
-        <select class="filter-select" id="f-upt" onchange="applyFilter()"><option value="">Semua UPT</option></select>
+    <div class="filter-bar">
+      <div class="fg"><span class="fl">UPT</span>
+        <select class="fs" id="f-upt" onchange="applyFilter()"><option value="">Semua UPT</option></select>
       </div>
-      <div class="filter-group">
-        <span class="filter-label">Status Alat</span>
-        <select class="filter-select" id="f-status" onchange="applyFilter()"><option value="">Semua Status</option></select>
+      <div class="fg"><span class="fl">Status Alat</span>
+        <select class="fs" id="f-status" onchange="applyFilter()"><option value="">Semua Status</option></select>
       </div>
-      <div class="filter-group">
-        <span class="filter-label">Tipe Tower</span>
-        <select class="filter-select" id="f-tipe" onchange="applyFilter()"><option value="">Semua Tipe</option></select>
+      <div class="fg"><span class="fl">Tipe Tower</span>
+        <select class="fs" id="f-tipe" onchange="applyFilter()"><option value="">Semua Tipe</option></select>
       </div>
-      <div class="filter-group">
-        <span class="filter-label">Tegangan (kV)</span>
-        <select class="filter-select" id="f-teg" onchange="applyFilter()"><option value="">Semua Tegangan</option></select>
+      <div class="fg"><span class="fl">Tegangan (kV)</span>
+        <select class="fs" id="f-teg" onchange="applyFilter()"><option value="">Semua Tegangan</option></select>
       </div>
       <button class="btn-reset" onclick="resetFilter()">✕ Reset</button>
       <span class="filter-info" id="filter-info"></span>
@@ -195,101 +184,77 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
       <button class="tab-btn" onclick="switchTab('tower')">Data Tower</button>
-      <button class="tab-btn" onclick="switchTab('tegangan')">Per Tegangan</button>
+      <button class="tab-btn" onclick="switchTab('tegangan')">Per Tegangan & GI</button>
       <button class="tab-btn" onclick="switchTab('ahi')">Kondisi AHI</button>
     </div>
 
-    <!-- TAB: OVERVIEW -->
+    <!-- TAB OVERVIEW -->
     <div class="tab-pane active" id="tab-overview">
-      <div class="section-label">Ringkasan aset</div>
-      <div class="metrics" id="m-tower"></div>
-      <div class="section-label">Kondisi inspeksi</div>
-      <div class="metrics" id="m-ahi"></div>
-      <div class="section-label">Distribusi</div>
+      <div class="sl">Ringkasan aset</div>
+      <div class="metrics" id="m-overview-tower"></div>
+      <div class="sl">Kondisi inspeksi (AHI — tidak terpengaruh filter tower)</div>
+      <div class="metrics" id="m-overview-ahi"></div>
       <div class="cg2">
-        <div class="cc">
-          <div class="cc-title">Jumlah tower per UPT</div>
-          <div class="cw" style="height:220px"><canvas id="c-upt-tower"></canvas></div>
-        </div>
-        <div class="cc">
-          <div class="cc-title">% tower kritis (AHI 4–5) per UPT</div>
-          <div class="cw" style="height:220px"><canvas id="c-upt-kritis"></canvas></div>
-        </div>
+        <div class="cc"><div class="cc-title">Jumlah tower per UPT</div>
+          <div class="cw" style="height:220px"><canvas id="c-ov-upt"></canvas></div></div>
+        <div class="cc"><div class="cc-title">% tower kritis AHI (4–5) per UPT</div>
+          <div class="cw" style="height:220px"><canvas id="c-ov-kritis"></canvas></div></div>
       </div>
     </div>
 
-    <!-- TAB: DATA TOWER -->
+    <!-- TAB TOWER -->
     <div class="tab-pane" id="tab-tower">
-      <div class="section-label">Status & tegangan</div>
+      <div class="sl">Status & tegangan</div>
       <div class="cg2">
-        <div class="cc">
-          <div class="cc-title">Status alat</div>
+        <div class="cc"><div class="cc-title">Status alat</div>
           <div class="legend" id="leg-status"></div>
-          <div class="cw" style="height:200px"><canvas id="c-status"></canvas></div>
-        </div>
-        <div class="cc">
-          <div class="cc-title">Tegangan operasi (kV)</div>
+          <div class="cw" style="height:200px"><canvas id="c-status"></canvas></div></div>
+        <div class="cc"><div class="cc-title">Tegangan operasi (kV)</div>
           <div class="legend" id="leg-teg"></div>
-          <div class="cw" style="height:200px"><canvas id="c-teg"></canvas></div>
-        </div>
+          <div class="cw" style="height:200px"><canvas id="c-teg"></canvas></div></div>
       </div>
-      <div class="section-label">Tipe & material tower</div>
+      <div class="sl">Tipe & material</div>
       <div class="cg2">
-        <div class="cc">
-          <div class="cc-title">Top 15 tipe tower</div>
-          <div class="cw" style="height:280px"><canvas id="c-tipe"></canvas></div>
-        </div>
-        <div class="cc">
-          <div class="cc-title">Jenis material</div>
+        <div class="cc"><div class="cc-title">Top 15 tipe tower</div>
+          <div class="cw" style="height:300px"><canvas id="c-tipe"></canvas></div></div>
+        <div class="cc"><div class="cc-title">Jenis material</div>
           <div class="legend" id="leg-mat"></div>
-          <div class="cw" style="height:280px"><canvas id="c-mat"></canvas></div>
-        </div>
+          <div class="cw" style="height:300px"><canvas id="c-mat"></canvas></div></div>
       </div>
-      <div class="section-label">Tahun pembuatan</div>
-      <div class="cc">
-        <div class="cc-title">Distribusi tower per dekade buat</div>
-        <div class="cw" style="height:200px"><canvas id="c-dekade"></canvas></div>
-      </div>
-      <div class="section-label">Ringkasan tahun buat</div>
+      <div class="sl">Tahun pembuatan</div>
+      <div class="cc"><div class="cc-title">Distribusi tower per dekade</div>
+        <div class="cw" style="height:200px"><canvas id="c-dekade"></canvas></div></div>
+      <div class="sl">Ringkasan tahun buat</div>
       <div class="metrics" id="m-tahun"></div>
     </div>
 
-    <!-- TAB: PER TEGANGAN -->
+    <!-- TAB TEGANGAN -->
     <div class="tab-pane" id="tab-tegangan">
-      <div class="section-label">Pilih level tegangan</div>
-      <div class="filter-bar" style="margin-bottom:1rem">
-        <div class="filter-group">
-          <span class="filter-label">Level Tegangan</span>
-          <select class="filter-select" id="f-teg2" onchange="renderTegangan()"><option value="">Pilih tegangan...</option></select>
+      <div class="sl">Pilih level tegangan</div>
+      <div class="filter-bar" style="margin-bottom:0">
+        <div class="fg"><span class="fl">Level Tegangan</span>
+          <select class="fs" id="f-teg2" onchange="renderTegangan()"><option value="">Pilih tegangan...</option></select>
         </div>
         <span class="filter-info" id="teg-info"></span>
       </div>
-      <div id="teg-content">
-        <div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:2rem 0;">Pilih level tegangan untuk melihat distribusi per GI.</div>
+      <div id="teg-content" style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:2rem 0;">
+        Pilih level tegangan untuk melihat distribusi per GI.
       </div>
     </div>
 
-    <!-- TAB: AHI -->
+    <!-- TAB AHI -->
     <div class="tab-pane" id="tab-ahi">
-      <div class="section-label">Nilai AHI CE SUTT</div>
-      <div class="cg2">
-        <div class="cc">
-          <div class="cc-title">Distribusi nilai AHI</div>
-          <div class="legend" id="leg-ahi"></div>
-          <div class="cw" style="height:210px"><canvas id="c-ahi-dist"></canvas></div>
-        </div>
-        <div class="cc">
-          <div class="cc-title">% tower kritis (AHI 4–5) per UPT</div>
-          <div class="cw" style="height:210px"><canvas id="c-kritis-upt"></canvas></div>
-        </div>
-      </div>
-      <div class="section-label">Temuan inspeksi</div>
+      <div class="sl">Nilai AHI CE SUTT (berdasarkan filter UPT)</div>
       <div class="metrics" id="m-ahi-detail"></div>
-      <div class="section-label">Kondisi per UPT</div>
-      <div class="cc">
-        <div class="cc-title">Total tower dimonitor per UPT</div>
-        <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div>
+      <div class="cg2">
+        <div class="cc"><div class="cc-title">Distribusi nilai AHI</div>
+          <div class="legend" id="leg-ahi"></div>
+          <div class="cw" style="height:210px"><canvas id="c-ahi-dist"></canvas></div></div>
+        <div class="cc"><div class="cc-title">% tower kritis (AHI 4–5) per UPT</div>
+          <div class="cw" style="height:210px"><canvas id="c-kritis-upt"></canvas></div></div>
       </div>
+      <div class="cc"><div class="cc-title">Total tower dimonitor per UPT</div>
+        <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div></div>
     </div>
   </div>
 </div>
@@ -298,68 +263,72 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 // ─── CONFIG ───────────────────────────────────────────────
 const API_URL = 'https://script.google.com/macros/s/AKfycbwhOLp0_Jy0CuZuiCmY1z6CbpHhlvntGISjdiw-FI4hYV31sTQw2Qsqy4yujsncJgsO/exec';
 
+// Row index constants — tower: [upt,status,tipe,teg,gi,thn,mat]
+const T_UPT=0,T_ST=1,T_TIPE=2,T_TEG=3,T_GI=4,T_THN=5,T_MAT=6;
+// AHI row: [upt, ce, pentanahan, struktur, antiBinatang]
+const A_UPT=0,A_CE=1,A_PENTNH=2,A_STRUKT=3,A_ANTIB=4;
+
 // ─── STATE ────────────────────────────────────────────────
-let TOKEN    = localStorage.getItem('tower_token') || '';
-let USERNAME = localStorage.getItem('tower_user')  || '';
-let ROLE     = localStorage.getItem('tower_role')  || '';
-let RAW      = null;   // full cache data
-let FILTERED = null;   // filtered tower data (byUPT, byStatus, etc.)
-let charts   = {};
+let TOKEN='', USERNAME='', ROLE='';
+let RAW=null;          // data asli dari server
+let F_ROWS=null;       // towerRows setelah filter
+let F_AHI=null;        // ahiRows setelah filter UPT
+let charts={};
 
 // ─── INIT ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  TOKEN    = localStorage.getItem('tower_token') || '';
+  USERNAME = localStorage.getItem('tower_user')  || '';
+  ROLE     = localStorage.getItem('tower_role')  || '';
   document.getElementById('inp-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
   if (TOKEN) checkTokenAndLoad(); else showLogin();
 });
 
 async function checkTokenAndLoad() {
   showLoading('Memverifikasi sesi...');
-  const res = await api({ action:'whoami', token:TOKEN });
+  const res = await api({action:'whoami',token:TOKEN});
   if (res.ok) {
-    USERNAME = res.name; ROLE = res.role;
-    localStorage.setItem('tower_user', USERNAME);
-    localStorage.setItem('tower_role', ROLE);
-    showDashboard();
-    loadDashboard();
+    USERNAME=res.name; ROLE=res.role;
+    localStorage.setItem('tower_user',USERNAME); localStorage.setItem('tower_role',ROLE);
+    showDashboard(); loadDashboard();
   } else { clearAuth(); showLogin(); }
 }
 
 // ─── AUTH ─────────────────────────────────────────────────
 async function doLogin() {
-  const username = document.getElementById('inp-user').value.trim();
-  const password = document.getElementById('inp-pass').value;
-  const errEl = document.getElementById('login-error');
-  const btn   = document.getElementById('btn-login');
-  if (!username || !password) { showError('Username dan password wajib diisi'); return; }
-  btn.disabled = true; btn.textContent = 'Memverifikasi...'; errEl.style.display='none';
-  const res = await api({ action:'login', username, password });
-  if (res.ok) {
-    TOKEN = res.token; USERNAME = res.name; ROLE = res.role;
-    localStorage.setItem('tower_token', TOKEN);
-    localStorage.setItem('tower_user',  USERNAME);
-    localStorage.setItem('tower_role',  ROLE);
+  const u=document.getElementById('inp-user').value.trim();
+  const p=document.getElementById('inp-pass').value;
+  const btn=document.getElementById('btn-login');
+  if(!u||!p){showError('Username dan password wajib diisi');return;}
+  btn.disabled=true; btn.textContent='Memverifikasi...';
+  document.getElementById('login-error').style.display='none';
+  const res=await api({action:'login',username:u,password:p});
+  if(res.ok){
+    TOKEN=res.token; USERNAME=res.name; ROLE=res.role;
+    localStorage.setItem('tower_token',TOKEN);
+    localStorage.setItem('tower_user',USERNAME);
+    localStorage.setItem('tower_role',ROLE);
     showDashboard(); loadDashboard();
   } else {
-    showError(res.error || 'Login gagal');
-    btn.disabled = false; btn.textContent = 'Masuk';
+    showError(res.error||'Login gagal');
+    btn.disabled=false; btn.textContent='Masuk';
   }
 }
 
 async function doLogout() {
-  await api({ action:'logout', token:TOKEN }); clearAuth(); location.reload();
+  await api({action:'logout',token:TOKEN}); clearAuth(); location.reload();
 }
 
 function clearAuth() {
   TOKEN=''; USERNAME=''; ROLE='';
-  ['tower_token','tower_user','tower_role'].forEach(k => localStorage.removeItem(k));
+  ['tower_token','tower_user','tower_role'].forEach(k=>localStorage.removeItem(k));
 }
 
 function showError(msg) {
-  const el = document.getElementById('login-error');
-  el.textContent = msg; el.style.display='block';
+  const el=document.getElementById('login-error');
+  el.textContent=msg; el.style.display='block';
 }
 
-// ─── UI SWITCHES ──────────────────────────────────────────
 function showLogin() {
   hideLoading();
   document.getElementById('login-screen').style.display='flex';
@@ -369,123 +338,103 @@ function showDashboard() {
   hideLoading();
   document.getElementById('login-screen').style.display='none';
   document.getElementById('dashboard').style.display='block';
-  document.getElementById('nav-username').textContent = USERNAME;
-  if (ROLE==='admin') document.getElementById('btn-rebuild').style.display='flex';
+  document.getElementById('nav-username').textContent=USERNAME;
+  if(ROLE==='admin') document.getElementById('btn-rebuild').style.display='flex';
 }
-function showLoading(msg='Memuat data...') {
-  document.getElementById('loading-text').textContent = msg;
+function showLoading(msg='Memuat...') {
+  document.getElementById('loading-text').textContent=msg;
   document.getElementById('loading-overlay').style.display='flex';
 }
 function hideLoading() { document.getElementById('loading-overlay').style.display='none'; }
 
 function switchTab(name) {
   const tabs=['overview','tower','tegangan','ahi'];
-  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i]===name));
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id==='tab-'+name));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===name));
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if(name==='tegangan') renderTegangan();
 }
 
-// ─── LOAD DASHBOARD ───────────────────────────────────────
+// ─── LOAD DATA ────────────────────────────────────────────
 async function loadDashboard() {
-  const btn = document.getElementById('btn-refresh');
+  const btn=document.getElementById('btn-refresh');
   btn.classList.add('loading');
-  showLoading('Mengambil data terbaru...');
-  const res = await api({ action:'summary', token:TOKEN });
+  showLoading('Mengambil data...');
+  const res=await api({action:'summary',token:TOKEN});
   hideLoading(); btn.classList.remove('loading');
-  if (!res.ok) {
-    if (res.error==='Unauthorized') { clearAuth(); showLogin(); return; }
-    alert('Gagal memuat data: ' + res.error); return;
+  if(!res.ok){
+    if(res.error==='Unauthorized'){clearAuth();showLogin();return;}
+    alert('Gagal memuat data: '+res.error); return;
   }
-  RAW = res;
-  const ts = new Date(res.generatedAt).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
-  document.getElementById('last-updated').textContent = 'Data diperbarui: ' + ts;
-  buildFilters(res.tower);
+  RAW=res;
+  const ts=new Date(res.generatedAt).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+  document.getElementById('last-updated').textContent='Data diperbarui: '+ts;
+  buildFilterOptions();
   applyFilter();
 }
 
-// ─── FILTERS ──────────────────────────────────────────────
-function buildFilters(tower) {
-  fillSelect('f-upt',    tower.rawUPT);
-  fillSelect('f-status', tower.rawStatus);
-  fillSelect('f-tipe',   tower.rawTipe);
-  fillSelect('f-teg',    tower.rawTeg);
+// ─── BUILD FILTER OPTIONS ─────────────────────────────────
+function buildFilterOptions() {
+  fillSel('f-upt',    RAW.rawUPT);
+  fillSel('f-status', RAW.rawStatus);
+  fillSel('f-tipe',   RAW.rawTipe);
+  fillSel('f-teg',    RAW.rawTeg);
 
-  // Tegangan tab dropdown
-  const sel2 = document.getElementById('f-teg2');
-  sel2.innerHTML = '<option value="">Pilih tegangan...</option>';
-  tower.rawTeg.forEach(v => {
-    const o = document.createElement('option'); o.value=v; o.textContent=v+' kV'; sel2.appendChild(o);
-  });
+  // Tegangan tab
+  const s=document.getElementById('f-teg2');
+  s.innerHTML='<option value="">Pilih tegangan...</option>';
+  RAW.rawTeg.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v+' kV'; s.appendChild(o); });
 }
 
-function fillSelect(id, values) {
-  const sel = document.getElementById(id);
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">Semua</option>';
-  values.forEach(v => {
-    const o = document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
-  });
-  if (cur) sel.value = cur;
+function fillSel(id, vals) {
+  const s=document.getElementById(id), cur=s.value;
+  s.innerHTML='<option value="">Semua</option>';
+  vals.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; s.appendChild(o); });
+  if(cur) s.value=cur;
 }
 
-function getFilters() {
-  return {
-    upt:    document.getElementById('f-upt').value,
-    status: document.getElementById('f-status').value,
-    tipe:   document.getElementById('f-tipe').value,
-    teg:    document.getElementById('f-teg').value,
-  };
-}
-
-function resetFilter() {
-  ['f-upt','f-status','f-tipe','f-teg'].forEach(id => document.getElementById(id).value='');
-  applyFilter();
-}
-
+// ─── APPLY FILTER (client-side pada row data) ─────────────
 function applyFilter() {
-  if (!RAW) return;
-  const f = getFilters();
-  const t = RAW.tower;
+  if(!RAW) return;
+  const fUPT    = document.getElementById('f-upt').value;
+  const fStatus = document.getElementById('f-status').value;
+  const fTipe   = document.getElementById('f-tipe').value;
+  const fTeg    = document.getElementById('f-teg').value;
 
-  // Recompute filtered summary from raw breakdowns
-  // Since we only have aggregates (not row-level data), we simulate filtering
-  // by intersecting available keys. Full row-level filter requires raw data endpoint.
-  // For now: filter byUPT, byStatus, byTipe, byTeg independently and show filtered totals.
+  // Filter towerRows
+  F_ROWS = RAW.towerRows.filter(r =>
+    (!fUPT    || r[T_UPT]  === fUPT)    &&
+    (!fStatus || r[T_ST]   === fStatus) &&
+    (!fTipe   || r[T_TIPE] === fTipe)   &&
+    (!fTeg    || r[T_TEG]  === fTeg)
+  );
 
-  let byUPT    = { ...t.byUPT };
-  let byStatus = { ...t.byStatus };
-  let byTipe   = { ...t.byTipe };
-  let byTeg    = { ...t.byTeg };
-  let byDekade = { ...t.byDekade };
+  // Filter ahiRows — hanya berdasarkan UPT agar AHI tetap konsisten
+  F_AHI = fUPT
+    ? RAW.ahiRows.filter(r => r[A_UPT] === fUPT)
+    : RAW.ahiRows;
 
-  if (f.upt)    { byUPT    = filterObj(byUPT,    f.upt);    }
-  if (f.status) { byStatus = filterObj(byStatus,  f.status); }
-  if (f.tipe)   { byTipe   = filterObj(byTipe,    f.tipe);   }
-  if (f.teg)    { byTeg    = filterObj(byTeg,     f.teg);    }
-
-  const total = f.upt ? (byUPT[f.upt]||0)
-              : f.status ? (byStatus[f.status]||0)
-              : f.teg ? (byTeg[f.teg]||0)
-              : f.tipe ? (byTipe[f.tipe]||0)
-              : t.total;
-
-  FILTERED = { byUPT, byStatus, byTipe, byTeg, byDekade, total,
-               byMat: {...t.byMat}, byGIperTeg: t.byGIperTeg };
-
-  const active = Object.values(f).filter(Boolean).length;
-  document.getElementById('filter-info').textContent = active ? `${active} filter aktif · ${fmtNum(total)} tower` : '';
+  const active=[fUPT,fStatus,fTipe,fTeg].filter(Boolean).length;
+  document.getElementById('filter-info').textContent =
+    active ? `${active} filter aktif · ${fmtNum(F_ROWS.length)} tower` : '';
 
   renderAll();
 }
 
-function filterObj(obj, key) {
-  const r = {};
-  if (obj[key] !== undefined) r[key] = obj[key];
-  return r;
+function resetFilter() {
+  ['f-upt','f-status','f-tipe','f-teg'].forEach(id=>document.getElementById(id).value='');
+  applyFilter();
+}
+
+// ─── AGGREGATE HELPER ─────────────────────────────────────
+function aggregate(rows, idx) {
+  const obj={};
+  rows.forEach(r=>{ const k=String(r[idx]||'N/A').trim()||'N/A'; obj[k]=(obj[k]||0)+1; });
+  return obj;
 }
 
 // ─── RENDER ALL ───────────────────────────────────────────
 function renderAll() {
-  if (!FILTERED || !RAW) return;
+  if(!F_ROWS||!F_AHI) return;
   renderOverview();
   renderTowerTab();
   renderAHITab();
@@ -493,212 +442,236 @@ function renderAll() {
 
 // ─── OVERVIEW ─────────────────────────────────────────────
 function renderOverview() {
-  const t = FILTERED;
-  const a = RAW.ahi;
-  const operasi   = t.byStatus['Operasi'] || 0;
-  const tidakOp   = t.byStatus['Tidak Operasi'] || 0;
-  const pctOp     = t.total ? Math.round(operasi/t.total*100) : 0;
+  const byStatus = aggregate(F_ROWS, T_ST);
+  const total    = F_ROWS.length;
+  const operasi  = byStatus['Operasi']||0;
+  const tidakOp  = byStatus['Tidak Operasi']||0;
 
-  document.getElementById('m-tower').innerHTML =
-    mc('Total Tower',      fmtNum(t.total),  'data terinventarisir', 'good') +
-    mc('Operasi',          fmtNum(operasi),  pctOp+'% dari total',   'good') +
-    mc('Tidak Operasi',    fmtNum(tidakOp),  Math.round(tidakOp/(t.total||1)*100)+'% dari total', 'warn') +
-    mc('Tower Dimonitor',  fmtNum(a.total),  'data AHI tersedia', '');
+  const ce45  = F_AHI.filter(r=>r[A_CE]==='4'||r[A_CE]==='5').length;
+  const pentnh= F_AHI.filter(r=>r[A_PENTNH]===1).length;
 
-  const ce45 = (a.byCE['4']||0) + (a.byCE['5']||0);
-  document.getElementById('m-ahi').innerHTML =
-    mc('AHI Kritis (4–5)', fmtNum(ce45), Math.round(ce45/(a.total||1)*100)+'% dari total', 'danger') +
-    mc('Pentanahan ⚠',     fmtNum(a.pentanahanMasalah), 'tidak sesuai SPLN', 'warn') +
-    mc('Struktur ⚠',       fmtNum(a.strukturWarning),   'perlu tindak lanjut', 'warn') +
-    mc('Anti Binatang ✅',  fmtNum(a.antiBinatang),      'terpasang', '');
+  document.getElementById('m-overview-tower').innerHTML =
+    mc('Total Tower',    fmtNum(total),   'tower terpilih','good') +
+    mc('Operasi',        fmtNum(operasi), pct(operasi,total)+'% dari total','good') +
+    mc('Tidak Operasi',  fmtNum(tidakOp), pct(tidakOp,total)+'% dari total','warn') +
+    mc('Tower Dimonitor',fmtNum(F_AHI.length),'data AHI','');
 
-  const uptL = Object.keys(t.byUPT).sort((a,b)=>t.byUPT[b]-t.byUPT[a]);
-  makeBar('c-upt-tower', uptL.map(l=>l.replace('UPT ','')), uptL.map(k=>t.byUPT[k]), '#3b7aff');
+  document.getElementById('m-overview-ahi').innerHTML =
+    mc('AHI Kritis (4–5)',fmtNum(ce45),  pct(ce45,F_AHI.length)+'%','danger') +
+    mc('Pentanahan ⚠',   fmtNum(pentnh), 'tidak sesuai SPLN','warn') +
+    mc('Struktur ⚠',     fmtNum(F_AHI.filter(r=>r[A_STRUKT]===1).length),'warning','warn') +
+    mc('Anti Binatang ✅',fmtNum(F_AHI.filter(r=>r[A_ANTIB]===1).length),'terpasang','');
 
-  // Kritis % per UPT dari AHI
-  const kritisUPT = RAW.ahi.kritisPerUPT;
-  const uptAHI    = Object.keys(kritisUPT).sort((a,b)=>{
-    const pa = kritisUPT[a].kritis/kritisUPT[a].total;
-    const pb = kritisUPT[b].kritis/kritisUPT[b].total;
-    return pb-pa;
+  // Tower per UPT
+  const byUPT = aggregate(F_ROWS, T_UPT);
+  const uptL  = Object.keys(byUPT).sort((a,b)=>byUPT[b]-byUPT[a]);
+  makeBar('c-ov-upt', uptL.map(l=>l.replace('UPT ','')), uptL.map(k=>byUPT[k]), '#3b7aff');
+
+  // Kritis % per UPT dari F_AHI
+  const ahiUPT={};
+  F_AHI.forEach(r=>{
+    const u=r[A_UPT]||'N/A';
+    if(!ahiUPT[u]) ahiUPT[u]={total:0,kritis:0};
+    ahiUPT[u].total++;
+    if(r[A_CE]==='4'||r[A_CE]==='5') ahiUPT[u].kritis++;
   });
-  const pctKritis = uptAHI.map(k => Math.round(kritisUPT[k].kritis/kritisUPT[k].total*100));
-  makeBarColor('c-upt-kritis', uptAHI.map(l=>l.replace('UPT ','')), pctKritis,
-    pctKritis.map(v => v>50?'#e84040':v>25?'#f5a623':'#3a9e75'), '%');
+  const kKeys=Object.keys(ahiUPT).sort((a,b)=>(ahiUPT[b].kritis/ahiUPT[b].total)-(ahiUPT[a].kritis/ahiUPT[a].total));
+  const kPct=kKeys.map(k=>pct(ahiUPT[k].kritis,ahiUPT[k].total));
+  makeBarColor('c-ov-kritis', kKeys.map(l=>l.replace('UPT ','')), kPct,
+    kPct.map(v=>v>50?'#e84040':v>25?'#f5a623':'#3a9e75'), '%');
 }
 
 // ─── TOWER TAB ────────────────────────────────────────────
 function renderTowerTab() {
-  const t = FILTERED;
+  // Status
+  const byStatus = aggregate(F_ROWS, T_ST);
+  const stKeys   = Object.keys(byStatus);
+  makeDoughnut('c-status', stKeys, stKeys.map(k=>byStatus[k]),
+    stKeys.map(l=>l==='Operasi'?'#00d4aa':l==='Tidak Operasi'?'#e84040':'#4a5060'), 'leg-status');
 
-  makeDoughnut('c-status',
-    Object.keys(t.byStatus), Object.values(t.byStatus),
-    Object.keys(t.byStatus).map(l=>l==='Operasi'?'#00d4aa':l==='Tidak Operasi'?'#e84040':'#4a5060'),
-    'leg-status');
+  // Tegangan
+  const byTeg  = aggregate(F_ROWS, T_TEG);
+  const tegKeys= Object.keys(byTeg).sort((a,b)=>Number(a)-Number(b));
+  const tegClr = ['#3b7aff','#4a5060','#f5a623','#00d4aa','#e84040','#9b59b6'];
+  makeDoughnut('c-teg', tegKeys.map(k=>k+' kV'), tegKeys.map(k=>byTeg[k]),
+    tegKeys.map((_,i)=>tegClr[i%tegClr.length]), 'leg-teg');
 
-  const tegKeys = Object.keys(t.byTeg).sort((a,b)=>Number(a)-Number(b));
-  const tegColors = ['#3b7aff','#4a5060','#f5a623','#00d4aa','#e84040','#9b59b6'];
-  makeDoughnut('c-teg', tegKeys.map(k=>k+' kV'), tegKeys.map(k=>t.byTeg[k]),
-    tegKeys.map((_,i)=>tegColors[i%tegColors.length]), 'leg-teg');
-
-  // Top 15 tipe
-  const tipeSort = Object.entries(t.byTipe).sort((a,b)=>b[1]-a[1]).slice(0,15);
+  // Tipe top 15
+  const byTipe = aggregate(F_ROWS, T_TIPE);
+  const tipeSort = Object.entries(byTipe).filter(([k])=>k&&k!=='N/A').sort((a,b)=>b[1]-a[1]).slice(0,15);
   makeBarHoriz('c-tipe', tipeSort.map(e=>e[0]), tipeSort.map(e=>e[1]), '#3b7aff');
 
   // Material
-  const matKeys = Object.keys(t.byMat).filter(k=>k!=='N/A'&&k!=='');
-  makeDoughnut('c-mat', matKeys, matKeys.map(k=>t.byMat[k]),
-    ['#3b7aff','#00d4aa','#f5a623','#e84040','#9b59b6'], 'leg-mat');
+  const byMat  = aggregate(F_ROWS, T_MAT);
+  const matKeys= Object.keys(byMat).filter(k=>k&&k!=='N/A');
+  if(matKeys.length>0) {
+    makeDoughnut('c-mat', matKeys, matKeys.map(k=>byMat[k]),
+      ['#3b7aff','#00d4aa','#f5a623','#e84040','#9b59b6','#4a5060'], 'leg-mat');
+  }
 
   // Dekade
-  const dekSort = Object.keys(t.byDekade).filter(k=>k!=='N/A').sort();
-  makeBar('c-dekade', dekSort.map(k=>k+'an'), dekSort.map(k=>t.byDekade[k]), '#3b7aff', true);
+  const byDek  = aggregate(F_ROWS, T_THN);
+  // group to decade
+  const dekObj={};
+  F_ROWS.forEach(r=>{ const thn=r[T_THN]; if(thn>0){ const d=Math.floor(thn/10)*10; dekObj[d]=(dekObj[d]||0)+1; } });
+  const dekKeys=Object.keys(dekObj).sort();
+  makeBar('c-dekade', dekKeys.map(k=>k+'an'), dekKeys.map(k=>dekObj[k]), '#3b7aff', true);
 
-  // Ringkasan tahun buat metrics
-  const allThn = [];
-  Object.entries(t.byDekade).forEach(([d,c]) => { if(d!=='N/A') for(let i=0;i<c;i++) allThn.push(Number(d)); });
-  const thnVals = Object.keys(t.byDekade).filter(k=>k!=='N/A').map(Number);
-  const thnMin  = thnVals.length ? Math.min(...thnVals) : '-';
-  const thnMax  = thnVals.length ? Math.max(...thnVals) : '-';
-  const paling  = dekSort.reduce((a,b)=>t.byDekade[a]>t.byDekade[b]?a:b, dekSort[0]);
+  // Ringkasan tahun
+  const thnNums = dekKeys.map(Number);
+  const paling  = dekKeys.reduce((a,b)=>dekObj[a]>dekObj[b]?a:b, dekKeys[0]);
   document.getElementById('m-tahun').innerHTML =
-    mc('Dekade Tertua',   thnMin ? thnMin+'an' : '-', 'periode buat paling awal', '') +
-    mc('Dekade Terbaru',  thnMax ? thnMax+'an' : '-', 'periode buat paling baru', 'good') +
-    mc('Dekade Terbanyak',paling ? paling+'an' : '-', fmtNum(t.byDekade[paling]||0)+' tower', 'good') +
-    mc('Periode Aktif',   thnVals.length ? (thnMax-thnMin)+' thn' : '-', 'rentang pembuatan', '');
+    mc('Dekade Tertua',   thnNums.length ? Math.min(...thnNums)+'an':'-','periode paling awal','') +
+    mc('Dekade Terbaru',  thnNums.length ? Math.max(...thnNums)+'an':'-','periode paling baru','good') +
+    mc('Dekade Terbanyak',paling ? paling+'an':'-', fmtNum(dekObj[paling]||0)+' tower','good') +
+    mc('Rentang Aktif',   thnNums.length>1 ? (Math.max(...thnNums)-Math.min(...thnNums))+' thn':'-','tahun pembuatan','');
 }
 
 // ─── TEGANGAN TAB ─────────────────────────────────────────
 function renderTegangan() {
-  const teg = document.getElementById('f-teg2').value;
-  const div = document.getElementById('teg-content');
+  const teg  = document.getElementById('f-teg2').value;
+  const div  = document.getElementById('teg-content');
   const info = document.getElementById('teg-info');
+  if(!teg||!RAW){ div.innerHTML='<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:2rem 0;">Pilih level tegangan untuk melihat distribusi per GI.</div>'; info.textContent=''; return; }
 
-  if (!teg || !RAW) {
-    div.innerHTML = '<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:2rem 0;">Pilih level tegangan untuk melihat distribusi per GI.</div>';
-    info.textContent=''; return;
-  }
+  // Filter towerRows berdasarkan tegangan yang dipilih DAN filter aktif lainnya
+  const fUPT    = document.getElementById('f-upt').value;
+  const fStatus = document.getElementById('f-status').value;
+  const fTipe   = document.getElementById('f-tipe').value;
+  const tegRows = RAW.towerRows.filter(r =>
+    r[T_TEG]===teg &&
+    (!fUPT    || r[T_UPT] ===fUPT) &&
+    (!fStatus || r[T_ST]  ===fStatus) &&
+    (!fTipe   || r[T_TIPE]===fTipe)
+  );
 
-  const giData = RAW.tower.byGIperTeg[teg] || {};
-  const giSort = Object.entries(giData).filter(([k])=>k!=='N/A'&&k!=='').sort((a,b)=>b[1]-a[1]);
-  const total  = giSort.reduce((s,[,v])=>s+v,0);
-  info.textContent = fmtNum(total) + ' tower · ' + giSort.length + ' GI';
+  // GI breakdown
+  const giObj={};
+  tegRows.forEach(r=>{ const g=r[T_GI]||'N/A'; giObj[g]=(giObj[g]||0)+1; });
+  const giSort=Object.entries(giObj).filter(([k])=>k&&k!=='N/A').sort((a,b)=>b[1]-a[1]);
+  const totalTeg=tegRows.length;
+  info.textContent=fmtNum(totalTeg)+' tower · '+giSort.length+' GI';
 
-  // Top 20 GI chart
-  const top20 = giSort.slice(0,20);
-  div.innerHTML = `
-    <div class="section-label">Top GI — ${teg} kV</div>
-    <div class="metrics" id="m-teg-summary"></div>
-    <div class="section-label">Distribusi tower per GI (top 20)</div>
-    <div class="cc" style="margin-top:0">
-      <div class="cc-title">Jumlah tower per GI · ${teg} kV</div>
-      <div class="cw" style="height:${Math.max(300, top20.length*28)}px"><canvas id="c-gi-bar"></canvas></div>
-    </div>
-    <div class="section-label">Semua GI</div>
-    <div id="gi-table"></div>
+  const top20=giSort.slice(0,20);
+  div.innerHTML=`
+    <div class="sl">Ringkasan — ${teg} kV</div>
+    <div class="metrics" id="m-teg-sum"></div>
+    <div class="cc"><div class="cc-title">Distribusi tower per GI (top 20) — ${teg} kV</div>
+      <div class="cw" style="height:${Math.max(280,top20.length*26)}px"><canvas id="c-gi-bar"></canvas></div></div>
+    <div class="sl">Semua GI — ${teg} kV (${giSort.length} GI)</div>
+    <div class="gi-table" id="gi-table-rows"></div>
   `;
 
-  // Metrics
-  const top1 = giSort[0] || ['—',0];
-  document.getElementById('m-teg-summary').innerHTML =
-    mc('Total Tower',   fmtNum(total),         teg+' kV', 'good') +
-    mc('Jumlah GI',     giSort.length,          'gardu induk', '') +
-    mc('GI Terbanyak',  top1[0].split(' ').slice(-1)[0], fmtNum(top1[1])+' tower', '') +
-    mc('Rata-rata/GI',  Math.round(total/(giSort.length||1)), 'tower per GI', '');
+  const top1=giSort[0]||['—',0];
+  document.getElementById('m-teg-sum').innerHTML=
+    mc('Total Tower',  fmtNum(totalTeg),    teg+' kV','good') +
+    mc('Jumlah GI',    giSort.length,       'gardu induk','') +
+    mc('GI Terbanyak', fmtNum(top1[1]),     top1[0].split(' ').pop(),'') +
+    mc('Rata-rata/GI', Math.round(totalTeg/(giSort.length||1)),'tower per GI','');
 
-  setTimeout(() => {
+  setTimeout(()=>{
     makeBarHoriz('c-gi-bar', top20.map(e=>e[0]), top20.map(e=>e[1]), '#3b7aff');
-
-    // Simple table untuk semua GI
-    const rows = giSort.map(([gi,cnt],i) =>
-      `<div style="display:flex;justify-content:space-between;padding:5px 10px;background:${i%2?'var(--bg2)':'var(--bg3)'};border-radius:4px;font-size:12px;font-family:var(--mono);">
-        <span style="color:var(--text2)">${gi}</span>
-        <span style="color:var(--accent)">${fmtNum(cnt)}</span>
-      </div>`
-    ).join('');
-    document.getElementById('gi-table').innerHTML = `<div style="display:flex;flex-direction:column;gap:2px;max-height:400px;overflow-y:auto;border-radius:var(--radius)">${rows}</div>`;
-  }, 50);
+    document.getElementById('gi-table-rows').innerHTML=
+      giSort.map(([gi,cnt])=>
+        `<div class="gi-row"><span style="color:var(--text2)">${gi}</span><span style="color:var(--accent)">${fmtNum(cnt)}</span></div>`
+      ).join('');
+  },50);
 }
 
 // ─── AHI TAB ──────────────────────────────────────────────
 function renderAHITab() {
-  const a = RAW.ahi;
-  const ce45 = (a.byCE['4']||0)+(a.byCE['5']||0);
+  const rows  = F_AHI;
+  const total = rows.length;
+  const ce2   = rows.filter(r=>r[A_CE]==='2').length;
+  const ce3   = rows.filter(r=>r[A_CE]==='3').length;
+  const ce4   = rows.filter(r=>r[A_CE]==='4').length;
+  const ce5   = rows.filter(r=>r[A_CE]==='5').length;
+  const ce45  = ce4+ce5;
+  const pentnh= rows.filter(r=>r[A_PENTNH]===1).length;
+  const strukt= rows.filter(r=>r[A_STRUKT]===1).length;
+  const antiB = rows.filter(r=>r[A_ANTIB] ===1).length;
 
-  document.getElementById('m-ahi-detail').innerHTML =
-    mc('Total Dimonitor',  fmtNum(a.total),              'data AHI', '') +
-    mc('AHI 2 (Baik)',     fmtNum(a.byCE['2']||0),       Math.round((a.byCE['2']||0)/a.total*100)+'%', 'good') +
-    mc('AHI 4–5 (Kritis)', fmtNum(ce45),                 Math.round(ce45/a.total*100)+'%', 'danger') +
-    mc('Pentanahan ⚠',     fmtNum(a.pentanahanMasalah),  'tdk sesuai SPLN', 'warn') +
-    mc('Struktur ⚠',       fmtNum(a.strukturWarning),    'warning', 'warn') +
-    mc('Anti Binatang ✅',  fmtNum(a.antiBinatang),       'terpasang', '');
+  document.getElementById('m-ahi-detail').innerHTML=
+    mc('Total Dimonitor', fmtNum(total),    'data AHI','') +
+    mc('AHI 2 (Baik)',    fmtNum(ce2),      pct(ce2,total)+'%','good') +
+    mc('AHI 3',           fmtNum(ce3),      pct(ce3,total)+'%','') +
+    mc('AHI 4–5 (Kritis)',fmtNum(ce45),     pct(ce45,total)+'%','danger') +
+    mc('Pentanahan ⚠',    fmtNum(pentnh),   'tidak sesuai SPLN','warn') +
+    mc('Struktur ⚠',      fmtNum(strukt),   'perlu tindak lanjut','warn') +
+    mc('Anti Binatang ✅', fmtNum(antiB),    'terpasang','');
 
-  const ahiOrder  = ['2','3','4','5','N/A'];
-  const ahiColors = {'2':'#00d4aa','3':'#3b7aff','4':'#f5a623','5':'#e84040','N/A':'#4a5060'};
-  const ahiVals   = ahiOrder.filter(k=>a.byCE[k]).map(k=>a.byCE[k]);
-  const ahiLabels = ahiOrder.filter(k=>a.byCE[k]).map(k=>'AHI '+k);
-  const ahiClrs   = ahiOrder.filter(k=>a.byCE[k]).map(k=>ahiColors[k]);
-  makeDoughnut('c-ahi-dist', ahiLabels, ahiVals, ahiClrs, 'leg-ahi');
+  // Distribusi CE
+  const ceL=['2','3','4','5'], ceC={'2':'#00d4aa','3':'#3b7aff','4':'#f5a623','5':'#e84040'};
+  const ceVals=[ce2,ce3,ce4,ce5];
+  makeDoughnut('c-ahi-dist', ceL.map(k=>'AHI '+k), ceVals, ceL.map(k=>ceC[k]), 'leg-ahi');
 
-  // Kritis % per UPT
-  const kUPT = a.kritisPerUPT;
-  const kKeys = Object.keys(kUPT).sort((a,b)=>(kUPT[b].kritis/kUPT[b].total)-(kUPT[a].kritis/kUPT[a].total));
-  const kPct  = kKeys.map(k=>Math.round(kUPT[k].kritis/kUPT[k].total*100));
+  // Kritis per UPT
+  const ahiUPT={};
+  rows.forEach(r=>{
+    const u=r[A_UPT]||'N/A';
+    if(!ahiUPT[u]) ahiUPT[u]={total:0,kritis:0};
+    ahiUPT[u].total++;
+    if(r[A_CE]==='4'||r[A_CE]==='5') ahiUPT[u].kritis++;
+  });
+  const kKeys=Object.keys(ahiUPT).sort((a,b)=>(ahiUPT[b].kritis/ahiUPT[b].total)-(ahiUPT[a].kritis/ahiUPT[a].total));
+  const kPct=kKeys.map(k=>pct(ahiUPT[k].kritis,ahiUPT[k].total));
   makeBarColor('c-kritis-upt', kKeys.map(l=>l.replace('UPT ','')), kPct,
     kPct.map(v=>v>50?'#e84040':v>25?'#f5a623':'#3a9e75'), '%');
 
   // Total AHI per UPT
-  const uptKeys = Object.keys(a.byUPT).sort((a,b)=>a.byUPT[b]-a.byUPT[a]);
-  makeBar('c-ahi-upt', uptKeys.map(l=>l.replace('UPT ','')), uptKeys.map(k=>a.byUPT[k]), '#00d4aa');
+  const byUPT=aggregate(rows,A_UPT);
+  const uKeys=Object.keys(byUPT).sort((a,b)=>byUPT[b]-byUPT[a]);
+  makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
 }
 
 // ─── CHART HELPERS ────────────────────────────────────────
 const TC='#8a90a0', GC='rgba(255,255,255,0.05)';
-function dc(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
+function dc(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
 
-function makeBar(id, labels, data, color, line=false) {
+function makeBar(id,labels,data,color,line=false){
   dc(id);
-  charts[id] = new Chart(document.getElementById(id), {
-    type: line?'line':'bar',
-    data: { labels, datasets:[{ data, backgroundColor:line?'rgba(59,122,255,0.12)':color,
-      borderColor:color, borderWidth:line?2:0, borderRadius:line?0:3,
-      fill:line?true:false, tension:line?0.3:0, pointRadius:line?3:0 }] },
-    options:{ responsive:true, maintainAspectRatio:false,
+  charts[id]=new Chart(document.getElementById(id),{
+    type:line?'line':'bar',
+    data:{labels,datasets:[{data,
+      backgroundColor:line?'rgba(59,122,255,0.12)':color,
+      borderColor:color,borderWidth:line?2:0,borderRadius:line?0:3,
+      fill:line,tension:line?0.3:0,pointRadius:line?3:0}]},
+    options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false}},
-      scales:{ x:{ticks:{color:TC,font:{size:10},maxRotation:30,autoSkip:false},grid:{color:GC}},
-               y:{ticks:{color:TC},grid:{color:GC}} } }
+      scales:{x:{ticks:{color:TC,font:{size:10},maxRotation:30,autoSkip:false},grid:{color:GC}},
+              y:{ticks:{color:TC},grid:{color:GC}}}}
   });
 }
 
-function makeBarHoriz(id, labels, data, color) {
+function makeBarHoriz(id,labels,data,color){
   dc(id);
-  charts[id] = new Chart(document.getElementById(id), {
+  charts[id]=new Chart(document.getElementById(id),{
     type:'bar',
-    data:{labels, datasets:[{data, backgroundColor:color, borderRadius:3}]},
-    options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    data:{labels,datasets:[{data,backgroundColor:color,borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false}},
-      scales:{x:{ticks:{color:TC},grid:{color:GC}}, y:{ticks:{color:TC,font:{size:10}},grid:{color:GC}}} }
+      scales:{x:{ticks:{color:TC},grid:{color:GC}},y:{ticks:{color:TC,font:{size:10}},grid:{color:GC}}}}
   });
 }
 
-function makeBarColor(id, labels, data, colors, suffix='') {
+function makeBarColor(id,labels,data,colors,suffix=''){
   dc(id);
-  charts[id] = new Chart(document.getElementById(id), {
+  charts[id]=new Chart(document.getElementById(id),{
     type:'bar',
-    data:{labels, datasets:[{data, backgroundColor:colors, borderRadius:3}]},
-    options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw+suffix}}},
-      scales:{x:{ticks:{color:TC,callback:v=>v+suffix},grid:{color:GC},max:100},
-              y:{ticks:{color:TC,font:{size:10}},grid:{color:GC}}} }
+      scales:{x:{max:100,ticks:{color:TC,callback:v=>v+suffix},grid:{color:GC}},
+              y:{ticks:{color:TC,font:{size:10}},grid:{color:GC}}}}
   });
 }
 
-function makeDoughnut(id, labels, data, colors, legendId) {
+function makeDoughnut(id,labels,data,colors,legendId){
   dc(id);
-  charts[id] = new Chart(document.getElementById(id), {
+  charts[id]=new Chart(document.getElementById(id),{
     type:'doughnut',
-    data:{labels, datasets:[{data, backgroundColor:colors, borderWidth:1, borderColor:'#13161e'}]},
-    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:1,borderColor:'#13161e'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
   });
   if(legendId){
     const el=document.getElementById(legendId);
@@ -709,35 +682,35 @@ function makeDoughnut(id, labels, data, colors, legendId) {
 }
 
 // ─── REBUILD CACHE ────────────────────────────────────────
-async function doRebuildCache() {
-  if(!confirm('Rebuild cache? Proses ±30-60 detik di background.')) return;
-  const btn = document.getElementById('btn-rebuild');
+async function doRebuildCache(){
+  if(!confirm('Rebuild cache? Proses ±30–60 detik.')) return;
+  const btn=document.getElementById('btn-rebuild');
   btn.textContent='⏳ Building...'; btn.disabled=true;
-  const res = await api({ action:'rebuild_cache', token:TOKEN });
+  const res=await api({action:'rebuild_cache',token:TOKEN});
   btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
-  if(res.ok){ alert('Cache berhasil! Dashboard akan refresh.'); loadDashboard(); }
+  if(res.ok){ alert('Cache berhasil!\nTower: '+res.rows+'\nAHI: '+res.ahiRows); loadDashboard(); }
   else alert('Gagal: '+res.error);
 }
 
 // ─── UTILS ────────────────────────────────────────────────
-function mc(label, value, sub, type='') {
-  const cls = type?` ${type}`:'';
-  return `<div class="mc${cls}"><div class="mc-label">${label}</div>
-    <div class="mc-value${cls}">${value}</div><div class="mc-sub">${sub}</div></div>`;
+function mc(label,value,sub,type=''){
+  const c=type?` ${type}`:'';
+  return `<div class="mc${c}"><div class="mc-lbl">${label}</div>
+    <div class="mc-val${c}">${value}</div><div class="mc-sub">${sub}</div></div>`;
 }
+function fmtNum(n){ return Number(n).toLocaleString('id-ID'); }
+function pct(a,b){ return b?Math.round(a/b*100):0; }
 
-function fmtNum(n) { return Number(n).toLocaleString('id-ID'); }
-
-function api(params) {
-  return new Promise(resolve => {
-    const cb = '_cb'+Date.now();
-    const s  = document.createElement('script');
-    const t  = setTimeout(()=>{ cleanup(); resolve({ok:false,error:'Koneksi timeout'}); }, 20000);
-    window[cb] = d => { cleanup(); resolve(d); };
-    function cleanup(){ clearTimeout(t); delete window[cb]; if(s.parentNode) s.parentNode.removeChild(s); }
-    params.callback = cb;
-    s.src = API_URL+'?'+new URLSearchParams(params).toString();
-    s.onerror = ()=>{ cleanup(); resolve({ok:false,error:'Koneksi gagal'}); };
+function api(params){
+  return new Promise(resolve=>{
+    const cb='_cb'+Date.now();
+    const s=document.createElement('script');
+    const t=setTimeout(()=>{cleanup();resolve({ok:false,error:'Koneksi timeout'});},25000);
+    window[cb]=d=>{cleanup();resolve(d);};
+    function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
+    params.callback=cb;
+    s.src=API_URL+'?'+new URLSearchParams(params).toString();
+    s.onerror=()=>{cleanup();resolve({ok:false,error:'Koneksi gagal'});};
     document.head.appendChild(s);
   });
 }
