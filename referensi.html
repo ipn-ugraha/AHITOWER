@@ -142,16 +142,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 <div class="main">
   <div id="banner" class="banner"></div>
 
-  <!-- SETUP jika CSV_URL belum diset -->
-  <div id="setup-box" class="setup-box" style="display:none">
-    <div class="setup-title">Konfigurasi URL CSV</div>
-    <div class="setup-sub">Masukkan raw GitHub URL file <code>referensi_penghantar.csv</code> untuk mulai.<br>
-    Contoh: <code style="color:var(--accent)">https://raw.githubusercontent.com/USER/REPO/main/referensi_penghantar.csv</code></div>
-    <div class="field">
-      <label>Raw GitHub URL</label>
-      <input type="url" id="inp-url" placeholder="https://raw.githubusercontent.com/..." />
-    </div>
-    <button class="btn primary" style="width:100%" onclick="saveUrl()">Simpan & Muat Data</button>
+  <!-- IMPORT CSV box -->
+  <div id="import-box" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.85rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:11px;color:var(--text2);font-family:var(--mono);">⬆ Import CSV terbaru:</span>
+    <input type="file" id="inp-file" accept=".csv" onchange="importCSV(this)" style="font-size:11px;color:var(--text2);font-family:var(--mono);cursor:pointer;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:4px 8px;">
+    <span style="font-size:11px;color:var(--text3);font-family:var(--mono);">— atau edit langsung di tabel, lalu Export CSV dan upload ke GitHub</span>
   </div>
 
   <div id="main-content" style="display:none">
@@ -217,8 +212,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────
-const LS_URL = 'ref_csv_url';
+// Data di-embed langsung — edit di sini atau gunakan tombol Import CSV
 const PAGE_SIZE = 50;
+const EMBEDDED_DATA = [{"pht": "TRS 150KV BANGIL-BUMICOKRO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV BANGIL-GONDANGWETAN", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV BANGIL-PIER", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV BANYUWANGI-GILIMANUK", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV BOJONEGORO-CEPU", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV BONDOWOSO-SITUBONDO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV GONDANGWETAN-PIER", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV GRATI-GONDANGWETAN", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV JEMBER-BONDOWOSO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV KEDIRI-BANARAN", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV KEDIRI-NEWTULUNGAGUNG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV KEREK-MLIWANG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV KEREK-SEMEN TUBAN", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150KV KRAKSAAN-GENDING", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150KV LAMONGAN-PACIRAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV MANISREJO-NGAWI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV MANISREJO-PONOROGO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV NEW PACITAN-NEW PONOROGO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV NEWTULUNGAGUNG-NEWWLINGI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV PAITON-KRAKSAAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV PAITON-NUSANTARA POWER", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV PIER-PURWOSARI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV PLTP IJEN-BANYUWANGI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV PROBOLINGGO-KRAKSAAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV PROBOLINGGO-LUMAJANG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV PURWOSARI-PAKIS", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV SAMBIKEREP-GIS WARU", "kritikal": "ya", "tier": "2", "ktt": "tidak"}, {"pht": "TRS 150KV SITUBONDO-BANYUWANGI", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV SITUBONDO-PAITON", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150KV SRAGEN-NGAWI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV ALTAPRIMA-SURABAYA BARAT", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV ANTOSARI-NEGARA", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV BABAT-BOJONEGORO", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV BALONGBENDO-SEKARPUTIH", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV BANARAN-NEWNGANJUK", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV BANGKALAN-SAMPANG", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV BATURITI-GIANYAR", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV BATURITI-PEMARON", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV BUDURAN-SIDOARJO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV CELUKAN BAWANG-KAPAL", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV CERME-LAMONGAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV CERME-MANYAR", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV CH GILIMANUK-GILIMANUK", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV CH PESANGGARAN-NUSA DUA", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV DARMOGRANDE-WARU", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV DRIYOREJO-BABADAN", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150kV GIANYAR-AMLAPURA", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV GILIMANUK-PEMARON", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV GILITIMUR-BANGKALAN", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV GIS GRESIK-TANDES", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV GONDANGWETAN-PROBOLINGGO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV GONDANGWETAN-REJOSO", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150kV GRATI-PIER", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV GULUK2-SUMENEP", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV GUNUNG SARI-WARU", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC (PLTU PACITAN-NEW PACITAN)-NGUNTORONADI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC BABAT-BABAT", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC BANGIL-BANGIL", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC BULUKANDANG-BULUKANDANG", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC CERME - CERME", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC GENTENG-GENTENG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC GILITIMUR-CH GILITIMUR", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC KASIH JATIM-KASIH JATIM", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC KIS-KIS", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150kV INC LAWANG-BANGIL", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC NEWNGANJUK-NEWNGANJUK", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC NEWPORONG-NEWPORONG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC PAYANGAN-PAYANGAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV INC SURYA ZIGZAG-SURYA ZIGZAG", "kritikal": "ya", "tier": "", "ktt": "ya"}, {"pht": "TRS 150kV JEMBER-BANYUWANGI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV JOMBANG BARU-JAYA KERTAS", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV JOMBANG-JATIGEDONG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KAPAL-PADANG SAMBIAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KAPAL-PEMECUTAN KELOD", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KAPAL-TANAH LOT", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KARANGPILANG - RUNGKUT", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KARANGPILANG-BAMBE", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KEBONAGUNG-LAWANG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KEBONAGUNG-PAKIS", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KEBONAGUNG-SENGKALING", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KEDINDING-BANGKALAN", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KEDIRI-JAYAKERTAS", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KENJERAN-UJUNG", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KERTOSONO-INC (KEDIRI-JAYAKERTAS)", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV KUBU-AMLAPURA", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV LAMONGAN-BABAT", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV LUMAJANG-TANGGUL", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV MOJOAGUNG - BANARAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV MOJOAGUNG-BANARAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV NEGARA-GILIMANUK", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV NEWNGANJUK-MANISREJO", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV NGIMBANG-JATIGEDONG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV NGIMBANG-MLIWANG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PADANG SAMBIAN-PESANGGARAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PAMEKASAN-GULUK2", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PEMECUTAN KELOD-CH BANDARA NGURAH RAI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PESANGGARAN-CH BANDARA NGURAH RAI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PESANGGARAN-SANUR", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PLTS BALI TIMUR-KUBU", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PLTU GRESIK-ALTAPRIMA", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PLTU GRESIK-SAMBIKEREP", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PLTU GRESIK-SEGOROMADU", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV PLTU PACITAN-NEW PACITAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV RUNGKUT-SURABAYA SELATAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SAMPANG-PAMEKASAN", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SANUR-GIANYAR", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SAWAHAN-GUNUNG SARI", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SAWAHAN-KREMBANGAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SAWAHAN-SURABAYA BARAT", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SEGOROMADU-ALTAPRIMA", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SEGOROMADU-CERME", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SEGOROMADU-PETROKIMIA", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150kV SEKARPUTIH-KERTOSONO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SEKARPUTIH-MOJOAGUNG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SEKARPUTIH-NGORO", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SIDOARJO-NEWPORONG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SUKOLILO-KENJERAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SUKOLILO-RUNGKUT", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SURABAYA BARAT-BALONGBENDO", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SURABAYA BARAT-CERME", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SURABAYA BARAT-DARMOGRANDE", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SURABAYA SELATAN-KALISARI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV SUTAMI - KEBONAGUNG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV TANAH LOT-ANTOSARI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV TANDES-SAWAHAN", "kritikal": "tidak", "tier": "2", "ktt": "tidak"}, {"pht": "TRS 150kV TANGGUL-JEMBER", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV TANGGUL-PUGER", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150kV TANJUNG AWAR AWAR-BABAT", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV TUBAN-KEREK", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV UJUNG-PERAK", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 150kV UJUNG-TANDES", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV WARU-BUDURAN", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV WARU-RUNGKUT", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 150kV WLINGI-SUTAMI", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 25KV DOLOPO-NGEBEL", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 25KV GIRINGAN-GOLANG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 25KV GOLANG-DOLOPO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 500KV PAITON-JAWA POWER", "kritikal": "tidak", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500KV PAITON-NUSANTARA POWER", "kritikal": "tidak", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500KV PAITON-PAITON ENERGY", "kritikal": "tidak", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV GRATI-INDONESIA POWER", "kritikal": "tidak", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV GRATI-KRIAN", "kritikal": "tidak", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV GRESIK-KRIAN", "kritikal": "ya", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV INC UNGRN-NGBNG", "kritikal": "ya", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV KEDIRI-PEDAN", "kritikal": "ya", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV NGIMBANG-INC KRIAN", "kritikal": "ya", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV PAITON-GRATI", "kritikal": "ya", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV PAITON-KEDIRI", "kritikal": "ya", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 500kV UNGARAN-KRIAN", "kritikal": "tidak", "tier": "1", "ktt": "tidak"}, {"pht": "TRS 70KV BANARAN-GUDANG GARAM", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 70KV BANARAN-PARE", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV BANARAN-TULUNGAGUNG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV BLITAR BARU-TULUNGAGUNG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV DOLOPO-PONOROGO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV KERTOSONO-NGANJUK", "kritikal": "ya", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV MANISREJO-MRANGGEN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV MRANGGEN-MAGETAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV TRENGGALEK-PONOROGO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70KV WLINGI-BLITAR BARU", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV BLIMBING-POLEHAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV BUDURAN-MASPION", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 70kV INC PLTA TULUNGAGUNG-PLTA TULUNG AGUNG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV INC SELOREJO-SELOREJO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV INC SIMAN-SIMAN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV INC TUREN (BRANCH)-TUREN", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV KARANGKATES-SENGGURUH", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV KEBONAGUNG-GAMPINGAN", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 70kV KERTOSONO-PLOSO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV MANYAR-MASPION SBM", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV MENDALAN-SEKARPUTIH", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV MENDALAN-SENGKALING", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV NGANJUK-MANISREJO", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV POLEHAN-KEBONAGUNG", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV SEGOROMADU-BARATA", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 70kV SEGOROMADU-SEMEN GRESIK", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV SEKARPUTIH-AJINOMOTO", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 70kV SEKARPUTIH-TJIWIKIMIA", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 70kV SENGKALING-BLIMBING", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV TARIK-BANGUN", "kritikal": "tidak", "tier": "", "ktt": "ya"}, {"pht": "TRS 70kV TARIK-MIWON", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV TARIK-SEKARPUTIH", "kritikal": "tidak", "tier": "", "ktt": "tidak"}, {"pht": "TRS 70kV TULUNGAGUNG-TRENGGALEK", "kritikal": "tidak", "tier": "", "ktt": "tidak"}];
 
 // ─── STATE ────────────────────────────────────────────────
 let DATA = [];       // array of {idx, pht, kritikal, tier, ktt, modified}
@@ -228,56 +224,55 @@ let PAGE = 0;
 
 // ─── INIT ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  const url = localStorage.getItem(LS_URL) || '';
-  if (!url) {
-    document.getElementById('setup-box').style.display = 'block';
-  } else {
-    document.getElementById('main-content').style.display = 'block';
-    loadCSV(url);
-  }
+  document.getElementById('main-content').style.display = 'block';
+  loadEmbedded();
 });
 
-function saveUrl() {
-  const url = document.getElementById('inp-url').value.trim();
-  if (!url || !url.startsWith('http')) { showBanner('URL tidak valid','error'); return; }
-  localStorage.setItem(LS_URL, url);
-  document.getElementById('setup-box').style.display = 'none';
-  document.getElementById('main-content').style.display = 'block';
-  loadCSV(url);
-}
-
-// ─── LOAD CSV ─────────────────────────────────────────────
-async function loadCSV(url) {
+// ─── LOAD EMBEDDED ────────────────────────────────────────
+function loadEmbedded() {
   showLoading(true);
-  try {
-    const res = await fetch(url + '?t=' + Date.now());
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
-    parseCSV(text);
-    showBanner('Data dimuat: ' + DATA.length + ' penghantar dari ' + url, 'success');
-    document.getElementById('btn-export').disabled = false;
-  } catch(e) {
-    showBanner('Gagal memuat CSV: ' + e.message + '. Pastikan URL benar dan file bisa diakses publik.', 'error');
-    showLoading(false);
-  }
-}
-
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  DATA = [];
-  lines.slice(1).forEach((line, i) => {
-    const parts = line.split(',');
-    const pht      = (parts[0]||'').trim();
-    const kritikal = (parts[1]||'tidak').trim().toLowerCase();
-    const tier     = (parts[2]||'').trim().replace('.0','');
-    const ktt      = (parts[3]||'tidak').trim().toLowerCase();
-    if (!pht) return;
-    DATA.push({ idx: i+1, pht, kritikal, tier, ktt, modified: false });
-  });
+  DATA = EMBEDDED_DATA.map((r, i) => ({
+    idx: i+1,
+    pht:      r.pht      || '',
+    kritikal: r.kritikal || 'tidak',
+    tier:     r.tier     || '',
+    ktt:      r.ktt      || 'tidak',
+    modified: false
+  }));
   buildFilters();
   applyFilters();
   showLoading(false);
   document.getElementById('main-table').style.display = 'table';
+  document.getElementById('btn-export').disabled = false;
+  showBanner('Data dimuat: ' + DATA.length + ' penghantar (embedded). Import CSV terbaru jika ada update.', 'success');
+}
+
+// ─── IMPORT CSV dari file lokal ───────────────────────────
+function importCSV(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const lines = text.trim().split(/\r?\n/);
+    const newData = [];
+    lines.slice(1).forEach((line, i) => {
+      const parts = line.split(',');
+      const pht      = (parts[0]||'').trim().replace(/^"|"$/g,'');
+      const kritikal = (parts[1]||'tidak').trim().toLowerCase();
+      const tier     = (parts[2]||'').trim().replace('.0','');
+      const ktt      = (parts[3]||'tidak').trim().toLowerCase();
+      if (!pht) return;
+      newData.push({ idx: i+1, pht, kritikal, tier, ktt, modified: false });
+    });
+    if (newData.length === 0) { showBanner('File CSV tidak valid atau kosong.','error'); return; }
+    DATA = newData;
+    buildFilters();
+    applyFilters();
+    showBanner('Import berhasil: ' + DATA.length + ' penghantar dari ' + file.name, 'success');
+    input.value = '';
+  };
+  reader.readAsText(file);
 }
 
 // ─── FILTERS ──────────────────────────────────────────────
@@ -460,11 +455,9 @@ function updateField(idx, field, value) {
 }
 
 function resetAll() {
-  if (!confirm('Reset semua perubahan? Data akan dikembalikan ke kondisi awal dari CSV.')) return;
-  const url = localStorage.getItem(LS_URL) || '';
-  if (url) loadCSV(url);
+  if (!confirm('Reset semua perubahan? Data akan dikembalikan ke data awal (embedded).')) return;
+  loadEmbedded();
   document.getElementById('export-area').value = '';
-  document.getElementById('btn-export').disabled = false;
 }
 
 // ─── EXPORT CSV ───────────────────────────────────────────
