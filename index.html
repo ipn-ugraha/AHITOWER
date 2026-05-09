@@ -198,7 +198,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-nav">
       <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
       <button class="tab-btn" onclick="switchTab('tower')">Data Tower</button>
-      <button class="tab-btn" onclick="switchTab('tegangan')">Per Tegangan & GI</button>
       <button class="tab-btn" onclick="switchTab('ahi')">Kondisi AHI</button>
     </div>
 
@@ -252,20 +251,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div class="cw" style="height:200px"><canvas id="c-dekade"></canvas></div></div>
       <div class="sl">Ringkasan tahun buat</div>
       <div class="metrics" id="m-tahun"></div>
-    </div>
-
-    <!-- TAB TEGANGAN -->
-    <div class="tab-pane" id="tab-tegangan">
-      <div class="sl">Pilih level tegangan</div>
-      <div class="filter-bar" style="margin-bottom:0">
-        <div class="fg"><span class="fl">Level Tegangan</span>
-          <select class="fs" id="f-teg2" onchange="renderTegangan()"><option value="">Semua Tegangan</option></select>
-        </div>
-        <span class="filter-info" id="teg-info"></span>
-      </div>
-      <div id="teg-content" style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:2rem 0;">
-        Pilih atau pilih &quot;Semua Tegangan&quot; untuk melihat distribusi per GI.
-      </div>
     </div>
 
     <!-- TAB AHI -->
@@ -401,10 +386,9 @@ function showLoading(msg='Memuat...') {
 function hideLoading() { document.getElementById('loading-overlay').style.display='none'; }
 
 function switchTab(name) {
-  const tabs=['overview','tower','tegangan','ahi'];
+  const tabs=['overview','tower','ahi'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===name));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
-  if(name==='tegangan') renderTegangan();
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────
@@ -432,10 +416,6 @@ function buildFilterOptions() {
   fillSel('f-tipe',   RAW.rawTipe);
   fillSel('f-teg',    RAW.rawTeg);
 
-  // Tegangan tab
-  const s=document.getElementById('f-teg2');
-  s.innerHTML='<option value="">Semua Tegangan</option>';
-  RAW.rawTeg.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v+' kV'; s.appendChild(o); });
 }
 
 function fillSel(id, vals) {
@@ -628,59 +608,6 @@ function renderTowerTab() {
     mc('Rentang Aktif',   thnNums.length>1 ? (Math.max(...thnNums)-Math.min(...thnNums))+' thn':'-','tahun pembuatan','');
 }
 
-// ─── TEGANGAN TAB ─────────────────────────────────────────
-function renderTegangan() {
-  const teg  = document.getElementById('f-teg2').value;
-  const div  = document.getElementById('teg-content');
-  const info = document.getElementById('teg-info');
-  if(!RAW){ info.textContent=''; return; }
-
-  const fUPT    = document.getElementById('f-upt').value;
-  const fStatus = document.getElementById('f-status').value;
-  const fTipe   = document.getElementById('f-tipe').value;
-
-  // Filter rows — tegangan optional (kosong = semua)
-  const tegRows = RAW.towerRows.filter(r =>
-    (!teg     || r[T_TEG] ===teg)    &&
-    (!fUPT    || r[T_UPT] ===fUPT)   &&
-    (!fStatus || r[T_ST]  ===fStatus) &&
-    (!fTipe   || r[T_TIPE]===fTipe)
-  );
-
-  const label = teg ? teg+' kV' : 'Semua Tegangan';
-
-  // GI breakdown
-  const giObj={};
-  tegRows.forEach(r=>{ const g=r[T_GI]||'N/A'; giObj[g]=(giObj[g]||0)+1; });
-  const giSort=Object.entries(giObj).filter(([k])=>k&&k!=='N/A').sort((a,b)=>b[1]-a[1]);
-  const totalTeg=tegRows.length;
-  info.textContent=fmtNum(totalTeg)+' tower · '+giSort.length+' GI';
-
-  const top20=giSort.slice(0,20);
-  div.innerHTML=`
-    <div class="sl">Ringkasan — ${label}</div>
-    <div class="metrics" id="m-teg-sum"></div>
-    <div class="cc"><div class="cc-title">Distribusi tower per GI (top 20) — ${label}</div>
-      <div class="cw" style="height:${Math.max(280,top20.length*26)}px"><canvas id="c-gi-bar"></canvas></div></div>
-    <div class="sl">Semua GI — ${label} (${giSort.length} GI)</div>
-    <div class="gi-table" id="gi-table-rows"></div>
-  `;
-
-  const top1=giSort[0]||['—',0];
-  document.getElementById('m-teg-sum').innerHTML=
-    mc('Total Tower',  fmtNum(totalTeg),                    label,'good') +
-    mc('Jumlah GI',    giSort.length,                       'gardu induk','') +
-    mc('GI Terbanyak', fmtNum(top1[1]),                     top1[0].split(' ').pop(),'') +
-    mc('Rata-rata/GI', Math.round(totalTeg/(giSort.length||1)),'tower per GI','');
-
-  setTimeout(()=>{
-    makeBarHoriz('c-gi-bar', top20.map(e=>e[0]), top20.map(e=>e[1]), '#3b7aff');
-    document.getElementById('gi-table-rows').innerHTML=
-      giSort.map(([gi,cnt])=>
-        `<div class="gi-row"><span style="color:var(--text2)">${gi}</span><span style="color:var(--accent)">${fmtNum(cnt)}</span></div>`
-      ).join('');
-  },50);
-}
 
 // ─── AHI TAB ──────────────────────────────────────────────
 let AHI_PHT_DATA = [];  // agregat per Penghantar
