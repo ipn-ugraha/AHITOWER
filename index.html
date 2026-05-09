@@ -271,10 +271,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div></div>
 
       <!-- TABEL AHI PER GI -->
-      <div class="sl">Rincian kondisi AHI per GI</div>
+      <div class="sl">Rincian kondisi AHI per Penghantar</div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
         <div style="display:flex;gap:8px;padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center;">
-          <input id="ahi-gi-search" type="text" placeholder="Cari nama GI..." oninput="filterAHITable()"
+          <input id="ahi-gi-search" type="text" placeholder="Cari nama penghantar..." oninput="filterAHITable()"
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);outline:none;width:220px;"/>
           <select id="ahi-gi-ce" onchange="filterAHITable()"
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);outline:none;cursor:pointer;">
@@ -290,7 +290,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <table id="ahi-gi-table" style="width:100%;border-collapse:collapse;font-size:12px;">
             <thead>
               <tr style="background:var(--bg3);position:sticky;top:0;z-index:1;">
-                <th class="th" onclick="sortAHITable('gi')">GI <span id="sort-gi"></span></th>
+                <th class="th" onclick="sortAHITable('gi')">Penghantar <span id="sort-gi"></span></th>
                 <th class="th" onclick="sortAHITable('upt')">UPT <span id="sort-upt"></span></th>
                 <th class="th" onclick="sortAHITable('total')">Total <span id="sort-total"></span></th>
                 <th class="th" onclick="sortAHITable('ce2')">AHI 2 <span id="sort-ce2"></span></th>
@@ -317,7 +317,7 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwhOLp0_Jy0CuZuiCmY1z6C
 // Row index constants — tower: [upt,status,tipe,teg,gi,thn,mat]
 const T_UPT=0,T_ST=1,T_TIPE=2,T_TEG=3,T_GI=4,T_THN=5,T_MAT=6;
 // AHI row: [upt, ce, pentanahan, struktur, antiBinatang]
-const A_UPT=0,A_GI=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5;
+const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5; // PHT=Penghantar
 
 // ─── STATE ────────────────────────────────────────────────
 let TOKEN='', USERNAME='', ROLE='';
@@ -682,7 +682,7 @@ function renderAHITab() {
   // Build GI aggregated data for table
   const giMap={};
   rows.forEach(r=>{
-    const gi  = r[A_GI]  || 'N/A';
+    const gi  = r[A_PHT] || 'N/A';
     const upt = r[A_UPT] || 'N/A';
     const ce  = r[A_CE]  || 'N/A';
     const key = gi+'|||'+upt;
@@ -736,7 +736,7 @@ function renderAHITable() {
     if(el) el.textContent = col===c ? (dir===1?'↑':'↓') : '';
   });
 
-  document.getElementById('ahi-table-count').textContent = fmtNum(data.length)+' GI';
+  document.getElementById('ahi-table-count').textContent = fmtNum(data.length)+' Penghantar';
 
   tbody.innerHTML = data.map((g,i)=>{
     const pct5=pct(g.ce5,g.total);
