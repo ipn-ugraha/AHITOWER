@@ -267,13 +267,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="metrics" id="m-ahi-detail"></div>
 
       <div class="sl">Distribusi nilai AHI</div>
-      <div class="cg2">
-        <div class="cc"><div class="cc-title">Distribusi AHI CE SUTT</div>
-          <div class="legend" id="leg-ahi"></div>
-          <div class="cw" style="height:210px"><canvas id="c-ahi-dist"></canvas></div></div>
-        <div class="cc"><div class="cc-title">% tower kritis (AHI 4–5) per UPT</div>
-          <div class="cw" style="height:210px"><canvas id="c-kritis-upt"></canvas></div></div>
-      </div>
+      <div class="cc"><div class="cc-title">Distribusi AHI CE SUTT</div>
+        <div class="legend" id="leg-ahi"></div>
+        <div class="cw" style="height:220px"><canvas id="c-ahi-dist"></canvas></div></div>
 
       <div class="sl">Distribusi AHI per Penghantar — top 20 kritis</div>
       <div class="cc"><div class="cc-title">Komposisi nilai AHI per penghantar (stacked)</div>
@@ -507,9 +503,11 @@ function renderOverview() {
     mc('Struktur ⚠',      fmtNum(strukt), pct(strukt,ahiTotal)+'% warning','warn') +
     mc('Anti Binatang ✅', fmtNum(antiB),  pct(antiB,ahiTotal)+'% terpasang','');
 
-  // Tower per UPT
+  // Tower per UPT — hanya yang mengandung 'UPT', sort terbanyak
   const byUPT = aggregate(F_ROWS, T_UPT);
-  const uptL  = Object.keys(byUPT).sort((a,b)=>byUPT[b]-byUPT[a]);
+  const uptL  = Object.keys(byUPT)
+    .filter(k=>k.toUpperCase().includes('UPT'))
+    .sort((a,b)=>byUPT[b]-byUPT[a]);
   makeBar('c-ov-upt', uptL.map(l=>l.replace('UPT ','')), uptL.map(k=>byUPT[k]), '#3b7aff');
 
   // Agregat per UPT untuk semua kriteria AHI
@@ -527,12 +525,10 @@ function renderOverview() {
     if(r[A_ANTIB] ===1) g.antiB++;
   });
 
-  // Sort UPT by % kritis
-  const uKeys = Object.keys(uMap).sort((a,b)=>{
-    const pa=(uMap[a].ce4+uMap[a].ce5)/uMap[a].total;
-    const pb=(uMap[b].ce4+uMap[b].ce5)/uMap[b].total;
-    return pb-pa;
-  });
+  // Sort UPT by jumlah kritis terbanyak (ce4+ce5 desc), filter hanya UPT
+  const uKeys = Object.keys(uMap)
+    .filter(k=>k.toUpperCase().includes('UPT'))
+    .sort((a,b)=>(uMap[b].ce4+uMap[b].ce5)-(uMap[a].ce4+uMap[a].ce5));
   const uLabels = uKeys.map(l=>l.replace('UPT ',''));
 
   // Stacked: AHI CE per UPT
@@ -677,64 +673,51 @@ function renderAHICharts(rows) {
     mc('Anti Binatang ✅', fmtNum(antiB),  'terpasang','');
 
   // Doughnut distribusi AHI
-  const ceC={'2':'#00d4aa','3':'#3b7aff','4':'#f5a623','5':'#e84040'};
   makeDoughnut('c-ahi-dist',
     ['AHI 2','AHI 3','AHI 4','AHI 5'], [ce2,ce3,ce4,ce5],
     ['#00d4aa','#3b7aff','#f5a623','#e84040'], 'leg-ahi');
 
-  // % Kritis per UPT
-  const ahiUPT={};
-  rows.forEach(r=>{
-    const u=r[A_UPT]||'N/A';
-    if(!ahiUPT[u]) ahiUPT[u]={total:0,kritis:0};
-    ahiUPT[u].total++;
-    if(r[A_CE]==='4'||r[A_CE]==='5') ahiUPT[u].kritis++;
-  });
-  const kKeys=Object.keys(ahiUPT).sort((a,b)=>(ahiUPT[b].kritis/ahiUPT[b].total)-(ahiUPT[a].kritis/ahiUPT[a].total));
-  makeBarColor('c-kritis-upt', kKeys.map(l=>l.replace('UPT ','')),
-    kKeys.map(k=>pct(ahiUPT[k].kritis,ahiUPT[k].total)),
-    kKeys.map(k=>{ const p2=pct(ahiUPT[k].kritis,ahiUPT[k].total); return p2>50?'#e84040':p2>25?'#f5a623':'#3a9e75'; }), '%');
-
-  // Per-Penghantar — gunakan AHI_PHT_DATA (sudah ter-aggregate)
-  // Bila filter penghantar aktif, tampilkan hanya 1 penghantar itu
+  // Per-Penghantar dari AHI_PHT_DATA
   const fPHTsel = document.getElementById('f-pht')?.value||'';
   let phtRows = fPHTsel
     ? AHI_PHT_DATA.filter(g=>g.pht===fPHTsel)
     : AHI_PHT_DATA;
 
-  // top 20 berdasarkan % kritis
-  const top20 = [...phtRows].sort((a,b)=>b.pctKritis-a.pctKritis).slice(0,20);
-  const phtLabels = top20.map(g=>g.pht);
+  // Sort masing-masing grafik berdasarkan kondisi jelek terbanyak
+  const top20ahi    = [...phtRows].sort((a,b)=>(b.ce4+b.ce5)-(a.ce4+a.ce5)).slice(0,20);
+  const top20pentnh = [...phtRows].sort((a,b)=>b.pentnh-a.pentnh).slice(0,20);
+  const top20strukt = [...phtRows].sort((a,b)=>b.strukt-a.strukt).slice(0,20);
+  const top20antib  = [...phtRows].sort((a,b)=>(b.total-b.antiB)-(a.total-a.antiB)).slice(0,20);
 
-  // ── Stacked bar: komposisi AHI 2/3/4/5 ──────────────────
-  makeStackedBar('c-ahi-pht-stacked', phtLabels, [
-    { label:'AHI 2 (Baik)', data:top20.map(g=>g.ce2),  color:'#00d4aa' },
-    { label:'AHI 3',        data:top20.map(g=>g.ce3),  color:'#3b7aff' },
-    { label:'AHI 4',        data:top20.map(g=>g.ce4),  color:'#f5a623' },
-    { label:'AHI 5 (Kritis)',data:top20.map(g=>g.ce5), color:'#e84040' },
+  // ── Stacked: AHI — sort by ce4+ce5 terbanyak ────────────
+  makeStackedBar('c-ahi-pht-stacked', top20ahi.map(g=>g.pht), [
+    { label:'AHI 2 (Baik)',  data:top20ahi.map(g=>g.ce2), color:'#00d4aa' },
+    { label:'AHI 3',         data:top20ahi.map(g=>g.ce3), color:'#3b7aff' },
+    { label:'AHI 4',         data:top20ahi.map(g=>g.ce4), color:'#f5a623' },
+    { label:'AHI 5 (Kritis)',data:top20ahi.map(g=>g.ce5), color:'#e84040' },
   ]);
 
-  // ── Stacked bar: pentanahan sesuai vs tidak ──────────────
-  makeStackedBar('c-ahi-pht-pentnh', phtLabels, [
-    { label:'Sesuai SPLN',      data:top20.map(g=>g.total-g.pentnh), color:'#00d4aa' },
-    { label:'Tidak sesuai SPLN',data:top20.map(g=>g.pentnh),         color:'#e84040' },
+  // ── Stacked: pentanahan — sort by tidak sesuai terbanyak ─
+  makeStackedBar('c-ahi-pht-pentnh', top20pentnh.map(g=>g.pht), [
+    { label:'Sesuai SPLN',       data:top20pentnh.map(g=>g.total-g.pentnh), color:'#00d4aa' },
+    { label:'Tidak sesuai SPLN', data:top20pentnh.map(g=>g.pentnh),         color:'#e84040' },
   ]);
 
-  // ── Stacked bar: struktur normal vs warning ──────────────
-  makeStackedBar('c-ahi-pht-strukt', phtLabels, [
-    { label:'Normal',  data:top20.map(g=>g.total-g.strukt), color:'#00d4aa' },
-    { label:'Warning', data:top20.map(g=>g.strukt),         color:'#f5a623' },
+  // ── Stacked: struktur — sort by warning terbanyak ────────
+  makeStackedBar('c-ahi-pht-strukt', top20strukt.map(g=>g.pht), [
+    { label:'Normal',  data:top20strukt.map(g=>g.total-g.strukt), color:'#00d4aa' },
+    { label:'Warning', data:top20strukt.map(g=>g.strukt),         color:'#f5a623' },
   ]);
 
-  // ── Stacked bar: anti binatang terpasang vs belum ────────
-  makeStackedBar('c-ahi-pht-antib', phtLabels, [
-    { label:'Terpasang',    data:top20.map(g=>g.antiB),         color:'#00d4aa' },
-    { label:'Belum terpasang',data:top20.map(g=>g.total-g.antiB), color:'#4a5060' },
+  // ── Stacked: anti binatang — sort by belum terpasang terbanyak ─
+  makeStackedBar('c-ahi-pht-antib', top20antib.map(g=>g.pht), [
+    { label:'Terpasang',      data:top20antib.map(g=>g.antiB),           color:'#00d4aa' },
+    { label:'Belum terpasang',data:top20antib.map(g=>g.total-g.antiB),   color:'#4a5060' },
   ]);
 
-  // Total per UPT
+  // Total per UPT — hanya UPT, sort terbanyak
   const byUPT=aggregate(rows,A_UPT);
-  const uKeys=Object.keys(byUPT).sort((a,b)=>byUPT[b]-byUPT[a]);
+  const uKeys=Object.keys(byUPT).filter(k=>k.toUpperCase().includes('UPT')).sort((a,b)=>byUPT[b]-byUPT[a]);
   makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
 }
 
