@@ -516,6 +516,7 @@ async function doLogin() {
   if(!u||!p){showError('Username dan password wajib diisi');return;}
   btn.disabled=true; btn.textContent='Memverifikasi...';
   document.getElementById('login-error').style.display='none';
+  dbg('login: action=login user='+u);
   const res=await api({action:'login',username:u,password:p});
   if(res.ok){
     TOKEN=res.token; USERNAME=res.name; ROLE=res.role;
@@ -1388,7 +1389,6 @@ function pct(a,b){ return b?Math.round(a/b*100):0; }
 
 function api(params){
   return new Promise(resolve=>{
-    // Buat params tanpa callback untuk fetch()
     const fetchParams = {...params};
     delete fetchParams.callback;
     const url = API_URL + '?' + new URLSearchParams(fetchParams).toString();
@@ -1400,26 +1400,38 @@ function api(params){
       .then(d => { clearTimeout(t); resolve(d); })
       .catch(err => {
         clearTimeout(t);
-        if (err.name === 'AbortError') {
-          jsonp(params, resolve);
-        } else {
-          // CORS error — fallback ke JSONP
-          jsonp(params, resolve);
-        }
+        dbg('fetch err: '+err.name+' '+err.message+' → fallback JSONP');
+        jsonp(params, resolve);
       });
   });
+}
+
+// Debug overlay — tampil di layar untuk mobile
+function dbg(msg) {
+  console.log(msg);
+  let el = document.getElementById('_dbg');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_dbg';
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,.85);color:#0f0;font-family:monospace;font-size:11px;padding:8px;max-height:40vh;overflow-y:auto;';
+    document.body.appendChild(el);
+  }
+  el.innerHTML += '<div>' + new Date().toLocaleTimeString() + ' ' + msg + '</div>';
+  el.scrollTop = el.scrollHeight;
 }
 
 function jsonp(params, resolve){
   const cb='_cb'+Date.now();
   const s=document.createElement('script');
   const t=setTimeout(()=>{cleanup();resolve({ok:false,error:'Koneksi timeout — periksa jaringan'});},40000);
-  window[cb]=d=>{cleanup();resolve(d);};
+  window[cb]=d=>{cleanup();dbg('JSONP ok: '+JSON.stringify(d).substring(0,60));resolve(d);};
   function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
   params.callback=cb;
-  s.src=API_URL+'?'+new URLSearchParams(params).toString();
+  const url=API_URL+'?'+new URLSearchParams(params).toString();
+  dbg('JSONP url: '+url.substring(0,80)+'...');
+  s.src=url;
   s.async=true;
-  s.onerror=()=>{cleanup();resolve({ok:false,error:'Koneksi gagal'});};
+  s.onerror=(e)=>{cleanup();dbg('JSONP onerror: '+e);resolve({ok:false,error:'Koneksi gagal'});};
   document.head.appendChild(s);
 }
 </script>
