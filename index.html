@@ -1392,6 +1392,7 @@ function api(params){
     const p = {...params};
     delete p.callback;
     const url = API_URL + '?' + new URLSearchParams(p).toString();
+    dbg('fetch start: '+Object.keys(p).join(','));
 
     fetch(url, {
       method: 'GET',
@@ -1400,13 +1401,16 @@ function api(params){
       mode: 'cors',
     })
     .then(r => {
+      dbg('fetch status:'+r.status+' type:'+r.type);
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
+      return r.text();
     })
-    .then(d => resolve(d))
+    .then(text => {
+      dbg('fetch body:'+text.substring(0,60));
+      resolve(JSON.parse(text));
+    })
     .catch(err => {
-      // Jika fetch gagal karena CORS/redirect, fallback ke JSONP
-      console.log('fetch gagal, coba JSONP:', err.message);
+      dbg('fetch err:'+err.name+':'+err.message+' → JSONP');
       jsonpApi(params, resolve);
     });
   });
@@ -1417,10 +1421,11 @@ function jsonpApi(params, resolve){
   const s  = document.createElement('script');
   const t  = setTimeout(() => {
     cleanup();
+    dbg('JSONP timeout');
     resolve({ok:false, error:'Koneksi timeout'});
   }, 40000);
 
-  window[cb] = d => { cleanup(); resolve(d); };
+  window[cb] = d => { cleanup(); dbg('JSONP ok'); resolve(d); };
   function cleanup(){
     clearTimeout(t);
     delete window[cb];
@@ -1430,12 +1435,24 @@ function jsonpApi(params, resolve){
   params.callback = cb;
   s.src   = API_URL + '?' + new URLSearchParams(params).toString();
   s.async = true;
-  s.onerror = () => { cleanup(); resolve({ok:false, error:'Koneksi gagal'}); };
+  s.onerror = () => { cleanup(); dbg('JSONP err'); resolve({ok:false, error:'Koneksi gagal'}); };
+  dbg('JSONP append');
   document.head.appendChild(s);
 }
 
 
-function dbg(msg) { console.log('[DBG]', msg); }
+function dbg(msg) {
+  console.log('[DBG]', msg);
+  let el = document.getElementById('_dbg');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_dbg';
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:rgba(0,0,0,.9);color:#0f0;font-family:monospace;font-size:11px;padding:8px;max-height:45vh;overflow-y:auto;';
+    document.body.appendChild(el);
+  }
+  el.innerHTML += '<div>' + new Date().toLocaleTimeString() + ' ' + msg + '</div>';
+  el.scrollTop = el.scrollHeight;
+}
 
 </script>
 </body>
