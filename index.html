@@ -1392,16 +1392,28 @@ function api(params){
     const fetchParams = {...params};
     delete fetchParams.callback;
     const url = API_URL + '?' + new URLSearchParams(fetchParams).toString();
-    const ctrl = new AbortController();
-    const t = setTimeout(()=>{ ctrl.abort(); jsonp(params, resolve); }, 10000);
+    dbg('fetch: '+Object.keys(fetchParams).join(','));
 
-    fetch(url, { signal: ctrl.signal })
-      .then(r => r.json())
-      .then(d => { clearTimeout(t); resolve(d); })
+    fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: { 'Accept': 'application/json' },
+    })
+      .then(r => {
+        dbg('fetch status: '+r.status+' '+r.url.substring(0,60));
+        return r.text();
+      })
+      .then(text => {
+        dbg('fetch body: '+text.substring(0,80));
+        try {
+          resolve(JSON.parse(text));
+        } catch(e) {
+          resolve({ok:false, error:'Response bukan JSON: '+text.substring(0,100)});
+        }
+      })
       .catch(err => {
-        clearTimeout(t);
-        dbg('fetch err: '+err.name+' '+err.message+' → fallback JSONP');
-        jsonp(params, resolve);
+        dbg('fetch catch: '+err.name+': '+err.message);
+        resolve({ok:false, error:'Koneksi gagal: '+err.message});
       });
   });
 }
