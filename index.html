@@ -1387,35 +1387,68 @@ function mc(label,value,sub,type=''){
 function fmtNum(n){ return Number(n).toLocaleString('id-ID'); }
 function pct(a,b){ return b?Math.round(a/b*100):0; }
 
+// ─── API via iframe (kompatibel Safari iOS) ───────────────
 function api(params){
   return new Promise(resolve=>{
     const fetchParams = {...params};
     delete fetchParams.callback;
-    const url = API_URL + '?' + new URLSearchParams(fetchParams).toString();
-    dbg('fetch: '+Object.keys(fetchParams).join(','));
 
-    fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      headers: { 'Accept': 'application/json' },
-    })
-      .then(r => {
-        dbg('fetch status: '+r.status+' '+r.url.substring(0,60));
-        return r.text();
-      })
-      .then(text => {
-        dbg('fetch body: '+text.substring(0,80));
-        try {
-          resolve(JSON.parse(text));
-        } catch(e) {
-          resolve({ok:false, error:'Response bukan JSON: '+text.substring(0,100)});
-        }
-      })
-      .catch(err => {
-        dbg('fetch catch: '+err.name+': '+err.message);
-        resolve({ok:false, error:'Koneksi gagal: '+err.message});
+    // Coba fetch dulu
+    const url = API_URL + '?' + new URLSearchParams(fetchParams).toString();
+    dbg('api: '+JSON.stringify(fetchParams));
+
+    fetch(url, { method:'GET', redirect:'follow' })
+      .then(r => r.json())
+      .then(d => { dbg('fetch ok'); resolve(d); })
+      .catch(() => {
+        dbg('fetch fail → iframe');
+        iframeApi(params, resolve);
       });
   });
+}
+
+function iframeApi(params, resolve){
+  const cb = '_cb' + Date.now();
+  const url = API_URL + '?' + new URLSearchParams({...params, callback: cb}).toString();
+  dbg('iframe url len:' + url.length);
+
+  // Buat iframe tersembunyi
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;width:1px;height:1px;top:-999px;left:-999px;';
+  iframe.sandbox = 'allow-scripts allow-same-origin allow-forms';
+
+  const t = setTimeout(() => {
+    cleanup();
+    dbg('iframe timeout');
+    resolve({ok:false, error:'Koneksi timeout'});
+  }, 40000);
+
+  window[cb] = (d) => { cleanup(); dbg('iframe cb ok'); resolve(d); };
+
+  function cleanup(){
+    clearTimeout(t);
+    delete window[cb];
+    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+  }
+
+  // Tulis HTML ke iframe yang memanggil JSONP
+  iframe.onload = () => {
+    try {
+      const doc = iframe.contentDocument || iframe.contentWindow.document;
+      const s = doc.createElement('script');
+      s.src = url;
+      s.onerror = () => { cleanup(); dbg('iframe script err'); resolve({ok:false,error:'Koneksi gagal'}); };
+      doc.head.appendChild(s);
+    } catch(e) {
+      cleanup();
+      dbg('iframe write err: '+e.message);
+      resolve({ok:false, error:'Koneksi gagal: '+e.message});
+    }
+  };
+
+  document.body.appendChild(iframe);
+  // Trigger onload dengan blank page
+  iframe.src = 'about:blank';
 }
 
 // Debug overlay — tampil di layar untuk mobile
