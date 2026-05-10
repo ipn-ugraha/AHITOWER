@@ -1390,7 +1390,7 @@ function api(params){
   return new Promise(resolve=>{
     const cb='_cb'+Date.now();
     const s=document.createElement('script');
-    const t=setTimeout(()=>{cleanup();resolve({ok:false,error:'Koneksi timeout'});},25000);
+    const t=setTimeout(()=>{cleanup();resolve({ok:false,error:'Koneksi timeout'});},45000);
     window[cb]=d=>{cleanup();resolve(d);};
     function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
     params.callback=cb;
