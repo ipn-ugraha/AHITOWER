@@ -588,33 +588,23 @@ async function loadDashboard() {
 
 // ─── LOAD CSV REFERENSI ───────────────────────────────────
 async function loadRef() {
-  // Gunakan embedded data; jika CSV_URL diisi, fetch dari URL (override)
-  REF = { ...REF_DATA };
-  if (CSV_URL) {
-    try {
-      const res = await fetch(CSV_URL);
-      if (res.ok) {
-        const text = await res.text();
-        REF = {};
-        const tiers = new Set();
-        text.trim().split(/\r?\n/).slice(1).forEach(line => {
-          const parts = line.split(',');
-          const pht      = (parts[0]||'').trim();
-          const kritikal = (parts[1]||'tidak').trim().toLowerCase();
-          const tier     = (parts[2]||'').trim();
-          const ktt      = (parts[3]||'tidak').trim().toLowerCase();
-          if (!pht) return;
-          REF[pht] = { kritikal, tier, ktt };
-          if (tier) tiers.add(tier);
-        });
-        buildTierDropdown([...tiers].sort((a,b)=>Number(a)-Number(b)));
-        console.log('REF from URL:', Object.keys(REF).length);
-        return;
-      }
-    } catch(e) { console.warn('CSV fetch gagal, pakai embedded:', e.message); }
+  // Selalu coba fetch terbaru dari Apps Script (proxy GitHub CSV via JSONP)
+  // Fallback ke embedded data jika gagal
+  if (TOKEN) {
+    const res = await api({ action: 'ref', token: TOKEN });
+    if (res.ok) {
+      REF = res.ref;
+      buildTierDropdown(res.tiers || []);
+      console.log('REF from Apps Script:', res.count, 'penghantar');
+      return;
+    } else {
+      console.warn('REF fetch gagal:', res.error, '— pakai embedded');
+    }
   }
-  // Pakai embedded — build tier dropdown dari REF_DATA
-  const embTiers = [...new Set(Object.values(REF).map(v=>v.tier).filter(Boolean))].sort((a,b)=>Number(a)-Number(b));
+  // Fallback: embedded data
+  REF = { ...REF_DATA };
+  const embTiers = [...new Set(Object.values(REF).map(v=>v.tier).filter(Boolean))]
+    .sort((a,b)=>Number(a)-Number(b));
   buildTierDropdown(embTiers);
   console.log('REF embedded:', Object.keys(REF).length, 'penghantar');
 }
