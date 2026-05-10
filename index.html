@@ -18,14 +18,42 @@
 body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
 
 /* LOGIN */
-#login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);position:relative;overflow:hidden;}
-#login-screen::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(0,212,170,0.06) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
-.login-box{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:2.5rem 2rem;width:100%;max-width:380px;position:relative;z-index:1;}
+#login-screen{min-height:100vh;display:flex;align-items:stretch;background:var(--bg);position:relative;overflow:hidden;}
+
+/* Animasi tower di background */
+#login-screen::before{content:'';position:absolute;inset:0;background:
+  radial-gradient(ellipse at 20% 80%,rgba(0,212,170,0.08) 0%,transparent 60%),
+  radial-gradient(ellipse at 80% 20%,rgba(59,122,255,0.06) 0%,transparent 60%);
+  pointer-events:none;}
+
+/* Panel kiri — ilustrasi tower */
+.login-left{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:3rem;position:relative;min-height:100vh;}
+.login-left-content{text-align:center;z-index:1;}
+.tower-svg-wrap{width:220px;height:320px;margin:0 auto 2rem;filter:drop-shadow(0 0 40px rgba(0,212,170,0.3));}
+.login-left-title{font-size:28px;font-weight:600;color:var(--text);line-height:1.2;margin-bottom:.5rem;}
+.login-left-sub{font-size:13px;color:var(--text2);line-height:1.6;max-width:320px;}
+/* Garis transmisi animasi */
+.wire{stroke-dasharray:300;stroke-dashoffset:300;animation:drawWire 2s ease forwards;}
+.wire1{animation-delay:.3s;}.wire2{animation-delay:.6s;}.wire3{animation-delay:.9s;}
+@keyframes drawWire{to{stroke-dashoffset:0;}}
+.tower-body{opacity:0;animation:fadeUp .8s ease .2s forwards;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* Panel kanan — form login */
+.login-right{width:420px;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--bg2);border-left:1px solid var(--border);}
+.login-box{width:100%;max-width:360px;}
 .login-logo{display:flex;align-items:center;gap:10px;margin-bottom:2rem;}
 .login-logo-icon{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;}
 .login-logo-icon svg{width:20px;height:20px;}
 .login-title{font-size:16px;font-weight:600;}
 .login-sub{font-size:11px;color:var(--text2);font-family:var(--mono);}
+
+/* Mobile: sembunyikan panel kiri */
+@media(max-width:640px){
+  .login-left{display:none;}
+  .login-right{width:100%;border-left:none;background:var(--bg);}
+  #login-screen::after{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+}
 .field{margin-bottom:1rem;}
 .field label{display:block;font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:6px;letter-spacing:.05em;text-transform:uppercase;}
 .field input{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s;}
@@ -194,20 +222,143 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 <!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#0d0f14" stroke-width="2.5" stroke-linecap="round">
-          <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+
+  <!-- Panel Kiri: Ilustrasi Tower -->
+  <div class="login-left">
+    <div class="login-left-content">
+      <!-- SVG Tower SUTT/SUTET -->
+      <div class="tower-svg-wrap">
+        <svg viewBox="0 0 220 340" xmlns="http://www.w3.org/2000/svg">
+          <!-- Kabel transmisi (animated) -->
+          <path class="wire wire1" d="M10,60 Q55,90 110,80 Q165,70 210,60" fill="none" stroke="#00d4aa" stroke-width="1.5" opacity="0.6"/>
+          <path class="wire wire2" d="M10,80 Q55,108 110,98 Q165,88 210,80" fill="none" stroke="#00d4aa" stroke-width="1.5" opacity="0.5"/>
+          <path class="wire wire3" d="M10,100 Q55,125 110,116 Q165,107 210,100" fill="none" stroke="#00d4aa" stroke-width="1.5" opacity="0.4"/>
+          <!-- Kabel bawah -->
+          <path class="wire wire1" d="M30,200 Q110,220 190,200" fill="none" stroke="#3b7aff" stroke-width="1.2" opacity="0.4"/>
+          <path class="wire wire2" d="M30,215 Q110,235 190,215" fill="none" stroke="#3b7aff" stroke-width="1.2" opacity="0.3"/>
+
+          <g class="tower-body">
+            <!-- Pondasi -->
+            <rect x="85" y="305" width="50" height="10" rx="2" fill="#1a1e28" stroke="#00d4aa" stroke-width="1"/>
+            <rect x="78" y="312" width="64" height="8" rx="2" fill="#13161e" stroke="#00d4aa" stroke-width="0.8"/>
+
+            <!-- Kaki tower (lattice) -->
+            <line x1="110" y1="305" x2="80" y2="230" stroke="#4a90d9" stroke-width="3" stroke-linecap="round"/>
+            <line x1="110" y1="305" x2="140" y2="230" stroke="#4a90d9" stroke-width="3" stroke-linecap="round"/>
+            <!-- Cross bracing kaki -->
+            <line x1="83" y1="295" x2="100" y2="260" stroke="#4a90d9" stroke-width="1.5" opacity=".7"/>
+            <line x1="137" y1="295" x2="120" y2="260" stroke="#4a90d9" stroke-width="1.5" opacity=".7"/>
+            <line x1="85" y1="270" x2="105" y2="245" stroke="#4a90d9" stroke-width="1.2" opacity=".6"/>
+            <line x1="135" y1="270" x2="115" y2="245" stroke="#4a90d9" stroke-width="1.2" opacity=".6"/>
+
+            <!-- Badan utama tower -->
+            <line x1="80" y1="230" x2="90" y2="120" stroke="#4a90d9" stroke-width="3" stroke-linecap="round"/>
+            <line x1="140" y1="230" x2="130" y2="120" stroke="#4a90d9" stroke-width="3" stroke-linecap="round"/>
+
+            <!-- Cross bracing badan -->
+            <line x1="82" y1="220" x2="138" y2="190" stroke="#4a90d9" stroke-width="1.5" opacity=".6"/>
+            <line x1="82" y1="190" x2="138" y2="220" stroke="#4a90d9" stroke-width="1.5" opacity=".6"/>
+            <line x1="85" y1="175" x2="135" y2="150" stroke="#4a90d9" stroke-width="1.5" opacity=".6"/>
+            <line x1="85" y1="150" x2="135" y2="175" stroke="#4a90d9" stroke-width="1.5" opacity=".6"/>
+            <line x1="88" y1="135" x2="132" y2="120" stroke="#4a90d9" stroke-width="1.2" opacity=".5"/>
+            <line x1="88" y1="120" x2="132" y2="135" stroke="#4a90d9" stroke-width="1.2" opacity=".5"/>
+
+            <!-- Platform / waist -->
+            <line x1="78" y1="230" x2="142" y2="230" stroke="#00d4aa" stroke-width="2.5"/>
+            <line x1="88" y1="200" x2="132" y2="200" stroke="#3b7aff" stroke-width="1.8" opacity=".7"/>
+
+            <!-- Tiang atas (menara) -->
+            <line x1="90" y1="120" x2="95" y2="60" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="130" y1="120" x2="125" y2="60" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="92" y1="110" x2="128" y2="110" stroke="#00d4aa" stroke-width="2"/>
+            <line x1="93" y1="95" x2="127" y2="95" stroke="#4a90d9" stroke-width="1.5" opacity=".7"/>
+            <line x1="94" y1="80" x2="126" y2="80" stroke="#4a90d9" stroke-width="1.5" opacity=".6"/>
+
+            <!-- Cross arm atas (sayap) -->
+            <line x1="95" y1="60" x2="20" y2="75" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="125" y1="60" x2="200" y2="75" stroke="#4a90d9" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Stiffener -->
+            <line x1="95" y1="60" x2="40" y2="60" stroke="#4a90d9" stroke-width="1.5" opacity=".6"/>
+            <line x1="125" y1="60" x2="180" y2="60" stroke="#4a90d9" stroke-width="1.5" opacity=".6"/>
+
+            <!-- Cross arm tengah -->
+            <line x1="92" y1="95" x2="30" y2="108" stroke="#4a90d9" stroke-width="2" stroke-linecap="round"/>
+            <line x1="128" y1="95" x2="190" y2="108" stroke="#4a90d9" stroke-width="2" stroke-linecap="round"/>
+
+            <!-- Cross arm bawah -->
+            <line x1="90" y1="120" x2="35" y2="135" stroke="#4a90d9" stroke-width="2" stroke-linecap="round"/>
+            <line x1="130" y1="120" x2="185" y2="135" stroke="#4a90d9" stroke-width="2" stroke-linecap="round"/>
+
+            <!-- Isolator string (titik kabel) -->
+            <circle cx="20" cy="75" r="3" fill="#00d4aa" opacity=".9"/>
+            <circle cx="200" cy="75" r="3" fill="#00d4aa" opacity=".9"/>
+            <circle cx="30" cy="108" r="2.5" fill="#00d4aa" opacity=".8"/>
+            <circle cx="190" cy="108" r="2.5" fill="#00d4aa" opacity=".8"/>
+            <circle cx="35" cy="135" r="2.5" fill="#00d4aa" opacity=".7"/>
+            <circle cx="185" cy="135" r="2.5" fill="#00d4aa" opacity=".7"/>
+
+            <!-- Puncak + lampu aviation -->
+            <line x1="95" y1="60" x2="110" y2="20" stroke="#4a90d9" stroke-width="2" stroke-linecap="round"/>
+            <line x1="125" y1="60" x2="110" y2="20" stroke="#4a90d9" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="110" cy="16" r="5" fill="#e84040" opacity=".9">
+              <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="110" cy="16" r="9" fill="none" stroke="#e84040" stroke-width="1" opacity=".3">
+              <animate attributeName="r" values="9;14;9" dur="2s" repeatCount="indefinite"/>
+              <animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Glow effect bawah -->
+            <ellipse cx="110" cy="318" rx="40" ry="6" fill="#00d4aa" opacity=".08"/>
+          </g>
         </svg>
       </div>
-      <div><div class="login-title">Tower Monitoring</div><div class="login-sub">PLN UIT JBM</div></div>
+      <div class="login-left-title">Tower Monitoring<br>UIT JBM</div>
+      <!-- Stats ringkas -->
+      <div style="display:flex;gap:2rem;justify-content:center;margin-top:2rem;">
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:var(--accent);font-family:var(--mono)">13K+</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Tower</div>
+        </div>
+        <div style="width:1px;background:var(--border)"></div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:var(--accent2);font-family:var(--mono)">6</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">UPT</div>
+        </div>
+        <div style="width:1px;background:var(--border)"></div>
+        <div style="text-align:center">
+          <div style="font-size:22px;font-weight:600;color:var(--warn);font-family:var(--mono)">182</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Penghantar</div>
+        </div>
+      </div>
     </div>
-    <div class="field"><label>Username</label><input type="text" id="inp-user" placeholder="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" enterkeyhint="next" onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()"/></div>
-    <div class="field"><label>Password</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password" enterkeyhint="go" onkeydown="if(event.key==='Enter')doLogin()"/></div>
-    <button class="btn-login" id="btn-login" onclick="doLogin()">Masuk</button>
-    <div class="login-error" id="login-error"></div>
   </div>
+
+  <!-- Panel Kanan: Form Login -->
+  <div class="login-right">
+    <div class="login-box">
+      <div class="login-logo">
+        <div class="login-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0d0f14" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div><div class="login-title">Tower Monitoring</div><div class="login-sub">PLN UIT JBM</div></div>
+      </div>
+      <div style="margin-bottom:1.5rem">
+        <div style="font-size:22px;font-weight:600;color:var(--text);margin-bottom:4px">Selamat Datang</div>
+        <div style="font-size:13px;color:var(--text2)">Masuk untuk mengakses dashboard</div>
+      </div>
+      <div class="field"><label>Username</label><input type="text" id="inp-user" placeholder="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" enterkeyhint="next" onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()"/></div>
+      <div class="field"><label>Password</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password" enterkeyhint="go" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+      <button class="btn-login" id="btn-login" onclick="doLogin()">Masuk</button>
+      <div class="login-error" id="login-error"></div>
+      <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);text-align:center;font-family:var(--mono)">
+        PLN UIT JBM · Dashboard Inspeksi SUTT/SUTET
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- DASHBOARD -->
