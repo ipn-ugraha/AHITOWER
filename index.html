@@ -203,7 +203,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
       <div><div class="login-title">Tower Monitoring</div><div class="login-sub">PLN UIT JBM</div></div>
     </div>
-    <div class="field"><label>Username</label><input type="text" id="inp-user" placeholder="username" autocomplete="username" inputmode="text" enterkeyhint="next" onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()"/></div>
+    <div class="field"><label>Username</label><input type="text" id="inp-user" placeholder="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" inputmode="text" enterkeyhint="next" onkeydown="if(event.key==='Enter')document.getElementById('inp-pass').focus()"/></div>
     <div class="field"><label>Password</label><input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password" enterkeyhint="go" onkeydown="if(event.key==='Enter')doLogin()"/></div>
     <button class="btn-login" id="btn-login" onclick="doLogin()">Masuk</button>
     <div class="login-error" id="login-error"></div>
@@ -510,7 +510,7 @@ async function checkTokenAndLoad() {
 
 // ─── AUTH ─────────────────────────────────────────────────
 async function doLogin() {
-  const u=document.getElementById('inp-user').value.trim();
+  const u=document.getElementById('inp-user').value.trim().toLowerCase();
   const p=document.getElementById('inp-pass').value;
   const btn=document.getElementById('btn-login');
   if(!u||!p){showError('Username dan password wajib diisi');return;}
