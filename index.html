@@ -1388,16 +1388,33 @@ function pct(a,b){ return b?Math.round(a/b*100):0; }
 
 function api(params){
   return new Promise(resolve=>{
-    const cb='_cb'+Date.now();
-    const s=document.createElement('script');
-    const t=setTimeout(()=>{cleanup();resolve({ok:false,error:'Koneksi timeout'});},45000);
-    window[cb]=d=>{cleanup();resolve(d);};
-    function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
-    params.callback=cb;
-    s.src=API_URL+'?'+new URLSearchParams(params).toString();
-    s.onerror=()=>{cleanup();resolve({ok:false,error:'Koneksi gagal'});};
-    document.head.appendChild(s);
+    // Coba fetch() dulu — lebih andal di mobile
+    const url = API_URL + '?' + new URLSearchParams({...params, callback:''}).toString();
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>{ ctrl.abort(); jsonp(params, resolve); }, 8000);
+
+    fetch(url, { signal: ctrl.signal })
+      .then(r => r.json())
+      .then(d => { clearTimeout(t); resolve(d); })
+      .catch(() => {
+        clearTimeout(t);
+        // Fallback ke JSONP jika fetch gagal (CORS issue)
+        jsonp(params, resolve);
+      });
   });
+}
+
+function jsonp(params, resolve){
+  const cb='_cb'+Date.now();
+  const s=document.createElement('script');
+  const t=setTimeout(()=>{cleanup();resolve({ok:false,error:'Koneksi timeout — periksa jaringan'});},40000);
+  window[cb]=d=>{cleanup();resolve(d);};
+  function cleanup(){clearTimeout(t);delete window[cb];if(s.parentNode)s.parentNode.removeChild(s);}
+  params.callback=cb;
+  s.src=API_URL+'?'+new URLSearchParams(params).toString();
+  s.async=true;
+  s.onerror=()=>{cleanup();resolve({ok:false,error:'Koneksi gagal'});};
+  document.head.appendChild(s);
 }
 </script>
 </body>
