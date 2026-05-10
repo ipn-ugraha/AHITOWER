@@ -1388,18 +1388,24 @@ function pct(a,b){ return b?Math.round(a/b*100):0; }
 
 function api(params){
   return new Promise(resolve=>{
-    // Coba fetch() dulu — lebih andal di mobile
-    const url = API_URL + '?' + new URLSearchParams({...params, callback:''}).toString();
+    // Buat params tanpa callback untuk fetch()
+    const fetchParams = {...params};
+    delete fetchParams.callback;
+    const url = API_URL + '?' + new URLSearchParams(fetchParams).toString();
     const ctrl = new AbortController();
-    const t = setTimeout(()=>{ ctrl.abort(); jsonp(params, resolve); }, 8000);
+    const t = setTimeout(()=>{ ctrl.abort(); jsonp(params, resolve); }, 10000);
 
     fetch(url, { signal: ctrl.signal })
       .then(r => r.json())
       .then(d => { clearTimeout(t); resolve(d); })
-      .catch(() => {
+      .catch(err => {
         clearTimeout(t);
-        // Fallback ke JSONP jika fetch gagal (CORS issue)
-        jsonp(params, resolve);
+        if (err.name === 'AbortError') {
+          jsonp(params, resolve);
+        } else {
+          // CORS error — fallback ke JSONP
+          jsonp(params, resolve);
+        }
       });
   });
 }
