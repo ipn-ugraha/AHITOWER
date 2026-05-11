@@ -1244,10 +1244,10 @@ function renderAHICharts(rows) {
   const phtRows = fPHTsel ? AHI_PHT_DATA.filter(g=>g.pht===fPHTsel) : AHI_PHT_DATA;
 
   // Simpan data terurut ke state, reset ke halaman 0
-  AHI_SORTED.stacked  = [...phtRows].sort((a,b)=>(b.ce4+b.ce5)-(a.ce4+a.ce5));
-  AHI_SORTED.pentnh   = [...phtRows].sort((a,b)=>b.pentnh-a.pentnh);
-  AHI_SORTED.strukt   = [...phtRows].sort((a,b)=>b.strukt-a.strukt);
-  AHI_SORTED.antib    = [...phtRows].sort((a,b)=>(b.total-b.antiB)-(a.total-a.antiB));
+  AHI_SORTED.stacked  = [...phtRows].sort((a,b)=>(b.ce4+b.ce5)-(a.ce4+a.ce5)); // kritis terbanyak dulu
+  AHI_SORTED.pentnh   = [...phtRows].sort((a,b)=>b.pentnh-a.pentnh);            // tidak sesuai SPLN terbanyak
+  AHI_SORTED.strukt   = [...phtRows].sort((a,b)=>b.strukt-a.strukt);            // warning terbanyak
+  AHI_SORTED.antib    = [...phtRows].sort((a,b)=>b.antiB-a.antiB);              // terpasang terbanyak
   AHI_SORTED.tahanan  = [...phtRows].sort((a,b)=>b.ohm10plus-a.ohm10plus);
   AHI_SORTED.tla      = [...phtRows].sort((a,b)=>b.tla-a.tla);
   AHI_PAGES.stacked   = 0;
