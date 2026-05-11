@@ -1041,12 +1041,12 @@ function renderOverview() {
     .sort((a,b)=>(uMap[b].ce4+uMap[b].ce5)-(uMap[a].ce4+uMap[a].ce5));
   const uLabels = uKeys.map(l=>l.replace('UPT ',''));
 
-  // Stacked: AHI CE per UPT
+  // Stacked: AHI CE per UPT — kritis paling kiri
   makeStackedBar('c-ov-ahi-stacked', uLabels, [
-    { label:'AHI 2 (Baik)', data:uKeys.map(k=>uMap[k].ce2),  color:'#00d4aa' },
-    { label:'AHI 3',        data:uKeys.map(k=>uMap[k].ce3),  color:'#3b7aff' },
-    { label:'AHI 4',        data:uKeys.map(k=>uMap[k].ce4),  color:'#f5a623' },
-    { label:'AHI 5 (Kritis)',data:uKeys.map(k=>uMap[k].ce5), color:'#e84040' },
+    { label:'AHI 5 (Kritis)', data:uKeys.map(k=>uMap[k].ce5), color:'#e84040' },
+    { label:'AHI 4',          data:uKeys.map(k=>uMap[k].ce4), color:'#f5a623' },
+    { label:'AHI 3',          data:uKeys.map(k=>uMap[k].ce3), color:'#3b7aff' },
+    { label:'AHI 2 (Baik)',   data:uKeys.map(k=>uMap[k].ce2), color:'#00d4aa' },
   ]);
 
   // Stacked: Pentanahan per UPT
