@@ -570,6 +570,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
       </div>
 
+      <div class="accordion" id="acc-ahi-tahanan" style="margin-top:14px">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-tahanan')">
+          <span><span class="accordion-title">Range Nilai Tahanan Pentanahan per Penghantar (Ω)</span><span class="accordion-meta">≤5Ω · 5–10Ω · >10Ω · stacked</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div id="pg-bar-tahanan" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-tahanan" style="height:520px"><canvas id="c-ahi-pht-tahanan"></canvas></div>
+          </div>
+        </div>
+      </div>
+
       <div class="accordion" id="acc-ahi-upt">
         <div class="accordion-header" onclick="toggleAcc('acc-ahi-upt')">
           <span><span class="accordion-title">Total Tower Dimonitor per UPT</span></span>
@@ -1128,8 +1141,8 @@ let AHI_PHT_DATA = [];  // agregat per Penghantar
 let F_AHI_PHT = null;   // ahiRows setelah filter Penghantar
 // Pagination per grafik AHI
 const PAGE_SIZE = 20;
-const AHI_PAGES  = { stacked:0, pentnh:0, strukt:0, antib:0, tahanan:0, tahanan2:0, tla:0 };
-let AHI_SORTED   = { stacked:[], pentnh:[], strukt:[], antib:[], tahanan:[], tahanan2:[], tla:[] };
+const AHI_PAGES  = { stacked:0, pentnh:0, strukt:0, antib:0, tahanan:0, tla:0 };
+let AHI_SORTED   = { stacked:[], pentnh:[], strukt:[], antib:[], tahanan:[], tla:[] };
 
 function renderAHITab() {
   // Build per-Penghantar aggregate dari F_AHI
@@ -1221,14 +1234,12 @@ function renderAHICharts(rows) {
   AHI_SORTED.strukt   = [...phtRows].sort((a,b)=>b.strukt-a.strukt);
   AHI_SORTED.antib    = [...phtRows].sort((a,b)=>(b.total-b.antiB)-(a.total-a.antiB));
   AHI_SORTED.tahanan  = [...phtRows].sort((a,b)=>b.ohm10plus-a.ohm10plus);
-  AHI_SORTED.tahanan2 = [...phtRows].sort((a,b)=>b.ohm10plus-a.ohm10plus);
   AHI_SORTED.tla      = [...phtRows].sort((a,b)=>(b.total-b.tla)-(a.total-a.tla));
   AHI_PAGES.stacked   = 0;
   AHI_PAGES.pentnh    = 0;
   AHI_PAGES.strukt    = 0;
   AHI_PAGES.antib     = 0;
   AHI_PAGES.tahanan   = 0;
-  AHI_PAGES.tahanan2  = 0;
   AHI_PAGES.tla       = 0;
 
   renderAHIPage('stacked');
@@ -1236,7 +1247,6 @@ function renderAHICharts(rows) {
   renderAHIPage('strukt');
   renderAHIPage('antib');
   renderAHIPage('tahanan');
-  renderAHIPage('tahanan2');
 
   // TLA — selalu tampilkan grafik (jika belum ada data, bar akan menunjukkan semua "belum")
   const noTlaMsg = document.getElementById('no-tla-msg');
@@ -1289,13 +1299,6 @@ function renderAHIPage(type) {
       { label:'Belum terpasang',data:slice.map(g=>g.total-g.antiB),   color:'#4a5060' },
     ]);
   } else if (type === 'tahanan') {
-    makeStackedBar(canvasId, slice.map(g=>g.pht), [
-      { label:'≤ 5 Ω (baik)',   data:slice.map(g=>g.ohm0_5),   color:'#00d4aa' },
-      { label:'5–10 Ω (batas)', data:slice.map(g=>g.ohm5_10),  color:'#f5a623' },
-      { label:'> 10 Ω (lebih)', data:slice.map(g=>g.ohm10plus),color:'#e84040' },
-      { label:'Tidak ada data', data:slice.map(g=>g.ohmNull),   color:'#4a5060' },
-    ]);
-  } else if (type === 'tahanan2') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
       { label:'≤ 5 Ω (baik)',   data:slice.map(g=>g.ohm0_5),   color:'#00d4aa' },
       { label:'5–10 Ω (batas)', data:slice.map(g=>g.ohm5_10),  color:'#f5a623' },
