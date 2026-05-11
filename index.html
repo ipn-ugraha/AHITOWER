@@ -373,6 +373,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         Refresh
       </button>
       <button class="btn-sm btn-warn" id="btn-rebuild" onclick="doRebuildCache()">⚙ Rebuild Cache</button>
+      <button class="btn-sm" id="btn-log" onclick="showLog()" style="display:none;border-color:rgba(59,122,255,.4);color:rgba(59,122,255,.8)">📋 Log Login</button>
       <button class="btn-sm btn-danger" onclick="doLogout()">Keluar</button>
     </div>
   </nav>
@@ -611,6 +612,38 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <tbody id="modal-tbody"></tbody>
       </table>
     </div>
+  </div>
+</div>
+
+<!-- MODAL LOG LOGIN -->
+<div class="modal-overlay" id="modal-log" style="display:none" onclick="if(event.target===this)closeLog()">
+  <div class="modal-box" style="max-width:760px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Log Login</div>
+        <div class="modal-sub" id="log-sub">200 data terbaru</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="log-search" type="text" placeholder="🔍 cari..." oninput="filterLog()"
+          style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);outline:none;width:160px"/>
+        <button class="modal-close" onclick="closeLog()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="log-loading" style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">Memuat log...</div>
+      <table id="log-table" class="bay-table" style="display:none">
+        <thead><tr>
+          <th>#</th>
+          <th onclick="sortLog('ts')" style="cursor:pointer">Waktu <span id="ls-ts"></span></th>
+          <th onclick="sortLog('username')" style="cursor:pointer">Username <span id="ls-username"></span></th>
+          <th onclick="sortLog('nama')" style="cursor:pointer">Nama <span id="ls-nama"></span></th>
+          <th onclick="sortLog('role')" style="cursor:pointer">Role <span id="ls-role"></span></th>
+          <th onclick="sortLog('status')" style="cursor:pointer">Status <span id="ls-status"></span></th>
+        </tr></thead>
+        <tbody id="log-tbody"></tbody>
+      </table>
+    </div>
+    <div style="padding:.75rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="log-footer"></div>
   </div>
 </div>
 
@@ -1437,7 +1470,77 @@ function closeModal() {
   document.getElementById('modal-bay').style.display = 'none';
 }
 
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape') { closeModal(); closeLog(); }
+});
+
+// ─── LOG LOGIN ────────────────────────────────────────────
+let LOG_DATA = [];
+let LOG_SORT = { col:'ts', dir:-1 };
+
+async function showLog() {
+  document.getElementById('modal-log').style.display = 'flex';
+  document.getElementById('log-loading').style.display = 'block';
+  document.getElementById('log-table').style.display   = 'none';
+
+  const res = await api({ action:'getlog', token:TOKEN });
+  document.getElementById('log-loading').style.display = 'none';
+
+  if (!res.ok) { document.getElementById('log-loading').textContent = 'Gagal: '+res.error; document.getElementById('log-loading').style.display='block'; return; }
+
+  LOG_DATA = res.rows;
+  document.getElementById('log-sub').textContent = fmtNum(res.total) + ' total login tercatat · menampilkan 200 terbaru';
+  renderLog();
+}
+
+function closeLog() { document.getElementById('modal-log').style.display='none'; }
+
+function filterLog() { renderLog(); }
+
+function sortLog(col) {
+  if(LOG_SORT.col===col) LOG_SORT.dir*=-1;
+  else { LOG_SORT.col=col; LOG_SORT.dir=1; }
+  renderLog();
+}
+
+function renderLog() {
+  const q    = (document.getElementById('log-search')?.value||'').toLowerCase();
+  const col  = LOG_SORT.col;
+  const dir  = LOG_SORT.dir;
+
+  let data = LOG_DATA.filter(r =>
+    !q || Object.values(r).some(v => String(v).toLowerCase().includes(q))
+  );
+
+  data.sort((a,b) => {
+    const av = String(a[col]||''), bv = String(b[col]||'');
+    return av<bv ? -dir : av>bv ? dir : 0;
+  });
+
+  // Update sort indicators
+  ['ts','username','nama','role','status'].forEach(c => {
+    const el = document.getElementById('ls-'+c);
+    if(el) el.textContent = col===c ? (dir===1?'↑':'↓') : '';
+  });
+
+  document.getElementById('log-footer').textContent = fmtNum(data.length) + ' baris ditampilkan';
+  document.getElementById('log-table').style.display = 'table';
+
+  document.getElementById('log-tbody').innerHTML = data.map((r,i) => {
+    const isGagal = r.status === 'GAGAL';
+    const statusBadge = isGagal
+      ? '<span style="color:#e84040;font-weight:500">✗ Gagal</span>'
+      : '<span style="color:#00d4aa;font-weight:500">✓ Login</span>';
+    return `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}${isGagal?';background:rgba(232,64,64,.05)':''}">
+      <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
+      <td style="font-family:var(--mono);font-size:11px;white-space:nowrap">${r.ts}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text)">${r.username}</td>
+      <td style="font-size:12px">${r.nama}</td>
+      <td style="font-size:11px;color:var(--text3)">${r.role}</td>
+      <td>${statusBadge}</td>
+    </tr>`;
+  }).join('');
+}
 
 // ─── ACCORDION ────────────────────────────────────────────
 function toggleAcc(id) {
