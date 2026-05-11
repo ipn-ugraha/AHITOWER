@@ -1299,15 +1299,15 @@ function renderAHIPage(type) {
   // Render grafik sesuai type
   if (type === 'stacked') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
-      { label:'AHI 2 (Baik)',  data:slice.map(g=>g.ce2), color:'#00d4aa' },
-      { label:'AHI 3',         data:slice.map(g=>g.ce3), color:'#3b7aff' },
-      { label:'AHI 4',         data:slice.map(g=>g.ce4), color:'#f5a623' },
-      { label:'AHI 5 (Kritis)',data:slice.map(g=>g.ce5), color:'#e84040' },
+      { label:'AHI 5 (Kritis)', data:slice.map(g=>g.ce5), color:'#e84040' },
+      { label:'AHI 4',          data:slice.map(g=>g.ce4), color:'#f5a623' },
+      { label:'AHI 3',          data:slice.map(g=>g.ce3), color:'#3b7aff' },
+      { label:'AHI 2 (Baik)',   data:slice.map(g=>g.ce2), color:'#00d4aa' },
     ]);
   } else if (type === 'pentnh') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
-      { label:'Sesuai SPLN',       data:slice.map(g=>g.total-g.pentnh), color:'#00d4aa' },
       { label:'Tidak sesuai SPLN', data:slice.map(g=>g.pentnh),         color:'#e84040' },
+      { label:'Sesuai SPLN',       data:slice.map(g=>g.total-g.pentnh), color:'#00d4aa' },
     ]);
   } else if (type === 'strukt') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
