@@ -1249,7 +1249,7 @@ function renderAHICharts(rows) {
   AHI_SORTED.strukt   = [...phtRows].sort((a,b)=>b.strukt-a.strukt);
   AHI_SORTED.antib    = [...phtRows].sort((a,b)=>(b.total-b.antiB)-(a.total-a.antiB));
   AHI_SORTED.tahanan  = [...phtRows].sort((a,b)=>b.ohm10plus-a.ohm10plus);
-  AHI_SORTED.tla      = [...phtRows].sort((a,b)=>(b.total-b.tla)-(a.total-a.tla));
+  AHI_SORTED.tla      = [...phtRows].sort((a,b)=>b.tla-a.tla);
   AHI_PAGES.stacked   = 0;
   AHI_PAGES.pentnh    = 0;
   AHI_PAGES.strukt    = 0;
