@@ -583,6 +583,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
       </div>
 
+      <div class="accordion" id="acc-ahi-tla" style="margin-top:14px">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-tla')">
+          <span><span class="accordion-title">Terpasang TLA per Penghantar</span><span class="accordion-meta">ada TLA · tidak ada · belum ada data</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div id="no-tla-msg" style="display:none;padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Belum ada data TLA</div>
+            <div id="pg-bar-tla" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-tla" style="height:520px"><canvas id="c-ahi-pht-tla"></canvas></div>
+          </div>
+        </div>
+      </div>
+
       <div class="accordion" id="acc-ahi-upt">
         <div class="accordion-header" onclick="toggleAcc('acc-ahi-upt')">
           <span><span class="accordion-title">Total Tower Dimonitor per UPT</span></span>
@@ -1248,9 +1262,14 @@ function renderAHICharts(rows) {
   renderAHIPage('antib');
   renderAHIPage('tahanan');
 
-  // TLA — selalu tampilkan grafik (jika belum ada data, bar akan menunjukkan semua "belum")
+  // TLA — set _nodata/_tidak sebelum render
   const noTlaMsg = document.getElementById('no-tla-msg');
   if (noTlaMsg) noTlaMsg.style.display = 'none';
+  const tlaHasAnyPHT = AHI_SORTED.tla.some(g=>g.tla>0);
+  AHI_SORTED.tla.forEach(g=>{
+    if (!tlaHasAnyPHT) { g._nodata = g.total; g._tidak = 0; }
+    else { g._nodata = 0; g._tidak = g.total - g.tla; }
+  });
   renderAHIPage('tla');
 
   // Total per UPT — hanya UPT, sort terbanyak
