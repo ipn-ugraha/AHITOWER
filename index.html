@@ -634,6 +634,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <th style="cursor:pointer" onclick="sortModal('pentnh')">Pentanahan <span id="ms-pentnh"></span></th>
             <th style="cursor:pointer" onclick="sortModal('strukt')">Struktur <span id="ms-strukt"></span></th>
             <th style="cursor:pointer" onclick="sortModal('antib')">Anti Binatang <span id="ms-antib"></span></th>
+            <th style="cursor:pointer" onclick="sortModal('tla')">TLA <span id="ms-tla"></span></th>
           </tr>
         </thead>
         <tbody id="modal-tbody"></tbody>
@@ -1440,6 +1441,7 @@ function renderModalTable() {
     else if (col==='pentnh') { av=a[A_PENTNH];          bv=b[A_PENTNH]; }
     else if (col==='strukt') { av=a[A_STRUKT];          bv=b[A_STRUKT]; }
     else if (col==='antib')  { av=a[A_ANTIB];           bv=b[A_ANTIB]; }
+    else if (col==='tla')    { av=a[A_TLA];             bv=b[A_TLA]; }
     else if (col==='ultg')   { av=a[A_ULTG]||'';        bv=b[A_ULTG]||''; }
     else if (col==='ultg')   { av=a[A_ULTG]||'';        bv=b[A_ULTG]||''; }
     else if (col==='bay')    { av=a[A_BAY]||'';         bv=b[A_BAY]||''; }
@@ -1449,7 +1451,7 @@ function renderModalTable() {
   });
 
   // Update sort indicators
-  ['ultg','bay','ce','ohm','pentnh','strukt','antib'].forEach(c => {
+  ['ultg','bay','ce','ohm','pentnh','strukt','antib','tla'].forEach(c => {
     const el = document.getElementById('ms-'+c);
     if (el) el.textContent = col===c ? (dir===1?'↑':'↓') : '';
   });
@@ -1478,6 +1480,7 @@ function renderModalTable() {
       <td>${yn(r[A_PENTNH])}</td>
       <td>${yn(r[A_STRUKT])}</td>
       <td>${ynb(r[A_ANTIB])}</td>
+      <td>${ynb(r[A_TLA])}</td>
     </tr>`;
   }).join('');
 }
