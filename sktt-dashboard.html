@@ -6,198 +6,95 @@
 <title>Dashboard SKTT 150kV</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --border: rgba(255,255,255,0.07);
-    --text: #f0f4ff;
-    --muted: #7a8aab;
-    --accent1: #4f8ef7;
-    --accent2: #38d9a9;
-    --accent3: #f7934f;
-    --accent4: #e05c7a;
-    --accent5: #a78bfa;
+    --bg:#0a0e1a; --surface:#111827; --surface2:#1a2235;
+    --border:rgba(255,255,255,0.07); --text:#f0f4ff; --muted:#7a8aab;
+    --accent1:#4f8ef7; --accent2:#38d9a9; --accent3:#f7934f;
+    --accent4:#e05c7a; --accent5:#a78bfa;
   }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;z-index:0;
+    background-image:linear-gradient(rgba(79,142,247,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.04) 1px,transparent 1px);
+    background-size:48px 48px;pointer-events:none;}
+  .glow{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
+  .glow-1{width:500px;height:500px;background:rgba(79,142,247,0.12);top:-150px;right:-100px;}
+  .glow-2{width:400px;height:400px;background:rgba(56,217,169,0.08);bottom:-100px;left:-100px;}
+  .container{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  header{padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative;z-index:1;}
+  .header-inner{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+  .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,142,247,0.15);border:1px solid rgba(79,142,247,0.3);
+    color:#80b4ff;font-size:11px;font-weight:500;letter-spacing:0.08em;padding:4px 12px;border-radius:100px;text-transform:uppercase;margin-bottom:10px;}
+  .badge-dot{width:6px;height:6px;border-radius:50%;background:#4f8ef7;animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  h1{font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;}
+  h1 span{color:var(--accent1);}
+  .subtitle{font-size:14px;color:var(--muted);margin-top:8px;}
+  .status-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);animation:pulse 2s infinite;}
 
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:40px;}
+  .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;
+    position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;}
+  .metric-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.15);}
+  .metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0;}
+  .metric-card.c1::before{background:linear-gradient(90deg,var(--accent1),var(--accent5));}
+  .metric-card.c2::before{background:linear-gradient(90deg,var(--accent2),var(--accent1));}
+  .metric-card.c3::before{background:linear-gradient(90deg,var(--accent3),var(--accent4));}
+  .metric-card.c4::before{background:linear-gradient(90deg,var(--accent4),var(--accent5));}
+  .metric-card.c5::before{background:linear-gradient(90deg,var(--accent5),var(--accent2));}
+  .metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
+  .metric-value{font-family:'Syne',sans-serif;font-size:36px;font-weight:700;line-height:1;}
+  .metric-value.c1{color:var(--accent1);} .metric-value.c2{color:var(--accent2);}
+  .metric-value.c3{color:var(--accent3);} .metric-value.c4{color:var(--accent4);} .metric-value.c5{color:var(--accent5);}
+  .metric-sub{font-size:12px;color:var(--muted);margin-top:6px;}
 
-  /* animated bg grid */
-  body::before {
-    content: '';
-    position: fixed; inset: 0; z-index: 0;
-    background-image:
-      linear-gradient(rgba(79,142,247,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(79,142,247,0.04) 1px, transparent 1px);
-    background-size: 48px 48px;
-    pointer-events: none;
-  }
+  .charts-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;margin-bottom:40px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;transition:border-color 0.2s;}
+  .chart-card:hover{border-color:rgba(255,255,255,0.12);}
+  .col-8{grid-column:span 8;} .col-4{grid-column:span 4;} .col-12{grid-column:span 12;}
+  @media(max-width:900px){.col-8,.col-4,.col-12{grid-column:span 12;}}
+  .chart-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
+  .chart-subtitle{font-size:12px;color:var(--muted);margin-bottom:20px;}
+  .chart-wrap{position:relative;width:100%;}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
+  .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
 
-  .glow {
-    position: fixed; border-radius: 50%; filter: blur(100px); pointer-events: none; z-index: 0;
-  }
-  .glow-1 { width: 500px; height: 500px; background: rgba(79,142,247,0.12); top: -150px; right: -100px; }
-  .glow-2 { width: 400px; height: 400px; background: rgba(56,217,169,0.08); bottom: -100px; left: -100px; }
+  #loading{position:fixed;inset:0;z-index:100;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+  .loader-ring{width:48px;height:48px;border-radius:50%;border:3px solid var(--surface2);
+    border-top-color:var(--accent1);animation:spin 0.8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #loading-msg{font-size:13px;color:var(--muted);}
+  #loading-sub{font-size:11px;color:#3a4a6b;}
 
-  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  #error-panel{display:none;background:var(--surface);border:1px solid rgba(224,92,122,0.3);
+    border-radius:16px;padding:28px;margin-bottom:32px;}
+  #error-panel h3{font-family:'Syne',sans-serif;color:var(--accent4);margin-bottom:12px;}
+  #error-panel p,#error-panel li{font-size:13px;color:var(--muted);line-height:1.8;}
+  #error-panel ol{padding-left:20px;margin:8px 0;}
+  #error-panel code{background:var(--surface2);color:var(--accent2);padding:2px 8px;border-radius:4px;font-size:12px;}
+  #error-detail{font-size:11px;color:#3a4a6b;margin-top:12px;word-break:break-all;}
 
-  /* HEADER */
-  header {
-    padding: 40px 0 32px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 40px;
-    position: relative; z-index: 1;
-  }
-  .header-inner { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(79,142,247,0.15); border: 1px solid rgba(79,142,247,0.3);
-    color: #80b4ff; font-size: 11px; font-weight: 500; letter-spacing: 0.08em;
-    padding: 4px 12px; border-radius: 100px; text-transform: uppercase; margin-bottom: 10px;
-  }
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: #4f8ef7; animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
-  h1 {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(28px, 4vw, 44px);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-  h1 span { color: var(--accent1); }
-  .subtitle { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .fade-in{opacity:0;transform:translateY(16px);transition:opacity 0.5s,transform 0.5s;}
+  .fade-in.visible{opacity:1;transform:translateY(0);}
 
-  .status-bar {
-    display: flex; align-items: center; gap: 8px;
-    font-size: 12px; color: var(--muted);
-  }
-  .status-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--accent2); animation: pulse 2s infinite; }
-  #last-updated { color: var(--accent2); font-weight: 500; }
-
-  /* METRIC CARDS */
-  .metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
-  }
-  .metric-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s, border-color 0.2s;
-  }
-  .metric-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
-  .metric-card::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    border-radius: 16px 16px 0 0;
-  }
-  .metric-card.c1::before { background: linear-gradient(90deg, var(--accent1), var(--accent5)); }
-  .metric-card.c2::before { background: linear-gradient(90deg, var(--accent2), var(--accent1)); }
-  .metric-card.c3::before { background: linear-gradient(90deg, var(--accent3), var(--accent4)); }
-  .metric-card.c4::before { background: linear-gradient(90deg, var(--accent4), var(--accent5)); }
-  .metric-card.c5::before { background: linear-gradient(90deg, var(--accent5), var(--accent2)); }
-  .metric-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
-  .metric-value { font-family: 'Syne', sans-serif; font-size: 36px; font-weight: 700; line-height: 1; }
-  .metric-value.c1 { color: var(--accent1); }
-  .metric-value.c2 { color: var(--accent2); }
-  .metric-value.c3 { color: var(--accent3); }
-  .metric-value.c4 { color: var(--accent4); }
-  .metric-value.c5 { color: var(--accent5); }
-  .metric-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
-
-  /* CHARTS GRID */
-  .charts-grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 20px;
-    margin-bottom: 40px;
-  }
-  .chart-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    transition: border-color 0.2s;
-  }
-  .chart-card:hover { border-color: rgba(255,255,255,0.12); }
-  .col-8 { grid-column: span 8; }
-  .col-6 { grid-column: span 6; }
-  .col-4 { grid-column: span 4; }
-  .col-12 { grid-column: span 12; }
-
-  @media (max-width: 900px) { .col-8, .col-6, .col-4, .col-12 { grid-column: span 12; } }
-
-  .chart-title {
-    font-family: 'Syne', sans-serif;
-    font-size: 14px; font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-  .chart-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
-
-  .chart-wrap { position: relative; width: 100%; }
-
-  /* LEGEND */
-  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); }
-  .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-
-  /* LOADING */
-  #loading {
-    position: fixed; inset: 0; z-index: 100;
-    background: var(--bg);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-  }
-  .loader-ring {
-    width: 48px; height: 48px; border-radius: 50%;
-    border: 3px solid var(--surface2);
-    border-top-color: var(--accent1);
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  #loading p { font-size: 13px; color: var(--muted); }
-
-  /* ERROR */
-  #error-msg {
-    display: none;
-    background: rgba(224,92,122,0.1); border: 1px solid rgba(224,92,122,0.3);
-    color: #ff8fa3; border-radius: 12px; padding: 16px 20px; font-size: 14px; margin-bottom: 24px;
-  }
-
-  footer {
-    text-align: center; padding: 32px 0;
-    font-size: 12px; color: var(--muted);
-    border-top: 1px solid var(--border);
-    position: relative; z-index: 1;
-  }
-  footer a { color: var(--accent1); text-decoration: none; }
-
-  /* fade-in */
-  .fade-in { opacity: 0; transform: translateY(16px); transition: opacity 0.5s, transform 0.5s; }
-  .fade-in.visible { opacity: 1; transform: translateY(0); }
+  footer{text-align:center;padding:32px 0;font-size:12px;color:var(--muted);border-top:1px solid var(--border);position:relative;z-index:1;}
+  footer a{color:var(--accent1);text-decoration:none;}
 </style>
 </head>
 <body>
-
 <div class="glow glow-1"></div>
 <div class="glow glow-2"></div>
 
 <div id="loading">
   <div class="loader-ring"></div>
-  <p>Mengambil data dari Google Sheets...</p>
+  <p id="loading-msg">Menghubungkan ke Google Sheets...</p>
+  <p id="loading-sub"></p>
 </div>
 
 <div class="container">
@@ -209,278 +106,226 @@
         <p class="subtitle">Monitoring kondisi Saluran Kabel Tegangan Tinggi — PT PLN (Persero)</p>
       </div>
       <div class="status-bar">
-        <span class="status-indicator"></span>
-        <span>Diperbarui: <span id="last-updated">—</span></span>
+        <span class="status-dot"></span>
+        <span>Diperbarui: <strong id="last-updated" style="color:var(--accent2)">—</strong></span>
       </div>
     </div>
   </header>
 
-  <div id="error-msg">⚠ Gagal memuat data. Pastikan Google Sheets sudah dipublish ke web.</div>
+  <div id="error-panel">
+    <h3>⚠ Gagal memuat data</h3>
+    <p>Lakukan langkah berikut di Google Sheets:</p>
+    <ol>
+      <li>Buka spreadsheet → <strong>File → Share → Publish to web</strong></li>
+      <li>Pilih sheet <code>Maping SKTT</code>, format <code>Comma-separated values (.csv)</code></li>
+      <li>Klik <strong>Publish</strong>, copy URL yang muncul</li>
+      <li>Tempel URL ke variabel <code>CSV_URL</code> di bagian konfigurasi dalam file HTML ini</li>
+    </ol>
+    <p id="error-detail"></p>
+  </div>
 
   <div class="metrics-grid fade-in">
-    <div class="metric-card c1">
-      <p class="metric-label">Total Data</p>
-      <p class="metric-value c1" id="m-total">—</p>
-      <p class="metric-sub">rekaman valid</p>
-    </div>
-    <div class="metric-card c2">
-      <p class="metric-label">Wilayah UPT</p>
-      <p class="metric-value c2" id="m-upt">—</p>
-      <p class="metric-sub">area cakupan</p>
-    </div>
-    <div class="metric-card c3">
-      <p class="metric-label">Gardu Induk</p>
-      <p class="metric-value c3" id="m-gi">—</p>
-      <p class="metric-sub">GI / GIS</p>
-    </div>
-    <div class="metric-card c4">
-      <p class="metric-label">Anomali Sheath</p>
-      <p class="metric-value c4" id="m-anomali">—</p>
-      <p class="metric-sub">arus bocor &gt;1mA</p>
-    </div>
-    <div class="metric-card c5">
-      <p class="metric-label">Anomali Joint</p>
-      <p class="metric-value c5" id="m-joint">—</p>
-      <p class="metric-sub">perlu tindak lanjut</p>
-    </div>
+    <div class="metric-card c1"><p class="metric-label">Total Data</p><p class="metric-value c1" id="m-total">—</p><p class="metric-sub">rekaman valid</p></div>
+    <div class="metric-card c2"><p class="metric-label">Wilayah UPT</p><p class="metric-value c2" id="m-upt">—</p><p class="metric-sub">area cakupan</p></div>
+    <div class="metric-card c3"><p class="metric-label">Gardu Induk</p><p class="metric-value c3" id="m-gi">—</p><p class="metric-sub">GI / GIS</p></div>
+    <div class="metric-card c4"><p class="metric-label">Anomali Sheath</p><p class="metric-value c4" id="m-anomali">—</p><p class="metric-sub">arus bocor &gt;1mA</p></div>
+    <div class="metric-card c5"><p class="metric-label">Anomali Joint</p><p class="metric-value c5" id="m-joint">—</p><p class="metric-sub">perlu tindak lanjut</p></div>
   </div>
 
   <div class="charts-grid">
-
-    <!-- UPT Bar -->
     <div class="chart-card col-8 fade-in">
       <p class="chart-title">Distribusi per UPT</p>
       <p class="chart-subtitle">Jumlah titik inspeksi per Unit Pelaksana Transmisi</p>
-      <div class="chart-wrap" style="height:260px">
-        <canvas id="chartUPT" role="img" aria-label="Bar chart distribusi per UPT"></canvas>
-      </div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chartUPT"></canvas></div>
     </div>
-
-    <!-- Sheath Donut -->
     <div class="chart-card col-4 fade-in">
       <p class="chart-title">Kondisi Cable Sheath</p>
       <p class="chart-subtitle">Arus bocor (mA)</p>
-      <div class="chart-wrap" style="height:200px">
-        <canvas id="chartSheath" role="img" aria-label="Donut chart kondisi cable sheath"></canvas>
-      </div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chartSheath"></canvas></div>
       <div class="legend" id="legendSheath"></div>
     </div>
-
-    <!-- Joint Donut -->
     <div class="chart-card col-4 fade-in">
       <p class="chart-title">Kondisi Joint Cable</p>
       <p class="chart-subtitle">Hasil inspeksi sambungan</p>
-      <div class="chart-wrap" style="height:200px">
-        <canvas id="chartJoint" role="img" aria-label="Donut chart kondisi joint cable"></canvas>
-      </div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chartJoint"></canvas></div>
       <div class="legend" id="legendJoint"></div>
     </div>
-
-    <!-- Kebocoran Minyak -->
     <div class="chart-card col-8 fade-in">
       <p class="chart-title">Kebocoran Minyak / Jenis Isolasi</p>
       <p class="chart-subtitle">Kategori kondisi insulasi kabel</p>
-      <div class="chart-wrap" style="height:200px">
-        <canvas id="chartMinyak" role="img" aria-label="Bar chart kebocoran minyak"></canvas>
-      </div>
+      <div class="chart-wrap" style="height:200px"><canvas id="chartMinyak"></canvas></div>
     </div>
-
-    <!-- GI Top 10 -->
     <div class="chart-card col-12 fade-in">
-      <p class="chart-title">Top Gardu Induk berdasarkan Jumlah Titik</p>
-      <p class="chart-subtitle">10 GI/GIS dengan rekaman terbanyak</p>
-      <div class="chart-wrap" style="height:280px">
-        <canvas id="chartGI" role="img" aria-label="Horizontal bar chart gardu induk"></canvas>
-      </div>
+      <p class="chart-title">Top 10 Gardu Induk</p>
+      <p class="chart-subtitle">GI/GIS dengan rekaman inspeksi terbanyak</p>
+      <div class="chart-wrap" style="height:320px"><canvas id="chartGI"></canvas></div>
     </div>
-
   </div>
 
   <footer>
-    Data bersumber dari <a href="#" id="sheet-link">Google Sheets SKTT 150kV</a> &mdash; diperbarui otomatis setiap kali halaman dimuat.
+    Data bersumber dari <a id="sheet-link" href="#" target="_blank">Google Sheets SKTT 150kV</a>
+    &mdash; diperbarui otomatis setiap kali halaman dimuat.
   </footer>
 </div>
 
 <script>
-// ============================================================
-// KONFIGURASI — ganti SHEET_ID dan SHEET_NAME sesuai kebutuhan
-// ============================================================
-const SHEET_ID   = '1GC3DUODDm1JDdhri1hWnXLNFOa1OwySH40pJuGjo7To';
-const SHEET_NAME = 'Maping SKTT'; // nama tab sheet
-const COL = {
-  NO:      0,
-  UPT:     1,
-  GI:      2,
-  PENGHANTAR: 3,
-  BAY:     4,
-  MINYAK:  5,
-  SHEATH:  6,
-  JOINT:   7,
-  PENANDA: 8
-};
-// ============================================================
+// ================================================================
+//  KONFIGURASI
+// ================================================================
+const SHEET_ID = '1GC3DUODDm1JDdhri1hWnXLNFOa1OwySH40pJuGjo7To';
 
-const COLORS = ['#4f8ef7','#38d9a9','#f7934f','#e05c7a','#a78bfa','#f7d34f','#54d4e0','#e07a5f'];
+// Isi dengan URL dari File > Share > Publish to web > CSV
+// Contoh: 'https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=0&output=csv'
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-wBWne3aUwYszDhjlziCsHeXzmC4PPaJXiDEwObWHmIQCuEMWEiJOn4_66ccVjstTZmC7cPJYoB-T/pub?gid=0&single=true&output=csv';
 
-function count(arr) {
-  return arr.reduce((acc, v) => { if (v) acc[v] = (acc[v]||0)+1; return acc; }, {});
+// Index kolom (0-based)
+const C = { NO:0, UPT:1, GI:2, PENGHANTAR:3, BAY:4, MINYAK:5, SHEATH:6, JOINT:7, PENANDA:8 };
+// ================================================================
+
+const PAL = ['#4f8ef7','#38d9a9','#f7934f','#e05c7a','#a78bfa','#f7d34f','#54d4e0','#e07a5f'];
+
+const $ = id => document.getElementById(id);
+const setMsg = (m,s='') => { $('loading-msg').textContent=m; $('loading-sub').textContent=s; };
+
+function tally(arr) {
+  return arr.reduce((a,v) => {
+    const k = v ? String(v).trim() : '';
+    if (k) a[k] = (a[k]||0)+1;
+    return a;
+  }, {});
 }
 
-function buildLegend(el, labels, colors, counts) {
-  el.innerHTML = labels.map((l,i) => `
-    <div class="legend-item">
-      <span class="legend-dot" style="background:${colors[i]}"></span>
-      <span>${l}: <strong style="color:${colors[i]}">${counts[i]}</strong></span>
-    </div>`).join('');
+function legend(elId, labels, colors, vals) {
+  $(elId).innerHTML = labels.map((l,i) =>
+    `<div class="legend-item"><span class="legend-dot" style="background:${colors[i%colors.length]}"></span>
+     <span>${l}: <strong style="color:${colors[i%colors.length]}">${vals[i]}</strong></span></div>`
+  ).join('');
 }
 
-function makeDonut(id, labels, data, colors) {
-  return new Chart(document.getElementById(id), {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 0, hoverOffset: 6 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: {
-        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0)*100)}%)` }
-      }},
-      cutout: '68%'
-    }
+function donut(id, labels, data, colors) {
+  const total = data.reduce((a,b)=>a+b,0);
+  new Chart($(id), {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:0, hoverOffset:6 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{ legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/total*100)}%)`}} } }
   });
 }
 
-function makeHBar(id, labels, data, colors) {
-  return new Chart(document.getElementById(id), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ data, backgroundColor: colors || labels.map((_,i)=>COLORS[i%COLORS.length]), borderRadius: 6, borderSkipped: false }]
-    },
-    options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7a8aab' } },
-        y: { grid: { display: false }, ticks: { color: '#f0f4ff', font: { size: 11 } } }
-      }
-    }
+function bar(id, labels, data, colors, horiz=false) {
+  new Chart($(id), {
+    type:'bar',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderRadius:6, borderSkipped:false }] },
+    options:{ indexAxis: horiz?'y':'x', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ grid:{color:horiz?'rgba(255,255,255,0.05)':'transparent',display:horiz},
+            ticks:{color:horiz?'#f0f4ff':'#f0f4ff',font:{size:11},maxRotation:horiz?0:20,autoSkip:false} },
+        y:{ grid:{color:horiz?'transparent':'rgba(255,255,255,0.05)',display:!horiz},
+            ticks:{color:'#7a8aab',font:{size:11}} }
+      } }
   });
 }
 
-function makeBar(id, labels, data, colors) {
-  return new Chart(document.getElementById(id), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{ data, backgroundColor: colors || COLORS, borderRadius: 6, borderSkipped: false }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#f0f4ff', font: { size: 11 }, maxRotation: 20 } },
-        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7a8aab' } }
-      }
-    }
+function render(rows) {
+  // buang baris header dan kosong
+  const data = rows.filter(r => {
+    const upt = r[C.UPT] ? String(r[C.UPT]).trim() : '';
+    return upt && upt.toLowerCase() !== 'upt';
   });
+
+  $('m-total').textContent  = data.length.toLocaleString('id');
+  $('m-upt').textContent    = new Set(data.map(r=>r[C.UPT])).size;
+  $('m-gi').textContent     = new Set(data.map(r=>r[C.GI])).size;
+  $('m-anomali').textContent = data.filter(r=>String(r[C.SHEATH]).includes('>')).length;
+  $('m-joint').textContent  = data.filter(r=>String(r[C.JOINT]).toLowerCase().includes('anomali')).length;
+  $('last-updated').textContent = new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+
+  // UPT
+  const upt = Object.entries(tally(data.map(r=>r[C.UPT]))).sort((a,b)=>b[1]-a[1]);
+  bar('chartUPT', upt.map(e=>e[0]), upt.map(e=>e[1]), upt.map((_,i)=>PAL[i%PAL.length]));
+
+  // Sheath
+  const shColors = ['#38d9a9','#e05c7a','#7a8aab','#f7934f'];
+  const sh = Object.entries(tally(data.map(r=>r[C.SHEATH]))).sort((a,b)=>b[1]-a[1]);
+  donut('chartSheath', sh.map(e=>e[0]), sh.map(e=>e[1]), shColors);
+  legend('legendSheath', sh.map(e=>e[0]), shColors, sh.map(e=>e[1]));
+
+  // Joint
+  const jtColors = ['#38d9a9','#f7934f','#7a8aab','#e05c7a','#a78bfa'];
+  const jt = Object.entries(tally(data.map(r=>r[C.JOINT]))).sort((a,b)=>b[1]-a[1]);
+  donut('chartJoint', jt.map(e=>e[0]), jt.map(e=>e[1]), jtColors);
+  legend('legendJoint', jt.map(e=>e[0]), jtColors, jt.map(e=>e[1]));
+
+  // Minyak
+  const mi = Object.entries(tally(data.map(r=>r[C.MINYAK]))).sort((a,b)=>b[1]-a[1]);
+  bar('chartMinyak', mi.map(e=>e[0]), mi.map(e=>e[1]), mi.map((_,i)=>PAL[i%PAL.length]));
+
+  // GI Top 10
+  const gi = Object.entries(tally(data.map(r=>r[C.GI]))).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  bar('chartGI', gi.map(e=>e[0]), gi.map(e=>e[1]), gi.map((_,i)=>PAL[i%PAL.length]), true);
+
+  $('loading').style.display = 'none';
+  document.querySelectorAll('.fade-in').forEach((el,i) => setTimeout(()=>el.classList.add('visible'), i*80));
 }
 
-async function loadData() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_NAME)}`;
-  try {
-    const res  = await fetch(url);
-    const text = await res.text();
-    // strip Google's JS wrapper
-    const json = JSON.parse(text.replace(/^[^{]*/, '').replace(/[^}]*$/, ''));
-    const rows = json.table.rows;
+function showError(msgs) {
+  $('loading').style.display = 'none';
+  $('error-panel').style.display = 'block';
+  $('error-detail').textContent = 'Error log: ' + msgs.join(' → ');
+  document.querySelectorAll('.fade-in').forEach(el=>el.classList.add('visible'));
+}
 
-    // parse rows to plain arrays
-    const data = rows.map(r => r.c.map(c => (c && c.v !== null) ? c.v : ''));
-
-    // filter empty rows
-    const valid = data.filter(r => r[COL.UPT] && String(r[COL.UPT]).trim() !== '');
-
-    // --- metrics ---
-    document.getElementById('m-total').textContent = valid.length.toLocaleString('id');
-    const uptSet = new Set(valid.map(r => r[COL.UPT]));
-    document.getElementById('m-upt').textContent = uptSet.size;
-    const giSet = new Set(valid.map(r => r[COL.GI]));
-    document.getElementById('m-gi').textContent = giSet.size;
-    const anomaliSheath = valid.filter(r => String(r[COL.SHEATH]).includes('> 1') || String(r[COL.SHEATH]).includes('>1')).length;
-    document.getElementById('m-anomali').textContent = anomaliSheath;
-    const anomaliJoint = valid.filter(r => String(r[COL.JOINT]).toLowerCase().includes('anomali')).length;
-    document.getElementById('m-joint').textContent = anomaliJoint;
-
-    // timestamp
-    const now = new Date();
-    document.getElementById('last-updated').textContent = now.toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' });
-
-    // --- UPT chart ---
-    const uptCount = count(valid.map(r => r[COL.UPT]));
-    const uptSorted = Object.entries(uptCount).sort((a,b) => b[1]-a[1]);
-    makeBar('chartUPT',
-      uptSorted.map(e=>e[0]),
-      uptSorted.map(e=>e[1]),
-      uptSorted.map((_,i)=>COLORS[i%COLORS.length])
-    );
-
-    // --- Sheath chart ---
-    const sheathCount = count(valid.map(r => r[COL.SHEATH]));
-    const sheathLabels = Object.keys(sheathCount);
-    const sheathData   = Object.values(sheathCount);
-    const sheathColors = ['#38d9a9','#e05c7a','#7a8aab','#f7934f'];
-    makeDonut('chartSheath', sheathLabels, sheathData, sheathColors.slice(0, sheathLabels.length));
-    buildLegend(
-      document.getElementById('legendSheath'),
-      sheathLabels, sheathColors.slice(0, sheathLabels.length), sheathData
-    );
-
-    // --- Joint chart ---
-    const jointCount = count(valid.map(r => r[COL.JOINT]));
-    const jointLabels = Object.keys(jointCount);
-    const jointData   = Object.values(jointCount);
-    const jointColors = ['#38d9a9','#f7934f','#7a8aab','#e05c7a','#a78bfa'];
-    makeDonut('chartJoint', jointLabels, jointData, jointColors.slice(0, jointLabels.length));
-    buildLegend(
-      document.getElementById('legendJoint'),
-      jointLabels, jointColors.slice(0, jointLabels.length), jointData
-    );
-
-    // --- Minyak chart ---
-    const minyakCount = count(valid.map(r => r[COL.MINYAK]));
-    const minyakSorted = Object.entries(minyakCount).sort((a,b) => b[1]-a[1]);
-    makeBar('chartMinyak',
-      minyakSorted.map(e=>e[0]),
-      minyakSorted.map(e=>e[1]),
-      minyakSorted.map((_,i)=>COLORS[i%COLORS.length])
-    );
-
-    // --- GI Top 10 ---
-    const giCount = count(valid.map(r => r[COL.GI]));
-    const giTop = Object.entries(giCount).sort((a,b) => b[1]-a[1]).slice(0,10);
-    makeHBar('chartGI',
-      giTop.map(e=>e[0]),
-      giTop.map(e=>e[1]),
-      giTop.map((_,i)=>COLORS[i%COLORS.length])
-    );
-
-    // hide loader, show content
-    document.getElementById('loading').style.display = 'none';
-    document.querySelectorAll('.fade-in').forEach((el, i) => {
-      setTimeout(() => el.classList.add('visible'), i * 80);
+function parseCSV(url) {
+  return new Promise((ok, fail) => {
+    Papa.parse(url, {
+      download: true, header: false, skipEmptyLines: true,
+      complete: r => (r.data?.length > 2) ? ok(r.data) : fail(new Error('Data kosong')),
+      error: e => fail(e)
     });
-
-  } catch(err) {
-    console.error(err);
-    document.getElementById('loading').style.display = 'none';
-    document.getElementById('error-msg').style.display = 'block';
-    document.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
-  }
+  });
 }
 
-document.getElementById('sheet-link').href =
-  `https://docs.google.com/spreadsheets/d/${SHEET_ID}`;
+async function parseGviz(sheetId) {
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
+  const res  = await fetch(url, { mode:'cors' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const txt  = await res.text();
+  const json = JSON.parse(txt.replace(/^[^{(]*\(/, '').replace(/\);?\s*$/, ''));
+  const cols = json.table.cols.length;
+  return json.table.rows.map(r =>
+    Array.from({length:cols}, (_,i) => {
+      const c = r.c?.[i];
+      return (c && c.v != null) ? String(c.v) : '';
+    })
+  );
+}
 
-loadData();
+async function load() {
+  const errs = [];
+
+  if (CSV_URL) {
+    setMsg('Mengambil data CSV...', 'via publish URL');
+    try { return render(await parseCSV(CSV_URL)); }
+    catch(e) { errs.push('CSV: ' + e.message); }
+  }
+
+  setMsg('Mencoba Google Visualization API...');
+  try { return render(await parseGviz(SHEET_ID)); }
+  catch(e) { errs.push('gviz: ' + e.message); }
+
+  setMsg('Mencoba export CSV...');
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    return render(await parseCSV(url));
+  } catch(e) { errs.push('export: ' + e.message); }
+
+  showError(errs);
+}
+
+$('sheet-link').href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}`;
+load();
 </script>
 </body>
 </html>
