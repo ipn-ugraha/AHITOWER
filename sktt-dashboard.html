@@ -120,6 +120,14 @@ tr:hover td{background:var(--surface2);}
 .pgn-btn.active{background:var(--a1);border-color:var(--a1);color:#fff;}
 .pgn-pages{display:flex;gap:4px;}
 
+/* SORTABLE HEADERS */
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
+th.sortable:hover{color:var(--text);}
+th.sortable::after{content:' ⇅';font-size:10px;opacity:0.35;margin-left:2px;}
+th.sort-asc::after{content:' ↑';opacity:1;color:var(--a1);}
+th.sort-desc::after{content:' ↓';opacity:1;color:var(--a1);}
+th.sort-asc,th.sort-desc{color:var(--a1);}
+
 /* LOADING */
 #loading{position:fixed;inset:0;z-index:100;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
@@ -238,9 +246,16 @@ footer a{color:var(--a1);text-decoration:none;}
     <div class="tbl-wrap">
       <table>
         <thead>
+        <thead id="dm-thead">
           <tr>
-            <th>No</th><th>UPT</th><th>GI</th><th>Penghantar</th><th>Bay / Joint</th>
-            <th>Sheath</th><th>Joint Cable</th><th>Penanda</th>
+            <th>No</th>
+            <th class="sortable" data-tbl="dm" data-col="1">UPT</th>
+            <th class="sortable" data-tbl="dm" data-col="2">GI</th>
+            <th class="sortable" data-tbl="dm" data-col="3">Penghantar</th>
+            <th class="sortable" data-tbl="dm" data-col="4">Bay / Joint</th>
+            <th class="sortable" data-tbl="dm" data-col="6">Sheath</th>
+            <th class="sortable" data-tbl="dm" data-col="7">Joint Cable</th>
+            <th class="sortable" data-tbl="dm" data-col="8">Penanda</th>
           </tr>
         </thead>
         <tbody id="dm-tbody"></tbody>
@@ -272,9 +287,16 @@ footer a{color:var(--a1);text-decoration:none;}
     <div class="tbl-wrap">
       <table>
         <thead>
+        <thead id="dp-thead">
           <tr>
-            <th>No</th><th>UPT</th><th>GI</th><th>Bay / Joint</th>
-            <th>Isolasi/Minyak</th><th>Sheath</th><th>Joint Cable</th><th>Penanda</th>
+            <th>No</th>
+            <th class="sortable" data-tbl="dp" data-col="1">UPT</th>
+            <th class="sortable" data-tbl="dp" data-col="2">GI</th>
+            <th class="sortable" data-tbl="dp" data-col="4">Bay / Joint</th>
+            <th class="sortable" data-tbl="dp" data-col="5">Isolasi/Minyak</th>
+            <th class="sortable" data-tbl="dp" data-col="6">Sheath</th>
+            <th class="sortable" data-tbl="dp" data-col="7">Joint Cable</th>
+            <th class="sortable" data-tbl="dp" data-col="8">Penanda</th>
           </tr>
         </thead>
         <tbody id="dp-tbody"></tbody>
@@ -509,29 +531,53 @@ function badgeJoint(v){
 
 const PAGE_SIZE = 20;
 
+// sort state per tabel: { col: int|null, dir: 'asc'|'desc' }
+const sortState = { dp: {col:null, dir:'asc'}, dm: {col:null, dir:'asc'} };
+
+function sortRows(rows, col, dir){
+  if(col === null) return rows;
+  return [...rows].sort((a,b)=>{
+    const va = String(a[col]||'').toLowerCase();
+    const vb = String(b[col]||'').toLowerCase();
+    const n = va.localeCompare(vb, 'id');
+    return dir === 'asc' ? n : -n;
+  });
+}
+
+function updateSortHeaders(theadId, tbl, col, dir){
+  const thead = $(theadId);
+  if(!thead) return;
+  thead.querySelectorAll('th.sortable').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if(parseInt(th.dataset.col) === col){
+      th.classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+
 // ---- Reusable paginated table renderer ----
 function renderTable(cfg, page){
-  const { rows, tbodyId, pgnId, rowFn, panelId, scrollTarget } = cfg;
-  const total      = rows.length;
+  const { rows, tbodyId, pgnId, onPage, rowFn, tbl } = cfg;
+  const { col, dir } = sortState[tbl] || {col:null, dir:'asc'};
+  const sorted     = sortRows(rows, col, dir);
+  const total      = sorted.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   page = Math.min(Math.max(1, page), totalPages);
 
   const start = (page-1) * PAGE_SIZE;
-  const slice = rows.slice(start, start + PAGE_SIZE);
+  const slice = sorted.slice(start, start + PAGE_SIZE);
 
-  // rows
   $(tbodyId).innerHTML = slice.map((r, i) => rowFn(r, start + i)).join('');
 
   // pagination
   const pgEl = $(pgnId);
   if(total <= PAGE_SIZE){ pgEl.innerHTML=''; return; }
 
-  // page number buttons (show max 5 around current)
   let pageBtns = '';
   const delta = 2;
   for(let p=1; p<=totalPages; p++){
     if(p===1 || p===totalPages || (p>=page-delta && p<=page+delta)){
-      pageBtns += `<button class="pgn-btn${p===page?' active':''}" onclick="${cfg.onPage}(${p})">${p}</button>`;
+      pageBtns += `<button class="pgn-btn${p===page?' active':''}" onclick="${onPage}(${p})">${p}</button>`;
     } else if(p===page-delta-1 || p===page+delta+1){
       pageBtns += `<span style="color:var(--muted);padding:0 4px;font-size:12px">…</span>`;
     }
@@ -542,10 +588,29 @@ function renderTable(cfg, page){
       Menampilkan <strong>${start+1}–${Math.min(start+PAGE_SIZE, total)}</strong> dari <strong>${total}</strong> rekaman
     </span>
     <div class="pgn-btns">
-      <button class="pgn-btn" ${page===1?'disabled':''} onclick="${cfg.onPage}(${page-1})">← Prev</button>
+      <button class="pgn-btn" ${page===1?'disabled':''} onclick="${onPage}(${page-1})">← Prev</button>
       <div class="pgn-pages">${pageBtns}</div>
-      <button class="pgn-btn" ${page===totalPages?'disabled':''} onclick="${cfg.onPage}(${page+1})">Next →</button>
+      <button class="pgn-btn" ${page===totalPages?'disabled':''} onclick="${onPage}(${page+1})">Next →</button>
     </div>`;
+}
+
+// sort click handler — wired after DOM ready
+function initSortHandlers(){
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const tbl = th.dataset.tbl;
+      const col = parseInt(th.dataset.col);
+      const st  = sortState[tbl];
+      if(st.col === col){
+        st.dir = st.dir === 'asc' ? 'desc' : 'asc';
+      } else {
+        st.col = col; st.dir = 'asc';
+      }
+      updateSortHeaders(tbl==='dp'?'dp-thead':'dm-thead', tbl, st.col, st.dir);
+      if(tbl === 'dp'){ dpPage=1; renderDpPage(1); }
+      else            { dmPage=1; renderDmPage(1); }
+    });
+  });
 }
 
 // ---- Penghantar detail ----
@@ -554,6 +619,8 @@ let dpRows = [], dpPage = 1;
 function showDetail(penghantar){
   dpRows = filtered().filter(r => String(r[C.PH]).trim() === penghantar);
   dpPage = 1;
+  sortState.dp = {col:null, dir:'asc'};
+  updateSortHeaders('dp-thead','dp',null,'asc');
   $('dp-name').textContent  = penghantar;
   $('dp-count').textContent = `${dpRows.length} rekaman ditemukan`;
   renderDpPage(1);
@@ -565,7 +632,7 @@ function showDetail(penghantar){
 function renderDpPage(page){
   dpPage = page;
   renderTable({
-    rows: dpRows, tbodyId:'dp-tbody', pgnId:'dp-pgn', onPage:'renderDpPage',
+    tbl:'dp', rows: dpRows, tbodyId:'dp-tbody', pgnId:'dp-pgn', onPage:'renderDpPage',
     rowFn:(r,i)=>`<tr>
       <td>${i+1}</td>
       <td>${r[C.UPT]||'—'}</td>
@@ -587,6 +654,8 @@ let dmRows = [], dmPage = 1;
 function showMinyak(kategori){
   dmRows = filtered().filter(r => String(r[C.MINYAK]).trim() === kategori);
   dmPage = 1;
+  sortState.dm = {col:null, dir:'asc'};
+  updateSortHeaders('dm-thead','dm',null,'asc');
   $('dm-name').textContent  = kategori;
   $('dm-count').textContent = `${dmRows.length} rekaman ditemukan`;
   renderDmPage(1);
@@ -598,7 +667,7 @@ function showMinyak(kategori){
 function renderDmPage(page){
   dmPage = page;
   renderTable({
-    rows: dmRows, tbodyId:'dm-tbody', pgnId:'dm-pgn', onPage:'renderDmPage',
+    tbl:'dm', rows: dmRows, tbodyId:'dm-tbody', pgnId:'dm-pgn', onPage:'renderDmPage',
     rowFn:(r,i)=>`<tr>
       <td>${i+1}</td>
       <td>${r[C.UPT]||'—'}</td>
@@ -620,6 +689,7 @@ function show(){
   $('ts').textContent = new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
   buildChips();
   renderCharts();
+  initSortHandlers();
   document.querySelectorAll('.fi').forEach((el,i)=>setTimeout(()=>el.classList.add('v'),i*60));
 }
 
