@@ -108,6 +108,18 @@ tr:hover td{background:var(--surface2);}
 .badge-gray{background:rgba(122,138,171,0.15);color:#7a8aab;padding:2px 8px;border-radius:100px;font-size:10px;}
 .tbl-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
 
+/* PAGINATION */
+.pgn{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;}
+.pgn-info{font-size:12px;color:var(--muted);}
+.pgn-info strong{color:var(--text);}
+.pgn-btns{display:flex;align-items:center;gap:6px;}
+.pgn-btn{background:transparent;border:1px solid var(--border2);color:var(--muted);
+  padding:5px 12px;border-radius:8px;font-size:12px;cursor:pointer;transition:all 0.15s;font-family:'DM Sans',sans-serif;}
+.pgn-btn:hover:not(:disabled){border-color:var(--a1);color:var(--a1);}
+.pgn-btn:disabled{opacity:0.3;cursor:default;}
+.pgn-btn.active{background:var(--a1);border-color:var(--a1);color:#fff;}
+.pgn-pages{display:flex;gap:4px;}
+
 /* LOADING */
 #loading{position:fixed;inset:0;z-index:100;background:var(--bg);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
@@ -234,6 +246,7 @@ footer a{color:var(--a1);text-decoration:none;}
         <tbody id="dm-tbody"></tbody>
       </table>
     </div>
+    <div id="dm-pgn" class="pgn"></div>
   </div>
 
   <!-- CHART PENGHANTAR + DETAIL TABLE -->
@@ -267,6 +280,7 @@ footer a{color:var(--a1);text-decoration:none;}
         <tbody id="dp-tbody"></tbody>
       </table>
     </div>
+    <div id="dp-pgn" class="pgn"></div>
   </div>
 
 
@@ -493,12 +507,66 @@ function badgeJoint(v){
   return `<span class="badge-gray">${v||'—'}</span>`;
 }
 
+const PAGE_SIZE = 20;
+
+// ---- Reusable paginated table renderer ----
+function renderTable(cfg, page){
+  const { rows, tbodyId, pgnId, rowFn, panelId, scrollTarget } = cfg;
+  const total      = rows.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  page = Math.min(Math.max(1, page), totalPages);
+
+  const start = (page-1) * PAGE_SIZE;
+  const slice = rows.slice(start, start + PAGE_SIZE);
+
+  // rows
+  $(tbodyId).innerHTML = slice.map((r, i) => rowFn(r, start + i)).join('');
+
+  // pagination
+  const pgEl = $(pgnId);
+  if(total <= PAGE_SIZE){ pgEl.innerHTML=''; return; }
+
+  // page number buttons (show max 5 around current)
+  let pageBtns = '';
+  const delta = 2;
+  for(let p=1; p<=totalPages; p++){
+    if(p===1 || p===totalPages || (p>=page-delta && p<=page+delta)){
+      pageBtns += `<button class="pgn-btn${p===page?' active':''}" onclick="${cfg.onPage}(${p})">${p}</button>`;
+    } else if(p===page-delta-1 || p===page+delta+1){
+      pageBtns += `<span style="color:var(--muted);padding:0 4px;font-size:12px">…</span>`;
+    }
+  }
+
+  pgEl.innerHTML = `
+    <span class="pgn-info">
+      Menampilkan <strong>${start+1}–${Math.min(start+PAGE_SIZE, total)}</strong> dari <strong>${total}</strong> rekaman
+    </span>
+    <div class="pgn-btns">
+      <button class="pgn-btn" ${page===1?'disabled':''} onclick="${cfg.onPage}(${page-1})">← Prev</button>
+      <div class="pgn-pages">${pageBtns}</div>
+      <button class="pgn-btn" ${page===totalPages?'disabled':''} onclick="${cfg.onPage}(${page+1})">Next →</button>
+    </div>`;
+}
+
+// ---- Penghantar detail ----
+let dpRows = [], dpPage = 1;
+
 function showDetail(penghantar){
-  const rows = filtered().filter(r => String(r[C.PH]).trim() === penghantar);
+  dpRows = filtered().filter(r => String(r[C.PH]).trim() === penghantar);
+  dpPage = 1;
   $('dp-name').textContent  = penghantar;
-  $('dp-count').textContent = `${rows.length} rekaman ditemukan`;
-  $('dp-tbody').innerHTML   = rows.map((r,i)=>`
-    <tr>
+  $('dp-count').textContent = `${dpRows.length} rekaman ditemukan`;
+  renderDpPage(1);
+  const panel = $('detail-panel');
+  panel.style.display = 'block';
+  setTimeout(()=> panel.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+}
+
+function renderDpPage(page){
+  dpPage = page;
+  renderTable({
+    rows: dpRows, tbodyId:'dp-tbody', pgnId:'dp-pgn', onPage:'renderDpPage',
+    rowFn:(r,i)=>`<tr>
       <td>${i+1}</td>
       <td>${r[C.UPT]||'—'}</td>
       <td>${r[C.GI]||'—'}</td>
@@ -506,24 +574,32 @@ function showDetail(penghantar){
       <td>${r[C.MINYAK]||'—'}</td>
       <td>${badgeSheath(r[C.SHEATH])}</td>
       <td>${badgeJoint(r[C.JOINT])}</td>
-      <td>${r[C.PENANDA]?`<span class="badge-ok">Ada</span>`:`<span class="badge-gray">—</span>`}</td>
-    </tr>`).join('');
+      <td>${r[C.PENANDA]?'<span class="badge-ok">Ada</span>':'<span class="badge-gray">—</span>'}</td>
+    </tr>`
+  }, page);
+}
 
-  const panel = $('detail-panel');
+function closeDetail(){ $('detail-panel').style.display='none'; dpRows=[]; dpPage=1; }
+
+// ---- Minyak detail ----
+let dmRows = [], dmPage = 1;
+
+function showMinyak(kategori){
+  dmRows = filtered().filter(r => String(r[C.MINYAK]).trim() === kategori);
+  dmPage = 1;
+  $('dm-name').textContent  = kategori;
+  $('dm-count').textContent = `${dmRows.length} rekaman ditemukan`;
+  renderDmPage(1);
+  const panel = $('detail-minyak');
   panel.style.display = 'block';
   setTimeout(()=> panel.scrollIntoView({behavior:'smooth', block:'start'}), 50);
 }
 
-function closeDetail(){
-  $('detail-panel').style.display = 'none';
-}
-
-function showMinyak(kategori){
-  const rows = filtered().filter(r => String(r[C.MINYAK]).trim() === kategori);
-  $('dm-name').textContent  = kategori;
-  $('dm-count').textContent = `${rows.length} rekaman ditemukan`;
-  $('dm-tbody').innerHTML   = rows.map((r,i)=>`
-    <tr>
+function renderDmPage(page){
+  dmPage = page;
+  renderTable({
+    rows: dmRows, tbodyId:'dm-tbody', pgnId:'dm-pgn', onPage:'renderDmPage',
+    rowFn:(r,i)=>`<tr>
       <td>${i+1}</td>
       <td>${r[C.UPT]||'—'}</td>
       <td>${r[C.GI]||'—'}</td>
@@ -531,17 +607,12 @@ function showMinyak(kategori){
       <td style="max-width:180px;white-space:normal;font-size:11px">${r[C.BAY]||'—'}</td>
       <td>${badgeSheath(r[C.SHEATH])}</td>
       <td>${badgeJoint(r[C.JOINT])}</td>
-      <td>${r[C.PENANDA]?`<span class="badge-ok">Ada</span>`:`<span class="badge-gray">—</span>`}</td>
-    </tr>`).join('');
-
-  const panel = $('detail-minyak');
-  panel.style.display = 'block';
-  setTimeout(()=> panel.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+      <td>${r[C.PENANDA]?'<span class="badge-ok">Ada</span>':'<span class="badge-gray">—</span>'}</td>
+    </tr>`
+  }, page);
 }
 
-function closeMinyak(){
-  $('detail-minyak').style.display = 'none';
-}
+function closeMinyak(){ $('detail-minyak').style.display='none'; dmRows=[]; dmPage=1; }
 
 // ---- Data loading ----
 function show(){
