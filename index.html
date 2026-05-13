@@ -1174,7 +1174,11 @@ function renderAHITab() {
     if(r[A_PENTNH]===1) g.pentnh++;
     if(r[A_STRUKT]===1) g.strukt++;
     if(r[A_ANTIB] ===1) g.antib++;
-    if(r[A_TLA]   ===1) g.tla++;
+    // TLA gabungan: terpasang jika TLA1 atau TLA2 bukan '-' dan tidak kosong
+    const tla1v = String(r[A_TLA1]||'').trim();
+    const tla2v = String(r[A_TLA2]||'').trim();
+    const tlaOK = (tla1v && tla1v!=='-') || (tla2v && tla2v!=='-');
+    if(tlaOK) g.tla++;
     const ohm=r[A_OHM];
     if(ohm===null||ohm===undefined) g.ohmNull++;
     else if(ohm<=5) g.ohm0_5++; else if(ohm<=10) g.ohm5_10++; else g.ohm10plus++;
@@ -1267,6 +1271,15 @@ function renderAHICharts(rows) {
   // TLA — set _nodata/_tidak sebelum render
   const noTlaMsg = document.getElementById('no-tla-msg');
   if (noTlaMsg) noTlaMsg.style.display = 'none';
+  // Re-hitung TLA dari nilai asli (A_TLA1/A_TLA2 sekarang string)
+  AHI_SORTED.tla.forEach(g => {
+    // Hitung ulang dari F_AHI untuk penghantar ini
+    const rows = F_AHI.filter(r=>r[A_PHT]===g.pht);
+    g.tla = rows.filter(r=>{
+      const v1=String(r[A_TLA1]||'').trim(), v2=String(r[A_TLA2]||'').trim();
+      return (v1&&v1!=='-')||(v2&&v2!=='-');
+    }).length;
+  });
   const tlaHasAnyPHT = AHI_SORTED.tla.some(g=>g.tla>0);
   AHI_SORTED.tla.forEach(g=>{
     if (!tlaHasAnyPHT) { g._nodata = g.total; g._tidak = 0; }
@@ -1443,8 +1456,8 @@ function renderModalTable() {
     else if (col==='strukt') { av=a[A_STRUKT];          bv=b[A_STRUKT]; }
     else if (col==='antib')  { av=a[A_ANTIB];           bv=b[A_ANTIB]; }
     else if (col==='tla')    { av=a[A_TLA];             bv=b[A_TLA]; }
-    else if (col==='tla1')   { av=a[A_TLA1]||0;         bv=b[A_TLA1]||0; }
-    else if (col==='tla2')   { av=a[A_TLA2]||0;         bv=b[A_TLA2]||0; }
+    else if (col==='tla1')   { av=String(a[A_TLA1]||''); bv=String(b[A_TLA1]||''); }
+    else if (col==='tla2')   { av=String(a[A_TLA2]||''); bv=String(b[A_TLA2]||''); }
     else if (col==='ultg')   { av=a[A_ULTG]||'';        bv=b[A_ULTG]||''; }
     else if (col==='ultg')   { av=a[A_ULTG]||'';        bv=b[A_ULTG]||''; }
     else if (col==='bay')    { av=a[A_BAY]||'';         bv=b[A_BAY]||''; }
@@ -1463,8 +1476,12 @@ function renderModalTable() {
     rows.length + ' tower · klik header untuk sort · klik di luar untuk tutup';
 
   const ceColor = {'2':'ahi-2','3':'ahi-3','4':'ahi-4','5':'ahi-5'};
-  const yn  = v => v===1 ? '<span style="color:#e84040">⚠ Ya</span>' : '<span style="color:var(--text3)">–</span>';
-  const ynb = v => v===1 ? '<span style="color:#00d4aa">✅ Ya</span>' : '<span style="color:var(--text3)">–</span>';
+  const yn     = v => v===1 ? '<span style="color:#e84040">⚠ Ya</span>' : '<span style="color:var(--text3)">–</span>';
+  const ynb    = v => v===1 ? '<span style="color:#00d4aa">✅ Ya</span>' : '<span style="color:var(--text3)">–</span>';
+  const tlaVal = v => {
+    if (!v || v==='-' || v==='') return '<span style="color:var(--text3)">–</span>';
+    return '<span style="color:#00d4aa;font-family:var(--mono);font-size:11px">'+v+'</span>';
+  };
   const ohmFmt = v => {
     if (v===null||v===undefined) return '<span style="color:var(--text3)">–</span>';
     const cls = v>10 ? 'style="color:#e84040;font-weight:500"' : 'style="color:#00d4aa"';
@@ -1483,8 +1500,8 @@ function renderModalTable() {
       <td>${yn(r[A_PENTNH])}</td>
       <td>${yn(r[A_STRUKT])}</td>
       <td>${ynb(r[A_ANTIB])}</td>
-      <td>${ynb(r[A_TLA1])}</td>
-      <td>${ynb(r[A_TLA2])}</td>
+      <td>${tlaVal(r[A_TLA1])}</td>
+      <td>${tlaVal(r[A_TLA2])}</td>
     </tr>`;
   }).join('');
 }
