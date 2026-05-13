@@ -216,8 +216,11 @@ footer a{color:var(--a1);text-decoration:none;}
   <!-- CHART PENGHANTAR + DETAIL TABLE -->
   <div class="cc fi" style="margin-bottom:18px;">
     <p class="ct">Rekaman Inspeksi per Penghantar</p>
-    <p class="cs">Klik bar untuk melihat detail data tiap penghantar</p>
-    <p class="click-hint">↖ Klik salah satu bar untuk membuka tabel detail</p>
+    <p class="cs">Komposisi kondisi Joint Cable &amp; Cable Sheath — klik bar untuk detail</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <p class="click-hint">↖ Klik bar untuk membuka tabel detail</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;" id="ph-legend"></div>
+    </div>
     <div class="cw" id="phWrap" style="height:340px"><canvas id="cPH"></canvas></div>
   </div>
 
@@ -243,12 +246,7 @@ footer a{color:var(--a1);text-decoration:none;}
     </div>
   </div>
 
-  <!-- CHART GI -->
-  <div class="cc fi" style="margin-bottom:32px;">
-    <p class="ct">Top 10 Gardu Induk</p>
-    <p class="cs">GI/GIS dengan rekaman inspeksi terbanyak</p>
-    <div class="cw" style="height:320px"><canvas id="cGI"></canvas></div>
-  </div>
+
 
   <footer>
     Data bersumber dari <a id="sl" href="#" target="_blank">Google Sheets SKTT 150kV</a>
@@ -383,17 +381,76 @@ function renderCharts(){
   const mi = Object.entries(tally(data.map(r=>r[C.MINYAK]))).sort((a,b)=>b[1]-a[1]);
   mkBar('cMinyak', mi.map(e=>e[0]), mi.map(e=>e[1]), mi.map((_,i)=>PAL[i%PAL.length]));
 
-  // Penghantar bar — clickable
-  const ph = Object.entries(tally(data.map(r=>r[C.PH]))).sort((a,b)=>b[1]-a[1]);
-  // dynamic height: min 300, ~28px per bar
-  const phH = Math.max(320, ph.length * 32 + 60);
-  $('phWrap').style.height = phH + 'px';
-  mkBar('cPH', ph.map(e=>e[0]), ph.map(e=>e[1]),
-    ph.map((_,i)=>PAL[i%PAL.length]), true, showDetail);
+  // Penghantar — stacked bar: joint + sheath
+  const phList = [...new Set(data.map(r=>String(r[C.PH]).trim()).filter(Boolean))];
+  // Kategori Joint Cable
+  const jCats  = ['Normal','Anomali JP','Belum Inspeksi','Anomali Compound'];
+  const jPal   = ['#38d9a9','#f7934f','#7a8aab','#e05c7a'];
+  // Kategori Sheath
+  const sCats  = ['Arus Bocor ≤ 1mA','Arus Bocor > 1mA','Belum Diuji'];
+  const sPal   = ['#4f8ef7','#e05c7a','#888'];
 
-  // GI Top 10
-  const gi = Object.entries(tally(data.map(r=>r[C.GI]))).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  mkBar('cGI', gi.map(e=>e[0]), gi.map(e=>e[1]), gi.map((_,i)=>PAL[i%PAL.length]), true);
+  // hitung per penghantar
+  const jDatasets = jCats.map((cat,ci)=>({
+    label: cat,
+    data: phList.map(ph=>{
+      const rows = data.filter(r=>String(r[C.PH]).trim()===ph);
+      return rows.filter(r=>String(r[C.JOINT]).toLowerCase().includes(cat.toLowerCase().split(' ')[1]||cat.toLowerCase())).length;
+    }),
+    backgroundColor: jPal[ci],
+    borderRadius: 0, borderSkipped: false,
+    stack: 'joint'
+  }));
+
+  // sheath per penghantar
+  const sDatasets = sCats.map((cat,ci)=>({
+    label: cat,
+    data: phList.map(ph=>{
+      const rows = data.filter(r=>String(r[C.PH]).trim()===ph);
+      const v = cat.includes('>') ? rows.filter(r=>String(r[C.SHEATH]).includes('>')).length
+              : cat.includes('≤') ? rows.filter(r=>String(r[C.SHEATH]).includes('≤')).length
+              : rows.filter(r=>{ const s=String(r[C.SHEATH]).toLowerCase(); return s.includes('belum')||s.includes('diuji'); }).length;
+      return v;
+    }),
+    backgroundColor: sPal[ci],
+    borderRadius: 0, borderSkipped: false,
+    stack: 'sheath'
+  }));
+
+  // build legend
+  const phLegEl = $('ph-legend');
+  phLegEl.innerHTML = [
+    ...jCats.map((l,i)=>`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:2px;background:${jPal[i]};display:inline-block"></span>${l}</span>`),
+    `<span style="width:1px;height:14px;background:var(--border2);display:inline-block;margin:0 4px"></span>`,
+    ...sCats.map((l,i)=>`<span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><span style="width:8px;height:8px;border-radius:2px;background:${sPal[i]};display:inline-block"></span>${l}</span>`)
+  ].join('');
+
+  killChart('cPH');
+  const phH = Math.max(360, phList.length * 36 + 80);
+  $('phWrap').style.height = phH + 'px';
+  charts['cPH'] = new Chart($('cPH'),{
+    type:'bar',
+    data:{ labels: phList, datasets:[...jDatasets,...sDatasets] },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          mode:'index', intersect:false,
+          callbacks:{
+            title: items => items[0]?.label || '',
+            label: c => ` ${c.dataset.label}: ${c.parsed.x}`
+          }
+        }
+      },
+      scales:{
+        x:{ stacked:true, grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#7a8aab',font:{size:11}} },
+        y:{ stacked:true, grid:{display:false}, ticks:{color:'#f0f4ff',font:{size:11}} }
+      },
+      onClick:(_,els)=>{ if(els.length) showDetail(phList[els[0].index]); },
+      onHover:(e,els)=>{ e.native.target.style.cursor = els.length?'pointer':'default'; }
+    }
+  });
 }
 
 // ---- Detail table ----
