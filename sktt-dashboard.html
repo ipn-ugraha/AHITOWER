@@ -208,8 +208,31 @@ footer a{color:var(--a1);text-decoration:none;}
     </div>
     <div class="cc col8 fi">
       <p class="ct">Kebocoran Minyak / Jenis Isolasi</p>
-      <p class="cs">Kategori kondisi insulasi kabel</p>
+      <p class="cs">Kategori kondisi insulasi kabel — klik bar untuk detail</p>
+      <p class="click-hint" style="margin-bottom:10px;">↖ Klik bar untuk membuka tabel detail</p>
       <div class="cw" style="height:180px"><canvas id="cMinyak"></canvas></div>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL MINYAK -->
+  <div id="detail-minyak" style="display:none;background:var(--surface);border:1px solid rgba(247,147,79,0.35);border-radius:14px;padding:24px;margin-bottom:18px;animation:slideDown 0.25s ease;">
+    <div class="dp-head">
+      <div>
+        <p class="dp-title">Detail Isolasi/Minyak: <span id="dm-name" style="color:var(--a3)">—</span></p>
+        <p id="dm-count" class="tbl-count"></p>
+      </div>
+      <button class="dp-close" onclick="closeMinyak()">✕ Tutup</button>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>UPT</th><th>GI</th><th>Penghantar</th><th>Bay / Joint</th>
+            <th>Sheath</th><th>Joint Cable</th><th>Penanda</th>
+          </tr>
+        </thead>
+        <tbody id="dm-tbody"></tbody>
+      </table>
     </div>
   </div>
 
@@ -345,6 +368,7 @@ function buildChips(){
       el.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       closeDetail();
+      closeMinyak();
       renderCharts();
     });
   });
@@ -377,9 +401,11 @@ function renderCharts(){
   mkDonut('cJoint', jt.map(e=>e[0]), jt.map(e=>e[1]), jtC);
   lgnd('lgJoint', jt.map(e=>e[0]), jtC, jt.map(e=>e[1]));
 
-  // Minyak bar
+  // Minyak bar — clickable
   const mi = Object.entries(tally(data.map(r=>r[C.MINYAK]))).sort((a,b)=>b[1]-a[1]);
-  mkBar('cMinyak', mi.map(e=>e[0]), mi.map(e=>e[1]), mi.map((_,i)=>PAL[i%PAL.length]));
+  const miLabels = mi.map(e=>e[0]);
+  mkBar('cMinyak', miLabels, mi.map(e=>e[1]), mi.map((_,i)=>PAL[i%PAL.length]), false,
+    label => showMinyak(label));
 
   // Penghantar — stacked bar: joint + sheath
   const phList = [...new Set(data.map(r=>String(r[C.PH]).trim()).filter(Boolean))];
@@ -490,6 +516,31 @@ function showDetail(penghantar){
 
 function closeDetail(){
   $('detail-panel').style.display = 'none';
+}
+
+function showMinyak(kategori){
+  const rows = filtered().filter(r => String(r[C.MINYAK]).trim() === kategori);
+  $('dm-name').textContent  = kategori;
+  $('dm-count').textContent = `${rows.length} rekaman ditemukan`;
+  $('dm-tbody').innerHTML   = rows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${r[C.UPT]||'—'}</td>
+      <td>${r[C.GI]||'—'}</td>
+      <td style="max-width:200px;white-space:normal;font-size:11px">${r[C.PH]||'—'}</td>
+      <td style="max-width:180px;white-space:normal;font-size:11px">${r[C.BAY]||'—'}</td>
+      <td>${badgeSheath(r[C.SHEATH])}</td>
+      <td>${badgeJoint(r[C.JOINT])}</td>
+      <td>${r[C.PENANDA]?`<span class="badge-ok">Ada</span>`:`<span class="badge-gray">—</span>`}</td>
+    </tr>`).join('');
+
+  const panel = $('detail-minyak');
+  panel.style.display = 'block';
+  setTimeout(()=> panel.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+}
+
+function closeMinyak(){
+  $('detail-minyak').style.display = 'none';
 }
 
 // ---- Data loading ----
