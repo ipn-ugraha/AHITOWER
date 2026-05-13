@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Jaringan Monitoring — PLN UIT JBM</title>
+<title>Tower Monitoring — PLN UIT JBM</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
@@ -609,12 +609,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
       <div class="accordion" id="acc-ahi-upt">
         <div class="accordion-header" onclick="toggleAcc('acc-ahi-upt')">
-          <span><span class="accordion-title">Total Tower Dimonitor per UPT</span></span>
+          <span><span class="accordion-title">Komposisi AHI per UPT</span><span class="accordion-meta">AHI 5→4→3→2 · stacked</span></span>
           <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="accordion-body">
           <div class="accordion-inner">
-            <div class="cw" style="height:200px"><canvas id="c-ahi-upt"></canvas></div>
+            <div class="cw" style="height:280px"><canvas id="c-ahi-upt"></canvas></div>
           </div>
         </div>
       </div>
@@ -1318,10 +1318,29 @@ function renderAHICharts(rows) {
   });
   renderAHIPage('tla');
 
-  // Total per UPT — hanya UPT, sort terbanyak
-  const byUPT=aggregate(rows,A_UPT);
-  const uKeys=Object.keys(byUPT).filter(k=>k.toUpperCase().includes('UPT')).sort((a,b)=>byUPT[b]-byUPT[a]);
-  makeBar('c-ahi-upt', uKeys.map(l=>l.replace('UPT ','')), uKeys.map(k=>byUPT[k]), '#00d4aa');
+  // Komposisi AHI per UPT — stacked, sort by ce5 terbanyak
+  const uptMapAHI = {};
+  rows.forEach(r => {
+    const u = r[A_UPT]||'N/A';
+    if (!u.toUpperCase().includes('UPT')) return;
+    if (!uptMapAHI[u]) uptMapAHI[u] = {ce2:0,ce3:0,ce4:0,ce5:0};
+    const ce = r[A_CE];
+    if(ce==='2') uptMapAHI[u].ce2++;
+    else if(ce==='3') uptMapAHI[u].ce3++;
+    else if(ce==='4') uptMapAHI[u].ce4++;
+    else if(ce==='5') uptMapAHI[u].ce5++;
+  });
+  const uKeysAHI = Object.keys(uptMapAHI)
+    .sort((a,b) => uptMapAHI[b].ce5!==uptMapAHI[a].ce5
+      ? uptMapAHI[b].ce5-uptMapAHI[a].ce5
+      : uptMapAHI[b].ce4-uptMapAHI[a].ce4);
+  const uLabelsAHI = uKeysAHI.map(l=>l.replace('UPT ',''));
+  makeStackedBar('c-ahi-upt', uLabelsAHI, [
+    { label:'AHI 5 (Kritis)', data:uKeysAHI.map(k=>uptMapAHI[k].ce5), color:'#e84040' },
+    { label:'AHI 4',          data:uKeysAHI.map(k=>uptMapAHI[k].ce4), color:'#f5a623' },
+    { label:'AHI 3',          data:uKeysAHI.map(k=>uptMapAHI[k].ce3), color:'#3b7aff' },
+    { label:'AHI 2 (Baik)',   data:uKeysAHI.map(k=>uptMapAHI[k].ce2), color:'#00d4aa' },
+  ]);
 }
 
 // ─── AHI PAGINATION ───────────────────────────────────────
