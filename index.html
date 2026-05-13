@@ -797,8 +797,10 @@ function hideLoading() { document.getElementById('loading-overlay').style.displa
 
 function switchPage(page) {
   const isTower = page === 'tower';
-  document.getElementById('page-tower').style.display = isTower ? 'block' : 'flex';
-  document.getElementById('page-sktt').style.display  = isTower ? 'none'  : 'flex';
+  const towerEl = document.getElementById('page-tower');
+  const skttEl  = document.getElementById('page-sktt');
+  if (towerEl) towerEl.style.display = isTower ? 'block' : 'none';
+  if (skttEl)  { skttEl.style.display = isTower ? 'none' : 'flex'; skttEl.style.flexDirection = 'column'; }
   document.getElementById('nav-tower').classList.toggle('active',  isTower);
   document.getElementById('nav-sktt').classList.toggle('active',  !isTower);
 }
