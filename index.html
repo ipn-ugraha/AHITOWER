@@ -1027,6 +1027,14 @@ function renderAll() {
   renderOverview();
   renderTowerTab();
   renderAHITab();
+  // Render petir hanya jika tab aktif, atau update data internalnya
+  const petirActive = document.getElementById('tab-petir')?.classList.contains('active');
+  if (petirActive) renderPetirTab();
+  else {
+    // Update data internal agar siap saat tab dibuka
+    PETIR_PHT_DATA = [];
+    PETIR_SORTED   = { pht:[], thn:[] };
+  }
 }
 
 // ─── OVERVIEW ─────────────────────────────────────────────
@@ -1383,54 +1391,65 @@ function renderPetirTab() {
   const rows  = fPHT ? F_AHI.filter(r=>r[A_PHT]===fPHT) : F_AHI;
 
   const info = document.getElementById('petir-filter-info');
-  if (info) info.textContent = fPHT ? fPHT + ' · ' + fmtNum(rows.length) + ' tower' : '';
+  if (info) info.textContent = fPHT ? fPHT + ' · ' + fmtNum(rows.length) + ' tower' : fmtNum(rows.length) + ' tower';
 
   // Build per-penghantar aggregate
   const phtMap = {};
   rows.forEach(r => {
-    const p = r[A_PHT]||'N/A';
-    if (!phtMap[p]) phtMap[p] = {pht:p, total:0, ohm0_5:0, ohm5_10:0, ohm10plus:0, ohmNull:0};
-    PETIR_ORDER.forEach(k => { if (!phtMap[p][k]) phtMap[p][k]=0; });
+    const p   = r[A_PHT]||'N/A';
+    if (p==='N/A') return;
+    if (!phtMap[p]) {
+      phtMap[p] = {pht:p, total:0, ohm0_5:0, ohm5_10:0, ohm10plus:0, ohmNull:0};
+      PETIR_ORDER.forEach(k => phtMap[p][k]=0);
+    }
     phtMap[p].total++;
+    // Normalize nilai petir
     const pet = String(r[A_PETIR]||'').trim().toUpperCase();
-    if (phtMap[p][pet]!==undefined) phtMap[p][pet]++;
+    if (PETIR_ORDER.includes(pet)) phtMap[p][pet]++;
+    // Tahanan
     const ohm = r[A_OHM];
     if (ohm===null||ohm===undefined) phtMap[p].ohmNull++;
-    else if (ohm<=5) phtMap[p].ohm0_5++;
+    else if (ohm<=5)  phtMap[p].ohm0_5++;
     else if (ohm<=10) phtMap[p].ohm5_10++;
-    else phtMap[p].ohm10plus++;
+    else              phtMap[p].ohm10plus++;
   });
-  PETIR_PHT_DATA = Object.values(phtMap).filter(g=>g.pht!=='N/A');
+  PETIR_PHT_DATA = Object.values(phtMap);
 
-  // Build dropdown penghantar
+  // Build dropdown penghantar — hanya update jika belum terisi atau filter berubah
   const sel = document.getElementById('f-pht-petir');
-  if (sel) {
-    const cur = sel.value;
-    sel.innerHTML = '<option value="">Semua Penghantar</option>';
-    [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort()
-      .forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
-    if (cur) sel.value = cur;
+  if (sel && sel.options.length <= 1) {
+    const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
+    phts.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
   }
 
-  // Metrics
+  // Hitung distribusi total
   const petirCount = {};
   PETIR_ORDER.forEach(k => petirCount[k]=0);
+  let noData = 0;
   rows.forEach(r => {
     const k = String(r[A_PETIR]||'').trim().toUpperCase();
-    if (petirCount[k]!==undefined) petirCount[k]++;
+    if (PETIR_ORDER.includes(k)) petirCount[k]++;
+    else noData++;
   });
+
+  // Metrics
   document.getElementById('m-petir').innerHTML =
-    mc('Total Tower', fmtNum(rows.length), 'data tersedia', '') +
+    mc('Total Tower',   fmtNum(rows.length), 'data tersedia', '') +
     mc('Sangat Tinggi', fmtNum(petirCount['SANGAT TINGGI']), pct(petirCount['SANGAT TINGGI'],rows.length)+'%', 'danger') +
     mc('Tinggi',        fmtNum(petirCount['TINGGI']),        pct(petirCount['TINGGI'],rows.length)+'%', 'warn') +
     mc('Sedang',        fmtNum(petirCount['SEDANG']),        pct(petirCount['SEDANG'],rows.length)+'%', '') +
-    mc('Rendah',        fmtNum(petirCount['RENDAH']),        pct(petirCount['RENDAH'],rows.length)+'%', 'good');
+    mc('Rendah',        fmtNum(petirCount['RENDAH']),        pct(petirCount['RENDAH'],rows.length)+'%', 'good') +
+    (noData>0 ? mc('Tidak Ada Data', fmtNum(noData), pct(noData,rows.length)+'%', '') : '');
 
-  // Doughnut distribusi
-  const vals = PETIR_ORDER.map(k=>petirCount[k]).filter((_,i)=>PETIR_ORDER[i]);
-  makeDoughnut('c-petir-dist',
-    PETIR_ORDER, PETIR_ORDER.map(k=>petirCount[k]),
-    PETIR_ORDER.map(k=>PETIR_WARNA[k]), 'leg-petir');
+  // Doughnut distribusi — hanya tampilkan kategori yang ada data
+  const distLabels = [], distVals = [], distColors = [];
+  PETIR_ORDER.forEach(k => {
+    if (petirCount[k]>0) { distLabels.push(k); distVals.push(petirCount[k]); distColors.push(PETIR_WARNA[k]); }
+  });
+  if (noData>0) { distLabels.push('Tidak ada data'); distVals.push(noData); distColors.push('#4a5060'); }
+  if (distVals.length > 0) {
+    makeDoughnut('c-petir-dist', distLabels, distVals, distColors, 'leg-petir');
+  }
 
   // Stacked per UPT
   const uptPetir = {};
@@ -1439,17 +1458,19 @@ function renderPetirTab() {
     if (!u.toUpperCase().includes('UPT')) return;
     if (!uptPetir[u]) { uptPetir[u]={}; PETIR_ORDER.forEach(k=>uptPetir[u][k]=0); }
     const k = String(r[A_PETIR]||'').trim().toUpperCase();
-    if (uptPetir[u][k]!==undefined) uptPetir[u][k]++;
+    if (PETIR_ORDER.includes(k)) uptPetir[u][k]++;
   });
   const uPetirKeys = Object.keys(uptPetir).sort((a,b)=>
     (uptPetir[b]['SANGAT TINGGI']||0)-(uptPetir[a]['SANGAT TINGGI']||0));
-  makeStackedBar('c-petir-upt', uPetirKeys.map(l=>l.replace('UPT ','')),
-    PETIR_ORDER.map(k=>({ label:k, data:uPetirKeys.map(u=>uptPetir[u][k]||0), color:PETIR_WARNA[k] }))
-  );
+  if (uPetirKeys.length > 0) {
+    makeStackedBar('c-petir-upt', uPetirKeys.map(l=>l.replace('UPT ','')),
+      PETIR_ORDER.filter(k=>uPetirKeys.some(u=>uptPetir[u][k]>0))
+        .map(k=>({ label:k, data:uPetirKeys.map(u=>uptPetir[u][k]||0), color:PETIR_WARNA[k] }))
+    );
+  }
 
-  // Per penghantar — top 20 sangat tinggi terbanyak
-  PETIR_SORTED.pht = [...PETIR_PHT_DATA].sort((a,b)=>
-    (b['SANGAT TINGGI']||0)-(a['SANGAT TINGGI']||0));
+  // Per penghantar — sort sangat tinggi terbanyak
+  PETIR_SORTED.pht = [...PETIR_PHT_DATA].sort((a,b)=>(b['SANGAT TINGGI']||0)-(a['SANGAT TINGGI']||0));
   PETIR_SORTED.thn = [...PETIR_PHT_DATA].sort((a,b)=>b.ohm10plus-a.ohm10plus);
   PETIR_PAGES.pht  = 0;
   PETIR_PAGES.thn  = 0;
