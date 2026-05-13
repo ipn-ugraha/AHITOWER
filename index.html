@@ -70,7 +70,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .topbar-icon svg{width:16px;height:16px;}
 .topbar-title{font-size:14px;font-weight:600;}
 .topbar-sub{font-size:10px;color:var(--text2);font-family:var(--mono);}
-.topbar-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;} @media(max-width:480px){.user-chip{display:none;}.topbar-title{font-size:13px;}}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.topbar-nav{background:none;border:none;border-radius:6px;color:var(--text2);font-family:var(--mono);font-size:12px;padding:5px 12px;cursor:pointer;transition:all .2s;letter-spacing:.03em;}
+.topbar-nav:hover{background:var(--bg3);color:var(--text);}
+.topbar-nav.active{background:var(--accent);color:#0d0f14;font-weight:600;} @media(max-width:480px){.user-chip{display:none;}.topbar-title{font-size:13px;}}
 .user-chip{background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--text2);font-family:var(--mono);}
 .user-chip span{color:var(--accent);}
 .btn-sm{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text2);padding:5px 10px;font-size:11px;cursor:pointer;font-family:var(--mono);transition:all .2s;display:flex;align-items:center;gap:5px;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
@@ -365,6 +368,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </svg>
       </div>
       <div><div class="topbar-title">Tower Monitoring</div><div class="topbar-sub">Dashboard Inspeksi SUTT/SUTET</div></div>
+      <!-- Tab navigasi halaman di topbar -->
+      <div style="display:flex;gap:2px;margin-left:16px;border-left:1px solid var(--border);padding-left:16px;">
+        <button id="nav-tower" class="topbar-nav active" onclick="switchPage('tower')">AHI Tower</button>
+        <button id="nav-sktt"  class="topbar-nav"        onclick="switchPage('sktt')">SKTT</button>
+      </div>
     </div>
     <div class="topbar-right">
       <div class="user-chip">Login: <span id="nav-username">-</span></div>
@@ -378,6 +386,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
   </nav>
 
+  <!-- Page: AHI Tower -->
+  <div id="page-tower" style="display:block">
   <div class="main">
     <div class="last-updated" id="last-updated">Menunggu data...</div>
 
@@ -610,6 +620,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
     </div>
   </div>
+</div><!-- end .main -->
+</div><!-- end #page-tower -->
+
+<!-- Page: SKTT -->
+<div id="page-sktt" style="display:none;height:calc(100vh - 52px)">
+  <iframe id="sktt-iframe" src="" style="width:100%;height:100%;border:none;" allow="fullscreen" title="Dashboard SKTT"></iframe>
 </div>
 
 <!-- MODAL BAY -->
@@ -769,6 +785,19 @@ function showLoading(msg='Memuat...') {
   document.getElementById('loading-overlay').style.display='flex';
 }
 function hideLoading() { document.getElementById('loading-overlay').style.display='none'; }
+
+function switchPage(page) {
+  const isTower = page === 'tower';
+  document.getElementById('page-tower').style.display = isTower ? 'block' : 'none';
+  document.getElementById('page-sktt').style.display  = isTower ? 'none'  : 'block';
+  document.getElementById('nav-tower').classList.toggle('active',  isTower);
+  document.getElementById('nav-sktt').classList.toggle('active',  !isTower);
+  // Lazy load iframe
+  if (!isTower) {
+    const iframe = document.getElementById('sktt-iframe');
+    if (iframe && !iframe.src) iframe.src = 'https://ipn-ugraha.github.io/AHITOWER/sktt-dashboard.html';
+  }
+}
 
 function switchTab(name) {
   const tabs=['overview','tower','ahi'];
