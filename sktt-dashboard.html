@@ -8,83 +8,129 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  :root {
-    --bg:#0a0e1a; --surface:#111827; --surface2:#1a2235;
-    --border:rgba(255,255,255,0.07); --text:#f0f4ff; --muted:#7a8aab;
-    --accent1:#4f8ef7; --accent2:#38d9a9; --accent3:#f7934f;
-    --accent4:#e05c7a; --accent5:#a78bfa;
-  }
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
-  body::before{content:'';position:fixed;inset:0;z-index:0;
-    background-image:linear-gradient(rgba(79,142,247,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(79,142,247,0.04) 1px,transparent 1px);
-    background-size:48px 48px;pointer-events:none;}
-  .glow{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
-  .glow-1{width:500px;height:500px;background:rgba(79,142,247,0.12);top:-150px;right:-100px;}
-  .glow-2{width:400px;height:400px;background:rgba(56,217,169,0.08);bottom:-100px;left:-100px;}
-  .container{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
+:root{
+  --bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#f0f4ff;--muted:#7a8aab;
+  --a1:#4f8ef7;--a2:#38d9a9;--a3:#f7934f;--a4:#e05c7a;--a5:#a78bfa;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;z-index:0;
+  background-image:linear-gradient(rgba(79,142,247,0.04) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(79,142,247,0.04) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;}
+.glow{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;}
+.glow-1{width:500px;height:500px;background:rgba(79,142,247,0.12);top:-150px;right:-100px;}
+.glow-2{width:400px;height:400px;background:rgba(56,217,169,0.08);bottom:-100px;left:-100px;}
+.wrap{max-width:1200px;margin:0 auto;padding:0 24px;position:relative;z-index:1;}
 
-  header{padding:40px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative;z-index:1;}
-  .header-inner{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;}
-  .badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,142,247,0.15);border:1px solid rgba(79,142,247,0.3);
-    color:#80b4ff;font-size:11px;font-weight:500;letter-spacing:0.08em;padding:4px 12px;border-radius:100px;text-transform:uppercase;margin-bottom:10px;}
-  .badge-dot{width:6px;height:6px;border-radius:50%;background:#4f8ef7;animation:pulse 2s infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
-  h1{font-family:'Syne',sans-serif;font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;}
-  h1 span{color:var(--accent1);}
-  .subtitle{font-size:14px;color:var(--muted);margin-top:8px;}
-  .status-bar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
-  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent2);animation:pulse 2s infinite;}
+/* HEADER */
+header{padding:36px 0 28px;border-bottom:1px solid var(--border);margin-bottom:32px;}
+.hrow{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(79,142,247,0.15);
+  border:1px solid rgba(79,142,247,0.3);color:#80b4ff;font-size:11px;font-weight:500;
+  letter-spacing:0.08em;padding:4px 12px;border-radius:100px;text-transform:uppercase;margin-bottom:10px;}
+.bdot{width:6px;height:6px;border-radius:50%;background:var(--a1);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(26px,4vw,42px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;}
+h1 em{color:var(--a1);font-style:normal;}
+.sub{font-size:14px;color:var(--muted);margin-top:6px;}
+.sbar{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--a2);animation:pulse 2s infinite;}
 
-  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:40px;}
-  .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;
-    position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;}
-  .metric-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,0.15);}
-  .metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0;}
-  .metric-card.c1::before{background:linear-gradient(90deg,var(--accent1),var(--accent5));}
-  .metric-card.c2::before{background:linear-gradient(90deg,var(--accent2),var(--accent1));}
-  .metric-card.c3::before{background:linear-gradient(90deg,var(--accent3),var(--accent4));}
-  .metric-card.c4::before{background:linear-gradient(90deg,var(--accent4),var(--accent5));}
-  .metric-card.c5::before{background:linear-gradient(90deg,var(--accent5),var(--accent2));}
-  .metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;}
-  .metric-value{font-family:'Syne',sans-serif;font-size:36px;font-weight:700;line-height:1;}
-  .metric-value.c1{color:var(--accent1);} .metric-value.c2{color:var(--accent2);}
-  .metric-value.c3{color:var(--accent3);} .metric-value.c4{color:var(--accent4);} .metric-value.c5{color:var(--accent5);}
-  .metric-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+/* FILTER BAR */
+.filter-bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:14px 20px;margin-bottom:32px;}
+.filter-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;white-space:nowrap;}
+.filter-chips{display:flex;flex-wrap:wrap;gap:8px;}
+.chip{padding:6px 14px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;
+  border:1px solid var(--border2);color:var(--muted);background:transparent;
+  transition:all 0.15s;}
+.chip:hover{border-color:var(--a1);color:var(--a1);}
+.chip.active{background:var(--a1);border-color:var(--a1);color:#fff;}
+.chip-all.active{background:var(--a5);border-color:var(--a5);}
 
-  .charts-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;margin-bottom:40px;}
-  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;transition:border-color 0.2s;}
-  .chart-card:hover{border-color:rgba(255,255,255,0.12);}
-  .col-8{grid-column:span 8;} .col-4{grid-column:span 4;} .col-12{grid-column:span 12;}
-  @media(max-width:900px){.col-8,.col-4,.col-12{grid-column:span 12;}}
-  .chart-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px;}
-  .chart-subtitle{font-size:12px;color:var(--muted);margin-bottom:20px;}
-  .chart-wrap{position:relative;width:100%;}
-  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px;}
-  .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);}
-  .legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:32px;}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 20px;
+  position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;}
+.mc:hover{transform:translateY(-2px);border-color:var(--border2);}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;}
+.mc.c1::before{background:linear-gradient(90deg,var(--a1),var(--a5));}
+.mc.c2::before{background:linear-gradient(90deg,var(--a2),var(--a1));}
+.mc.c3::before{background:linear-gradient(90deg,var(--a3),var(--a4));}
+.mc.c4::before{background:linear-gradient(90deg,var(--a4),var(--a5));}
+.mc.c5::before{background:linear-gradient(90deg,var(--a5),var(--a2));}
+.ml{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px;}
+.mv{font-family:'Syne',sans-serif;font-size:34px;font-weight:700;line-height:1;}
+.mv.c1{color:var(--a1);}.mv.c2{color:var(--a2);}.mv.c3{color:var(--a3);}.mv.c4{color:var(--a4);}.mv.c5{color:var(--a5);}
+.ms{font-size:11px;color:var(--muted);margin-top:5px;}
 
-  #loading{position:fixed;inset:0;z-index:100;background:var(--bg);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
-  .loader-ring{width:48px;height:48px;border-radius:50%;border:3px solid var(--surface2);
-    border-top-color:var(--accent1);animation:spin 0.8s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
-  #loading-msg{font-size:13px;color:var(--muted);}
-  #loading-sub{font-size:11px;color:#3a4a6b;}
+/* CHARTS GRID */
+.cgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px;margin-bottom:32px;}
+.cc{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;transition:border-color 0.2s;}
+.cc:hover{border-color:var(--border2);}
+.col8{grid-column:span 8;}.col4{grid-column:span 4;}.col12{grid-column:span 12;}
+@media(max-width:900px){.col8,.col4,.col12{grid-column:span 12;}}
+.ct{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;margin-bottom:3px;}
+.cs{font-size:12px;color:var(--muted);margin-bottom:18px;}
+.cw{position:relative;width:100%;}
+.lgnd{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.ld{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
 
-  #error-panel{display:none;background:var(--surface);border:1px solid rgba(224,92,122,0.3);
-    border-radius:16px;padding:28px;margin-bottom:32px;}
-  #error-panel h3{font-family:'Syne',sans-serif;color:var(--accent4);margin-bottom:12px;}
-  #error-panel p,#error-panel li{font-size:13px;color:var(--muted);line-height:1.8;}
-  #error-panel ol{padding-left:20px;margin:8px 0;}
-  #error-panel code{background:var(--surface2);color:var(--accent2);padding:2px 8px;border-radius:4px;font-size:12px;}
-  #error-detail{font-size:11px;color:#3a4a6b;margin-top:12px;word-break:break-all;}
+/* PENGHANTAR CHART — clickable hint */
+.click-hint{font-size:11px;color:var(--a1);margin-bottom:4px;display:flex;align-items:center;gap:4px;}
 
-  .fade-in{opacity:0;transform:translateY(16px);transition:opacity 0.5s,transform 0.5s;}
-  .fade-in.visible{opacity:1;transform:translateY(0);}
+/* DETAIL TABLE PANEL */
+#detail-panel{display:none;background:var(--surface);border:1px solid rgba(79,142,247,0.3);
+  border-radius:14px;padding:24px;margin-bottom:32px;animation:slideDown 0.25s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.dp-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;}
+.dp-title span{color:var(--a1);}
+.dp-close{background:transparent;border:1px solid var(--border2);color:var(--muted);
+  padding:5px 14px;border-radius:8px;font-size:12px;cursor:pointer;transition:all 0.15s;}
+.dp-close:hover{border-color:var(--a4);color:var(--a4);}
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{border-bottom:1px solid var(--border2);}
+th{text-align:left;padding:8px 10px;color:var(--muted);font-weight:500;font-size:11px;
+  text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;}
+td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--surface2);}
+.badge-ok{background:rgba(56,217,169,0.15);color:#38d9a9;padding:2px 8px;border-radius:100px;font-size:10px;}
+.badge-warn{background:rgba(247,147,79,0.15);color:#f7934f;padding:2px 8px;border-radius:100px;font-size:10px;}
+.badge-err{background:rgba(224,92,122,0.15);color:#e05c7a;padding:2px 8px;border-radius:100px;font-size:10px;}
+.badge-gray{background:rgba(122,138,171,0.15);color:#7a8aab;padding:2px 8px;border-radius:100px;font-size:10px;}
+.tbl-count{font-size:12px;color:var(--muted);margin-bottom:10px;}
 
-  footer{text-align:center;padding:32px 0;font-size:12px;color:var(--muted);border-top:1px solid var(--border);position:relative;z-index:1;}
-  footer a{color:var(--accent1);text-decoration:none;}
+/* LOADING */
+#loading{position:fixed;inset:0;z-index:100;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.ring{width:46px;height:46px;border-radius:50%;border:3px solid var(--surface2);
+  border-top-color:var(--a1);animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#lmsg{font-size:13px;color:var(--muted);}
+#lsub{font-size:11px;color:#3a4a6b;}
+
+/* ERROR */
+#err-panel{display:none;background:var(--surface);border:1px solid rgba(224,92,122,0.3);
+  border-radius:14px;padding:26px;margin-bottom:28px;}
+#err-panel h3{font-family:'Syne',sans-serif;color:var(--a4);margin-bottom:10px;}
+#err-panel p,#err-panel li{font-size:13px;color:var(--muted);line-height:1.8;}
+#err-panel ol{padding-left:20px;margin:8px 0;}
+#err-panel code{background:var(--surface2);color:var(--a2);padding:2px 8px;border-radius:4px;font-size:12px;}
+#err-detail{font-size:11px;color:#3a4a6b;margin-top:10px;word-break:break-all;}
+
+.fi{opacity:0;transform:translateY(14px);transition:opacity 0.45s,transform 0.45s;}
+.fi.v{opacity:1;transform:translateY(0);}
+footer{text-align:center;padding:28px 0;font-size:12px;color:var(--muted);
+  border-top:1px solid var(--border);position:relative;z-index:1;}
+footer a{color:var(--a1);text-decoration:none;}
 </style>
 </head>
 <body>
@@ -92,239 +138,360 @@
 <div class="glow glow-2"></div>
 
 <div id="loading">
-  <div class="loader-ring"></div>
-  <p id="loading-msg">Menghubungkan ke Google Sheets...</p>
-  <p id="loading-sub"></p>
+  <div class="ring"></div>
+  <p id="lmsg">Menghubungkan ke Google Sheets...</p>
+  <p id="lsub"></p>
 </div>
 
-<div class="container">
+<div class="wrap">
+
+  <!-- HEADER -->
   <header>
-    <div class="header-inner">
+    <div class="hrow">
       <div>
-        <div class="badge"><span class="badge-dot"></span>Live Data</div>
-        <h1>Dashboard <span>SKTT</span> 150kV</h1>
-        <p class="subtitle">Monitoring kondisi Saluran Kabel Tegangan Tinggi — PT PLN (Persero)</p>
+        <div class="badge"><span class="bdot"></span>Live Data</div>
+        <h1>Dashboard <em>SKTT</em> 150kV</h1>
+        <p class="sub">Monitoring kondisi Saluran Kabel Tegangan Tinggi — PT PLN (Persero)</p>
       </div>
-      <div class="status-bar">
-        <span class="status-dot"></span>
-        <span>Diperbarui: <strong id="last-updated" style="color:var(--accent2)">—</strong></span>
+      <div class="sbar">
+        <span class="sdot"></span>
+        <span>Diperbarui: <strong id="ts" style="color:var(--a2)">—</strong></span>
       </div>
     </div>
   </header>
 
-  <div id="error-panel">
+  <!-- ERROR -->
+  <div id="err-panel">
     <h3>⚠ Gagal memuat data</h3>
     <p>Lakukan langkah berikut di Google Sheets:</p>
     <ol>
       <li>Buka spreadsheet → <strong>File → Share → Publish to web</strong></li>
-      <li>Pilih sheet <code>Maping SKTT</code>, format <code>Comma-separated values (.csv)</code></li>
-      <li>Klik <strong>Publish</strong>, copy URL yang muncul</li>
-      <li>Tempel URL ke variabel <code>CSV_URL</code> di bagian konfigurasi dalam file HTML ini</li>
+      <li>Pilih sheet, format <code>CSV</code>, klik <strong>Publish</strong></li>
+      <li>Copy URL dan tempel ke variabel <code>CSV_URL</code> dalam file HTML ini</li>
     </ol>
-    <p id="error-detail"></p>
+    <p id="err-detail"></p>
   </div>
 
-  <div class="metrics-grid fade-in">
-    <div class="metric-card c1"><p class="metric-label">Total Data</p><p class="metric-value c1" id="m-total">—</p><p class="metric-sub">rekaman valid</p></div>
-    <div class="metric-card c2"><p class="metric-label">Wilayah UPT</p><p class="metric-value c2" id="m-upt">—</p><p class="metric-sub">area cakupan</p></div>
-    <div class="metric-card c3"><p class="metric-label">Gardu Induk</p><p class="metric-value c3" id="m-gi">—</p><p class="metric-sub">GI / GIS</p></div>
-    <div class="metric-card c4"><p class="metric-label">Anomali Sheath</p><p class="metric-value c4" id="m-anomali">—</p><p class="metric-sub">arus bocor &gt;1mA</p></div>
-    <div class="metric-card c5"><p class="metric-label">Anomali Joint</p><p class="metric-value c5" id="m-joint">—</p><p class="metric-sub">perlu tindak lanjut</p></div>
+  <!-- FILTER BAR -->
+  <div class="filter-bar fi" id="filter-bar">
+    <span class="filter-label">Filter UPT</span>
+    <div class="filter-chips" id="chips"></div>
   </div>
 
-  <div class="charts-grid">
-    <div class="chart-card col-8 fade-in">
-      <p class="chart-title">Distribusi per UPT</p>
-      <p class="chart-subtitle">Jumlah titik inspeksi per Unit Pelaksana Transmisi</p>
-      <div class="chart-wrap" style="height:260px"><canvas id="chartUPT"></canvas></div>
+  <!-- METRICS -->
+  <div class="metrics fi">
+    <div class="mc c1"><p class="ml">Total Data</p><p class="mv c1" id="m0">—</p><p class="ms">rekaman valid</p></div>
+    <div class="mc c2"><p class="ml">Wilayah UPT</p><p class="mv c2" id="m1">—</p><p class="ms">area cakupan</p></div>
+    <div class="mc c3"><p class="ml">Gardu Induk</p><p class="mv c3" id="m2">—</p><p class="ms">GI / GIS</p></div>
+    <div class="mc c4"><p class="ml">Anomali Sheath</p><p class="mv c4" id="m3">—</p><p class="ms">arus bocor &gt;1mA</p></div>
+    <div class="mc c5"><p class="ml">Anomali Joint</p><p class="mv c5" id="m4">—</p><p class="ms">perlu tindak lanjut</p></div>
+  </div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="cgrid">
+    <div class="cc col8 fi">
+      <p class="ct">Distribusi per UPT</p>
+      <p class="cs">Jumlah titik inspeksi per Unit Pelaksana Transmisi</p>
+      <div class="cw" style="height:240px"><canvas id="cUPT"></canvas></div>
     </div>
-    <div class="chart-card col-4 fade-in">
-      <p class="chart-title">Kondisi Cable Sheath</p>
-      <p class="chart-subtitle">Arus bocor (mA)</p>
-      <div class="chart-wrap" style="height:200px"><canvas id="chartSheath"></canvas></div>
-      <div class="legend" id="legendSheath"></div>
+    <div class="cc col4 fi">
+      <p class="ct">Kondisi Cable Sheath</p>
+      <p class="cs">Arus bocor (mA)</p>
+      <div class="cw" style="height:180px"><canvas id="cSheath"></canvas></div>
+      <div class="lgnd" id="lgSheath"></div>
     </div>
-    <div class="chart-card col-4 fade-in">
-      <p class="chart-title">Kondisi Joint Cable</p>
-      <p class="chart-subtitle">Hasil inspeksi sambungan</p>
-      <div class="chart-wrap" style="height:200px"><canvas id="chartJoint"></canvas></div>
-      <div class="legend" id="legendJoint"></div>
+    <div class="cc col4 fi">
+      <p class="ct">Kondisi Joint Cable</p>
+      <p class="cs">Hasil inspeksi sambungan</p>
+      <div class="cw" style="height:180px"><canvas id="cJoint"></canvas></div>
+      <div class="lgnd" id="lgJoint"></div>
     </div>
-    <div class="chart-card col-8 fade-in">
-      <p class="chart-title">Kebocoran Minyak / Jenis Isolasi</p>
-      <p class="chart-subtitle">Kategori kondisi insulasi kabel</p>
-      <div class="chart-wrap" style="height:200px"><canvas id="chartMinyak"></canvas></div>
+    <div class="cc col8 fi">
+      <p class="ct">Kebocoran Minyak / Jenis Isolasi</p>
+      <p class="cs">Kategori kondisi insulasi kabel</p>
+      <div class="cw" style="height:180px"><canvas id="cMinyak"></canvas></div>
     </div>
-    <div class="chart-card col-12 fade-in">
-      <p class="chart-title">Top 10 Gardu Induk</p>
-      <p class="chart-subtitle">GI/GIS dengan rekaman inspeksi terbanyak</p>
-      <div class="chart-wrap" style="height:320px"><canvas id="chartGI"></canvas></div>
+  </div>
+
+  <!-- CHART PENGHANTAR + DETAIL TABLE -->
+  <div class="cc fi" style="margin-bottom:18px;">
+    <p class="ct">Rekaman Inspeksi per Penghantar</p>
+    <p class="cs">Klik bar untuk melihat detail data tiap penghantar</p>
+    <p class="click-hint">↖ Klik salah satu bar untuk membuka tabel detail</p>
+    <div class="cw" id="phWrap" style="height:340px"><canvas id="cPH"></canvas></div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="detail-panel">
+    <div class="dp-head">
+      <div>
+        <p class="dp-title">Detail Penghantar: <span id="dp-name">—</span></p>
+        <p id="dp-count" class="tbl-count"></p>
+      </div>
+      <button class="dp-close" onclick="closeDetail()">✕ Tutup</button>
     </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>No</th><th>UPT</th><th>GI</th><th>Bay / Joint</th>
+            <th>Isolasi/Minyak</th><th>Sheath</th><th>Joint Cable</th><th>Penanda</th>
+          </tr>
+        </thead>
+        <tbody id="dp-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CHART GI -->
+  <div class="cc fi" style="margin-bottom:32px;">
+    <p class="ct">Top 10 Gardu Induk</p>
+    <p class="cs">GI/GIS dengan rekaman inspeksi terbanyak</p>
+    <div class="cw" style="height:320px"><canvas id="cGI"></canvas></div>
   </div>
 
   <footer>
-    Data bersumber dari <a id="sheet-link" href="#" target="_blank">Google Sheets SKTT 150kV</a>
-    &mdash; diperbarui otomatis setiap kali halaman dimuat.
+    Data bersumber dari <a id="sl" href="#" target="_blank">Google Sheets SKTT 150kV</a>
+    &mdash; diperbarui otomatis setiap halaman dimuat.
   </footer>
 </div>
 
 <script>
 // ================================================================
-//  KONFIGURASI
+// KONFIGURASI
 // ================================================================
 const SHEET_ID = '1GC3DUODDm1JDdhri1hWnXLNFOa1OwySH40pJuGjo7To';
-
-// Isi dengan URL dari File > Share > Publish to web > CSV
-// Contoh: 'https://docs.google.com/spreadsheets/d/e/2PACX-.../pub?gid=0&output=csv'
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-wBWne3aUwYszDhjlziCsHeXzmC4PPaJXiDEwObWHmIQCuEMWEiJOn4_66ccVjstTZmC7cPJYoB-T/pub?gid=0&single=true&output=csv';
-
-// Index kolom (0-based)
-const C = { NO:0, UPT:1, GI:2, PENGHANTAR:3, BAY:4, MINYAK:5, SHEATH:6, JOINT:7, PENANDA:8 };
+const CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ-wBWne3aUwYszDhjlziCsHeXzmC4PPaJXiDEwObWHmIQCuEMWEiJOn4_66ccVjstTZmC7cPJYoB-T/pub?gid=0&single=true&output=csv';
+const C = { NO:0,UPT:1,GI:2,PH:3,BAY:4,MINYAK:5,SHEATH:6,JOINT:7,PENANDA:8 };
 // ================================================================
 
 const PAL = ['#4f8ef7','#38d9a9','#f7934f','#e05c7a','#a78bfa','#f7d34f','#54d4e0','#e07a5f'];
-
 const $ = id => document.getElementById(id);
-const setMsg = (m,s='') => { $('loading-msg').textContent=m; $('loading-sub').textContent=s; };
+const setMsg = (m,s='') => { $('lmsg').textContent=m; $('lsub').textContent=s; };
 
-function tally(arr) {
-  return arr.reduce((a,v) => {
-    const k = v ? String(v).trim() : '';
-    if (k) a[k] = (a[k]||0)+1;
-    return a;
-  }, {});
+let ALL_DATA   = [];   // semua baris valid
+let activeUPT  = null; // null = semua
+let charts     = {};   // simpan instance Chart.js agar bisa di-destroy
+
+function tally(arr){
+  return arr.reduce((a,v)=>{const k=v?String(v).trim():'';if(k)a[k]=(a[k]||0)+1;return a;},{});
 }
 
-function legend(elId, labels, colors, vals) {
-  $(elId).innerHTML = labels.map((l,i) =>
-    `<div class="legend-item"><span class="legend-dot" style="background:${colors[i%colors.length]}"></span>
+function lgnd(elId, labels, colors, vals){
+  $(elId).innerHTML = labels.map((l,i)=>
+    `<div class="li"><span class="ld" style="background:${colors[i%colors.length]}"></span>
      <span>${l}: <strong style="color:${colors[i%colors.length]}">${vals[i]}</strong></span></div>`
   ).join('');
 }
 
-function donut(id, labels, data, colors) {
+function killChart(id){
+  if(charts[id]){ charts[id].destroy(); delete charts[id]; }
+}
+
+function mkDonut(id, labels, data, colors){
+  killChart(id);
   const total = data.reduce((a,b)=>a+b,0);
-  new Chart($(id), {
+  charts[id] = new Chart($(id),{
     type:'doughnut',
-    data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:0, hoverOffset:6 }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:'68%',
-      plugins:{ legend:{display:false},
-        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/total*100)}%)`}} } }
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'68%',
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${c.parsed} (${Math.round(c.parsed/total*100)}%)`}}}}
   });
 }
 
-function bar(id, labels, data, colors, horiz=false) {
-  new Chart($(id), {
+function mkBar(id, labels, data, colors, horiz=false, onClick=null){
+  killChart(id);
+  const cfg = {
     type:'bar',
-    data:{ labels, datasets:[{ data, backgroundColor:colors, borderRadius:6, borderSkipped:false }] },
-    options:{ indexAxis: horiz?'y':'x', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false} },
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:6,borderSkipped:false,
+      hoverBackgroundColor:colors.map(c=>c+'cc')}]},
+    options:{
+      indexAxis:horiz?'y':'x',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>` ${c.parsed} rekaman`}}},
       scales:{
-        x:{ grid:{color:horiz?'rgba(255,255,255,0.05)':'transparent',display:horiz},
-            ticks:{color:horiz?'#f0f4ff':'#f0f4ff',font:{size:11},maxRotation:horiz?0:20,autoSkip:false} },
-        y:{ grid:{color:horiz?'transparent':'rgba(255,255,255,0.05)',display:!horiz},
-            ticks:{color:'#7a8aab',font:{size:11}} }
-      } }
-  });
+        x:{grid:{color:horiz?'rgba(255,255,255,0.05)':'transparent',display:horiz},
+           ticks:{color:'#f0f4ff',font:{size:11},maxRotation:horiz?0:22,autoSkip:false}},
+        y:{grid:{color:horiz?'transparent':'rgba(255,255,255,0.05)',display:!horiz},
+           ticks:{color:'#7a8aab',font:{size:11}}}
+      }
+    }
+  };
+  if(onClick){
+    cfg.options.onClick = (_,els) => {
+      if(els.length){ onClick(labels[els[0].index]); }
+    };
+    cfg.options.onHover = (e,els) => {
+      e.native.target.style.cursor = els.length ? 'pointer' : 'default';
+    };
+  }
+  charts[id] = new Chart($(id), cfg);
 }
 
-function render(rows) {
-  // buang baris header dan kosong
-  const data = rows.filter(r => {
-    const upt = r[C.UPT] ? String(r[C.UPT]).trim() : '';
-    return upt && upt.toLowerCase() !== 'upt';
-  });
-
-  $('m-total').textContent  = data.length.toLocaleString('id');
-  $('m-upt').textContent    = new Set(data.map(r=>r[C.UPT])).size;
-  $('m-gi').textContent     = new Set(data.map(r=>r[C.GI])).size;
-  $('m-anomali').textContent = data.filter(r=>String(r[C.SHEATH]).includes('>')).length;
-  $('m-joint').textContent  = data.filter(r=>String(r[C.JOINT]).toLowerCase().includes('anomali')).length;
-  $('last-updated').textContent = new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
-
-  // UPT
-  const upt = Object.entries(tally(data.map(r=>r[C.UPT]))).sort((a,b)=>b[1]-a[1]);
-  bar('chartUPT', upt.map(e=>e[0]), upt.map(e=>e[1]), upt.map((_,i)=>PAL[i%PAL.length]));
-
-  // Sheath
-  const shColors = ['#38d9a9','#e05c7a','#7a8aab','#f7934f'];
-  const sh = Object.entries(tally(data.map(r=>r[C.SHEATH]))).sort((a,b)=>b[1]-a[1]);
-  donut('chartSheath', sh.map(e=>e[0]), sh.map(e=>e[1]), shColors);
-  legend('legendSheath', sh.map(e=>e[0]), shColors, sh.map(e=>e[1]));
-
-  // Joint
-  const jtColors = ['#38d9a9','#f7934f','#7a8aab','#e05c7a','#a78bfa'];
-  const jt = Object.entries(tally(data.map(r=>r[C.JOINT]))).sort((a,b)=>b[1]-a[1]);
-  donut('chartJoint', jt.map(e=>e[0]), jt.map(e=>e[1]), jtColors);
-  legend('legendJoint', jt.map(e=>e[0]), jtColors, jt.map(e=>e[1]));
-
-  // Minyak
-  const mi = Object.entries(tally(data.map(r=>r[C.MINYAK]))).sort((a,b)=>b[1]-a[1]);
-  bar('chartMinyak', mi.map(e=>e[0]), mi.map(e=>e[1]), mi.map((_,i)=>PAL[i%PAL.length]));
-
-  // GI Top 10
-  const gi = Object.entries(tally(data.map(r=>r[C.GI]))).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  bar('chartGI', gi.map(e=>e[0]), gi.map(e=>e[1]), gi.map((_,i)=>PAL[i%PAL.length]), true);
-
-  $('loading').style.display = 'none';
-  document.querySelectorAll('.fade-in').forEach((el,i) => setTimeout(()=>el.classList.add('visible'), i*80));
+// ---- Filter: filtered data based on activeUPT ----
+function filtered(){
+  if(!activeUPT) return ALL_DATA;
+  return ALL_DATA.filter(r => String(r[C.UPT]).trim() === activeUPT);
 }
 
-function showError(msgs) {
-  $('loading').style.display = 'none';
-  $('error-panel').style.display = 'block';
-  $('error-detail').textContent = 'Error log: ' + msgs.join(' → ');
-  document.querySelectorAll('.fade-in').forEach(el=>el.classList.add('visible'));
-}
-
-function parseCSV(url) {
-  return new Promise((ok, fail) => {
-    Papa.parse(url, {
-      download: true, header: false, skipEmptyLines: true,
-      complete: r => (r.data?.length > 2) ? ok(r.data) : fail(new Error('Data kosong')),
-      error: e => fail(e)
+// ---- Build filter chips ----
+function buildChips(){
+  const upts = [...new Set(ALL_DATA.map(r=>String(r[C.UPT]).trim()))].sort();
+  const el = $('chips');
+  el.innerHTML = `<button class="chip chip-all active" data-upt="">Semua</button>` +
+    upts.map(u=>`<button class="chip" data-upt="${u}">${u.replace('UPT ','')}</button>`).join('');
+  el.querySelectorAll('.chip').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      activeUPT = btn.dataset.upt || null;
+      el.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      closeDetail();
+      renderCharts();
     });
   });
 }
 
-async function parseGviz(sheetId) {
-  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json`;
-  const res  = await fetch(url, { mode:'cors' });
-  if (!res.ok) throw new Error('HTTP ' + res.status);
-  const txt  = await res.text();
-  const json = JSON.parse(txt.replace(/^[^{(]*\(/, '').replace(/\);?\s*$/, ''));
-  const cols = json.table.cols.length;
-  return json.table.rows.map(r =>
-    Array.from({length:cols}, (_,i) => {
-      const c = r.c?.[i];
-      return (c && c.v != null) ? String(c.v) : '';
-    })
-  );
+// ---- Render all charts from filtered data ----
+function renderCharts(){
+  const data = filtered();
+
+  // metrics
+  $('m0').textContent = data.length.toLocaleString('id');
+  $('m1').textContent = new Set(data.map(r=>r[C.UPT])).size;
+  $('m2').textContent = new Set(data.map(r=>r[C.GI])).size;
+  $('m3').textContent = data.filter(r=>String(r[C.SHEATH]).includes('>')).length;
+  $('m4').textContent = data.filter(r=>String(r[C.JOINT]).toLowerCase().includes('anomali')).length;
+
+  // UPT bar
+  const upt = Object.entries(tally(data.map(r=>r[C.UPT]))).sort((a,b)=>b[1]-a[1]);
+  mkBar('cUPT', upt.map(e=>e[0]), upt.map(e=>e[1]), upt.map((_,i)=>PAL[i%PAL.length]));
+
+  // Sheath donut
+  const shC = ['#38d9a9','#e05c7a','#7a8aab','#f7934f'];
+  const sh  = Object.entries(tally(data.map(r=>r[C.SHEATH]))).sort((a,b)=>b[1]-a[1]);
+  mkDonut('cSheath', sh.map(e=>e[0]), sh.map(e=>e[1]), shC);
+  lgnd('lgSheath', sh.map(e=>e[0]), shC, sh.map(e=>e[1]));
+
+  // Joint donut
+  const jtC = ['#38d9a9','#f7934f','#7a8aab','#e05c7a','#a78bfa'];
+  const jt  = Object.entries(tally(data.map(r=>r[C.JOINT]))).sort((a,b)=>b[1]-a[1]);
+  mkDonut('cJoint', jt.map(e=>e[0]), jt.map(e=>e[1]), jtC);
+  lgnd('lgJoint', jt.map(e=>e[0]), jtC, jt.map(e=>e[1]));
+
+  // Minyak bar
+  const mi = Object.entries(tally(data.map(r=>r[C.MINYAK]))).sort((a,b)=>b[1]-a[1]);
+  mkBar('cMinyak', mi.map(e=>e[0]), mi.map(e=>e[1]), mi.map((_,i)=>PAL[i%PAL.length]));
+
+  // Penghantar bar — clickable
+  const ph = Object.entries(tally(data.map(r=>r[C.PH]))).sort((a,b)=>b[1]-a[1]);
+  // dynamic height: min 300, ~28px per bar
+  const phH = Math.max(320, ph.length * 32 + 60);
+  $('phWrap').style.height = phH + 'px';
+  mkBar('cPH', ph.map(e=>e[0]), ph.map(e=>e[1]),
+    ph.map((_,i)=>PAL[i%PAL.length]), true, showDetail);
+
+  // GI Top 10
+  const gi = Object.entries(tally(data.map(r=>r[C.GI]))).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  mkBar('cGI', gi.map(e=>e[0]), gi.map(e=>e[1]), gi.map((_,i)=>PAL[i%PAL.length]), true);
 }
 
-async function load() {
-  const errs = [];
+// ---- Detail table ----
+function badgeSheath(v){
+  const s = String(v);
+  if(s.includes('>'))  return `<span class="badge-err">${v}</span>`;
+  if(s.includes('≤'))  return `<span class="badge-ok">${v}</span>`;
+  return `<span class="badge-gray">${v||'—'}</span>`;
+}
+function badgeJoint(v){
+  const s = String(v).toLowerCase();
+  if(s.includes('anomali')) return `<span class="badge-warn">${v}</span>`;
+  if(s.includes('normal'))  return `<span class="badge-ok">${v}</span>`;
+  return `<span class="badge-gray">${v||'—'}</span>`;
+}
 
-  if (CSV_URL) {
-    setMsg('Mengambil data CSV...', 'via publish URL');
-    try { return render(await parseCSV(CSV_URL)); }
-    catch(e) { errs.push('CSV: ' + e.message); }
+function showDetail(penghantar){
+  const rows = filtered().filter(r => String(r[C.PH]).trim() === penghantar);
+  $('dp-name').textContent  = penghantar;
+  $('dp-count').textContent = `${rows.length} rekaman ditemukan`;
+  $('dp-tbody').innerHTML   = rows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${r[C.UPT]||'—'}</td>
+      <td>${r[C.GI]||'—'}</td>
+      <td>${r[C.BAY]||'—'}</td>
+      <td>${r[C.MINYAK]||'—'}</td>
+      <td>${badgeSheath(r[C.SHEATH])}</td>
+      <td>${badgeJoint(r[C.JOINT])}</td>
+      <td>${r[C.PENANDA]?`<span class="badge-ok">Ada</span>`:`<span class="badge-gray">—</span>`}</td>
+    </tr>`).join('');
+
+  const panel = $('detail-panel');
+  panel.style.display = 'block';
+  setTimeout(()=> panel.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+}
+
+function closeDetail(){
+  $('detail-panel').style.display = 'none';
+}
+
+// ---- Data loading ----
+function show(){
+  $('loading').style.display='none';
+  $('ts').textContent = new Date().toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
+  buildChips();
+  renderCharts();
+  document.querySelectorAll('.fi').forEach((el,i)=>setTimeout(()=>el.classList.add('v'),i*60));
+}
+
+function showError(msgs){
+  $('loading').style.display='none';
+  $('err-panel').style.display='block';
+  $('err-detail').textContent='Error: '+msgs.join(' → ');
+  document.querySelectorAll('.fi').forEach(el=>el.classList.add('v'));
+}
+
+function parseCSV(url){
+  return new Promise((ok,fail)=>{
+    Papa.parse(url,{download:true,header:false,skipEmptyLines:true,
+      complete:r=>(r.data?.length>2)?ok(r.data):fail(new Error('Data kosong')),
+      error:e=>fail(e)});
+  });
+}
+
+async function parseGviz(id){
+  const r = await fetch(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:json`,{mode:'cors'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const txt  = await r.text();
+  const json = JSON.parse(txt.replace(/^[^{(]*\(/,'').replace(/\);?\s*$/,''));
+  const cols = json.table.cols.length;
+  return json.table.rows.map(r=>Array.from({length:cols},(_,i)=>{const c=r.c?.[i];return(c&&c.v!=null)?String(c.v):'';}));
+}
+
+function processRows(rows){
+  ALL_DATA = rows.filter(r=>{
+    const u = r[C.UPT]?String(r[C.UPT]).trim():'';
+    return u && u.toLowerCase()!=='upt';
+  });
+}
+
+async function load(){
+  const errs=[];
+  if(CSV_URL){
+    setMsg('Mengambil data CSV...');
+    try{processRows(await parseCSV(CSV_URL));return show();}
+    catch(e){errs.push('CSV: '+e.message);}
   }
-
-  setMsg('Mencoba Google Visualization API...');
-  try { return render(await parseGviz(SHEET_ID)); }
-  catch(e) { errs.push('gviz: ' + e.message); }
-
+  setMsg('Mencoba gviz API...');
+  try{processRows(await parseGviz(SHEET_ID));return show();}
+  catch(e){errs.push('gviz: '+e.message);}
   setMsg('Mencoba export CSV...');
-  try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
-    return render(await parseCSV(url));
-  } catch(e) { errs.push('export: ' + e.message); }
-
+  try{processRows(await parseCSV(`https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`));return show();}
+  catch(e){errs.push('export: '+e.message);}
   showError(errs);
 }
 
-$('sheet-link').href = `https://docs.google.com/spreadsheets/d/${SHEET_ID}`;
+$('sl').href=`https://docs.google.com/spreadsheets/d/${SHEET_ID}`;
 load();
 </script>
 </body>
