@@ -674,6 +674,37 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </iframe>
 </div>
 
+<!-- MODAL DENSITY PETIR -->
+<div class="modal-overlay" id="modal-density" style="display:none" onclick="if(event.target===this)closeModalDensity()">
+  <div class="modal-box" style="max-width:900px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modal-density-title">Profil Density Petir</div>
+        <div class="modal-sub" id="modal-density-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModalDensity()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:1rem 1.25rem">
+      <!-- Legend -->
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text2)">
+        <span>⚡ Density:</span>
+        <span><span style="color:#e84040">⚡</span> Sangat Tinggi (≥10)</span>
+        <span><span style="color:#f5a623">⚡</span> Tinggi (6–10)</span>
+        <span><span style="color:#d4bf00">⚡</span> Sedang (3–6)</span>
+        <span><span style="color:#00d4aa">⚡</span> Rendah (&lt;3)</span>
+        <span style="margin-left:8px">▐ Bar: <span style="color:#00d4aa">≤5Ω</span> <span style="color:#f5a623">5–10Ω</span> <span style="color:#e84040">&gt;10Ω</span></span>
+        <span><span style="color:#00d4aa">▲</span> TLA terpasang</span>
+      </div>
+      <!-- Stats -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px" id="modal-density-stats"></div>
+      <!-- Chart -->
+      <div style="position:relative;width:100%;height:340px">
+        <canvas id="c-modal-density"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL BAY -->
 <div class="modal-overlay" id="modal-bay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
@@ -1553,6 +1584,115 @@ function gotoPetirPage(type, page) {
 }
 
 // ─── DENSITY LINE CHART ──────────────────────────────────
+// ─── MODAL DENSITY PETIR ─────────────────────────────────
+let modalDensityChart = null;
+
+function showModalDensity(phtName) {
+  if (!F_AHI) return;
+  document.getElementById('modal-density-title').textContent = phtName;
+  document.getElementById('modal-density').style.display = 'flex';
+  renderModalDensityChart(phtName);
+}
+
+function closeModalDensity() {
+  document.getElementById('modal-density').style.display = 'none';
+  if (modalDensityChart) { modalDensityChart.destroy(); modalDensityChart = null; }
+}
+
+function renderModalDensityChart(phtName) {
+  const rows = F_AHI.filter(r=>r[A_PHT]===phtName)
+    .sort((a,b)=>{ const na=Number(a[A_NO])||0, nb=Number(b[A_NO])||0; return na-nb; });
+
+  if (!rows.length) return;
+
+  const labels   = rows.map(r=>String(r[A_NO]||'?'));
+  const density  = rows.map(r=>r[A_DENSITY]);
+  const ohm      = rows.map(r=>r[A_OHM]);
+  const tla1vals = rows.map(r=>r[A_TLA1]);
+  const tla2vals = rows.map(r=>r[A_TLA2]);
+
+  // Stats
+  const dValid = density.filter(v=>v!==null&&v!==undefined);
+  const avg = dValid.length ? (dValid.reduce((s,v)=>s+v,0)/dValid.length).toFixed(1) : '–';
+  const max = dValid.length ? Math.max(...dValid).toFixed(1) : '–';
+  const thnBad  = ohm.filter(v=>v!==null&&v>10).length;
+  const tlaCount= rows.filter((_,i)=>hasTLAval(tla1vals[i],tla2vals[i])).length;
+
+  document.getElementById('modal-density-sub').textContent =
+    rows.length+' tower · avg '+avg+' · max '+max+' flash/km²/thn · klik di luar untuk tutup';
+
+  const statEl = document.getElementById('modal-density-stats');
+  const sm = (label,val,color='') =>
+    `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:5px 12px;text-align:center;min-width:90px">
+      <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">${label}</div>
+      <div style="font-size:15px;font-weight:500;color:${color||'var(--text)'}">${val}</div>
+    </div>`;
+  statEl.innerHTML =
+    sm('Total Tower', rows.length) +
+    sm('Avg Density', avg) +
+    sm('Max Density', max, dValid.length && +max>=10?'#e84040':dValid.length && +max>=6?'#f5a623':'#00d4aa') +
+    sm('Tahanan >10Ω', thnBad+' tower', thnBad>0?'#e84040':'') +
+    sm('TLA Terpasang', tlaCount+' tower', tlaCount>0?'#00d4aa':'');
+
+  // TLA scatter
+  const tlaData = rows.map((r,i)=>
+    hasTLAval(tla1vals[i],tla2vals[i]) && density[i]!==null
+      ? {x:labels[i], y:density[i]+1.5} : null).filter(Boolean);
+
+  if (modalDensityChart) modalDensityChart.destroy();
+  modalDensityChart = new Chart(document.getElementById('c-modal-density'), {
+    type:'bar',
+    plugins:[DENSITY_LIGHTNING_PLUGIN],
+    data:{
+      labels,
+      datasets:[
+        { type:'bar', label:'Tahanan (Ω)',
+          data:ohm.map(v=>v??0),
+          backgroundColor:ohm.map(getOhmColor),
+          borderColor:ohm.map(getOhmBorder),
+          borderWidth:1, borderRadius:2, yAxisID:'y2', order:3 },
+        { type:'line', label:'Density petir', _isLine:true,
+          data:density,
+          borderColor:'rgba(100,140,255,0.4)', borderWidth:1.5,
+          pointRadius:0, pointHoverRadius:0, tension:0.3,
+          fill:{target:'origin',above:'rgba(59,122,255,0.04)'},
+          yAxisID:'y1', order:2 },
+        { type:'scatter', label:'TLA',
+          data:tlaData,
+          pointStyle:'triangle', pointRadius:7,
+          backgroundColor:'#00d4aa', borderColor:'#009980', borderWidth:1,
+          yAxisID:'y1', order:0 },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title: ctx=>'Tower No. '+ctx[0].label,
+          beforeBody: ctx=>{
+            const i=ctx[0].dataIndex;
+            return [
+              '⚡ Density : '+(density[i]!==null?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
+              '  Tahanan : '+(ohm[i]!==null?ohm[i]+' Ω':'no data'),
+              '▲ TLA I   : '+(tla1vals[i]||'–')+'   II: '+(tla2vals[i]||'–'),
+            ];
+          },
+          label:()=>null
+        }}
+      },
+      scales:{
+        x:{ ticks:{color:TC,font:{size:9},maxRotation:0,maxTicksLimit:25}, grid:{color:GC} },
+        y1:{ position:'left', title:{display:true,text:'Density (flash/km²/thn)',color:TC,font:{size:10}},
+             ticks:{color:TC,font:{size:10}}, grid:{color:GC}, min:0 },
+        y2:{ position:'right', title:{display:true,text:'Tahanan (Ω)',color:TC,font:{size:10}},
+             ticks:{color:TC,font:{size:10}}, grid:{display:false}, min:0 }
+      }
+    }
+  });
+}
+
 const DENSITY_LIGHTNING_PLUGIN = {
   id: 'lightning',
   afterDatasetsDraw(chart) {
@@ -1787,7 +1927,7 @@ function gotoAHIPage(type, page) {
 }
 
 // ─── STACKED BAR ──────────────────────────────────────────
-function makeStackedBar(id, labels, datasets) {
+function makeStackedBar(id, labels, datasets, onClickCb) {
   dc(id);
   const canvas = document.getElementById(id);
   charts[id] = new Chart(canvas, {
@@ -1828,7 +1968,8 @@ function makeStackedBar(id, labels, datasets) {
       onClick: (evt, elements) => {
         if (!elements.length) return;
         const label = charts[id].data.labels[elements[0].index];
-        showBayModal(label);
+        if (onClickCb) onClickCb(label);
+        else showBayModal(label);
       },
       onHover: (evt, elements) => {
         evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
