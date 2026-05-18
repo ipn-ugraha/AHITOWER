@@ -1749,6 +1749,9 @@ function buildDensityDropdown() {
   if (!sel||sel.options.length>1) return;
   const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
   phts.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
+  // Default: pilih penghantar yang mengandung KEBONAGUNG-LAWANG
+  const defaultPht = phts.find(p=>p.toUpperCase().includes('KEBONAGUNG') && p.toUpperCase().includes('LAWANG'));
+  if (defaultPht) sel.value = defaultPht;
 }
 
 function renderDensityLine() {
