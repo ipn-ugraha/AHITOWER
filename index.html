@@ -513,6 +513,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
 
       <div class="sl">Kerapatan petir</div>
+      <!-- Info kriteria CIGRE -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1.1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+        <span style="font-size:11px;color:var(--text3);font-family:var(--mono);font-weight:500">Klasifikasi CIGRE:</span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--text2)">
+          <span style="color:#00d4aa">●</span> <b>Rendah</b> &lt;2
+        </span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--text2)">
+          <span style="color:#d4bf00">●</span> <b>Sedang</b> 2–6
+        </span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--text2)">
+          <span style="color:#f5a623">●</span> <b>Tinggi</b> 6–15
+        </span>
+        <span style="font-size:11px;font-family:var(--mono);color:var(--text2)">
+          <span style="color:#e84040">●</span> <b>Sangat Tinggi</b> &gt;15
+        </span>
+        <span style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-left:4px">flash/km²/thn</span>
+        <span style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-left:auto">Ref: CIGRE TB 549 / IEC 62305</span>
+      </div>
       <div class="metrics" id="m-petir"></div>
       <div class="cg2">
         <div class="cc"><div class="cc-title">Distribusi kategori kerapatan petir</div>
@@ -531,10 +549,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:11px;color:var(--text2)">
           <span>⚡ Density:</span>
-          <span><span style="color:#e84040">⚡</span> Sangat Tinggi (≥10)</span>
-          <span><span style="color:#f5a623">⚡</span> Tinggi (6–10)</span>
-          <span><span style="color:#d4bf00">⚡</span> Sedang (3–6)</span>
-          <span><span style="color:#00d4aa">⚡</span> Rendah (&lt;3)</span>
+          <span><span style="color:#e84040">⚡</span> Sangat Tinggi (&gt;15)</span>
+          <span><span style="color:#f5a623">⚡</span> Tinggi (6–15)</span>
+          <span><span style="color:#d4bf00">⚡</span> Sedang (2–6)</span>
+          <span><span style="color:#00d4aa">⚡</span> Rendah (&lt;2)</span>
           <span style="margin-left:8px">▐ Bar:</span>
           <span><span style="color:#00d4aa">▐</span> ≤5Ω</span>
           <span><span style="color:#f5a623">▐</span> 5–10Ω</span>
@@ -1729,11 +1747,11 @@ const DENSITY_LIGHTNING_PLUGIN = {
 
 function getDensityColor(v) {
   if (v===null||v===undefined) return '#4a5060';
-  return v>=10?'#e84040': v>=6?'#f5a623': v>=3?'#d4bf00':'#00d4aa';
+  return v>15?'#e84040': v>=6?'#f5a623': v>=2?'#d4bf00':'#00d4aa';
 }
 function getDensityCat(v) {
   if (v===null||v===undefined) return '–';
-  return v>=10?'Sangat Tinggi': v>=6?'Tinggi': v>=3?'Sedang':'Rendah';
+  return v>15?'Sangat Tinggi': v>=6?'Tinggi': v>=2?'Sedang':'Rendah';
 }
 function getOhmColor(v) {
   if (v===null||v===undefined) return '#4a506066';
