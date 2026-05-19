@@ -1753,11 +1753,10 @@ function extractTowerNum(bay, twr) {
   return m ? parseInt(m[1]) : null;
 }
 function bayLabel(bay, twr) {
-  // Tampilkan BAY + nomor #
-  const num = extractTowerNum(bay, twr);
-  const b = (bay||'').toString().trim();
-  if (!b || b==='-') return num ? '#'+num : '?';
-  return b;
+  // Tampilkan hanya angka setelah '#'
+  const src = (twr||bay||'').toString();
+  const m = src.match(/#0*(\d+)/);
+  return m ? m[1] : (bay||'?').toString().trim();
 }
 
 let densityChart = null;
