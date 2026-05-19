@@ -1601,11 +1601,15 @@ function closeModalDensity() {
 
 function renderModalDensityChart(phtName) {
   const rows = F_AHI.filter(r=>r[A_PHT]===phtName)
-    .sort((a,b)=>{ const na=Number(a[A_NO])||0, nb=Number(b[A_NO])||0; return na-nb; });
+    .sort((a,b)=>{
+      const na = extractTowerNum(a[A_BAY], a[A_TWR]) ?? Number(a[A_NO]) ?? 0;
+      const nb = extractTowerNum(b[A_BAY], b[A_TWR]) ?? Number(b[A_NO]) ?? 0;
+      return na-nb;
+    });
 
   if (!rows.length) return;
 
-  const labels   = rows.map(r=>String(r[A_NO]||'?'));
+  const labels   = rows.map(r=>bayLabel(r[A_BAY], r[A_TWR]));
   const density  = rows.map(r=>r[A_DENSITY]);
   const ohm      = rows.map(r=>r[A_OHM]);
   const tla1vals = rows.map(r=>r[A_TLA1]);
@@ -1670,7 +1674,7 @@ function renderModalDensityChart(phtName) {
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{
-          title: ctx=>'Tower No. '+ctx[0].label,
+          title: ctx=>'Tower: '+ctx[0].label,
           beforeBody: ctx=>{
             const i=ctx[0].dataIndex;
             return [
@@ -1741,6 +1745,21 @@ function getOhmBorder(v) {
 }
 const hasTLAval = (v1,v2) => (v1&&v1!=='-')||(v2&&v2!=='-');
 
+// Ekstrak nomor setelah '#' dari string BAY/TOWER, untuk sorting dan label
+function extractTowerNum(bay, twr) {
+  // Coba dari kolom TWR dulu (biasanya ada #XXXX)
+  const src = (twr||bay||'').toString();
+  const m = src.match(/#(\d+)/);
+  return m ? parseInt(m[1]) : null;
+}
+function bayLabel(bay, twr) {
+  // Tampilkan BAY + nomor #
+  const num = extractTowerNum(bay, twr);
+  const b = (bay||'').toString().trim();
+  if (!b || b==='-') return num ? '#'+num : '?';
+  return b;
+}
+
 let densityChart = null;
 
 function buildDensityDropdown() {
@@ -1761,13 +1780,17 @@ function renderDensityLine() {
   const pht = sel?.value;
   if (!pht) { if(sel?.options.length>1) { sel.selectedIndex=1; } renderDensityLine(); return; }
 
-  // Ambil semua tower untuk penghantar ini, urutkan by A_NO
+  // Ambil semua tower, urutkan by nomor # dari BAY/TOWER
   const rows = F_AHI.filter(r=>r[A_PHT]===pht)
-    .sort((a,b)=>{ const na=Number(a[A_NO])||0, nb=Number(b[A_NO])||0; return na-nb; });
+    .sort((a,b)=>{
+      const na = extractTowerNum(a[A_BAY], a[A_TWR]) ?? Number(a[A_NO]) ?? 0;
+      const nb = extractTowerNum(b[A_BAY], b[A_TWR]) ?? Number(b[A_NO]) ?? 0;
+      return na-nb;
+    });
 
   if (!rows.length) return;
 
-  const labels   = rows.map(r=>r[A_NO]||'?');
+  const labels   = rows.map(r=>bayLabel(r[A_BAY], r[A_TWR]));
   const density  = rows.map(r=>r[A_DENSITY]);
   const ohm      = rows.map(r=>r[A_OHM]);
   const tla1vals = rows.map(r=>r[A_TLA1]);
@@ -1822,7 +1845,7 @@ function renderDensityLine() {
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{
-          title: ctx=>'Tower No. '+ctx[0].label,
+          title: ctx=>'Tower: '+ctx[0].label,
           beforeBody: ctx=>{
             const i=ctx[0].dataIndex;
             const d=density[i], o=ohm[i], t1=tla1vals[i], t2=tla2vals[i];
