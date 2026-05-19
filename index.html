@@ -1747,16 +1747,27 @@ const hasTLAval = (v1,v2) => (v1&&v1!=='-')||(v2&&v2!=='-');
 
 // Ekstrak nomor setelah '#' dari string BAY/TOWER, untuk sorting dan label
 function extractTowerNum(bay, twr) {
-  // Coba dari kolom TWR dulu (biasanya ada #XXXX)
-  const src = (twr||bay||'').toString();
-  const m = src.match(/#(\d+)/);
-  return m ? parseInt(m[1]) : null;
+  for (const src of [bay, twr]) {
+    if (!src) continue;
+    const m = String(src).match(/#\s*(\d+)/);
+    if (m) return parseInt(m[1]);
+  }
+  const n = parseInt(twr);
+  return !isNaN(n) ? n : null;
 }
 function bayLabel(bay, twr) {
-  // Tampilkan hanya angka setelah '#'
-  const src = (twr||bay||'').toString();
-  const m = src.match(/#0*(\d+)/);
-  return m ? m[1] : (bay||'?').toString().trim();
+  // Strip leading zero tapi pertahankan minimal 2 digit
+  // 0053 → 53, 0001 → 01, 0010 → 10, 0100 → 100
+  for (const src of [bay, twr]) {
+    if (!src) continue;
+    const m = String(src).match(/#\s*(\d+)/);
+    if (m) {
+      const num = parseInt(m[1]);
+      return num < 10 ? '00'+num : num < 100 ? '0'+num : String(num);
+    }
+  }
+  const n = parseInt(twr);
+  return !isNaN(n) ? String(n) : String(bay||'?').trim();
 }
 
 let densityChart = null;
@@ -2251,10 +2262,27 @@ async function doRebuildCache(){
   if(!confirm('Rebuild cache? Proses ±30–60 detik.')) return;
   const btn=document.getElementById('btn-rebuild');
   btn.textContent='⏳ Building...'; btn.disabled=true;
-  const res=await api({action:'rebuild_cache',token:TOKEN});
-  btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
-  if(res.ok){ alert('Cache berhasil!\nTower: '+res.rows+'\nAHI: '+res.ahiRows); loadDashboard(); }
-  else alert('Gagal: '+res.error);
+
+  // Gunakan fetch langsung dengan timeout lebih lama (120 detik)
+  try {
+    const url = API_URL + '?' + new URLSearchParams({action:'rebuild_cache', token:TOKEN}).toString();
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), 120000); // 120 detik
+    const r = await fetch(url, {method:'GET', redirect:'follow', signal:ctrl.signal});
+    clearTimeout(t);
+    const res = await r.json();
+    btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
+    if(res.ok){
+      alert('✅ Cache berhasil diperbarui!\nTower: '+fmtNum(res.rows)+'\nAHI: '+fmtNum(res.ahiRows));
+      loadDashboard();
+    } else {
+      alert('❌ Gagal: '+res.error);
+    }
+  } catch(e) {
+    btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
+    if(e.name==='AbortError') alert('⏱ Timeout — rebuild mungkin masih berjalan di server.\nTunggu 1-2 menit lalu refresh halaman.');
+    else alert('❌ Error: '+e.message);
+  }
 }
 
 // ─── UTILS ────────────────────────────────────────────────
