@@ -1663,9 +1663,12 @@ function renderModalDensityChart(phtName) {
     sm('TLA Terpasang', tlaCount+' tower', tlaCount>0?'#00d4aa':'');
 
   // TLA scatter
+  // Hitung max density untuk posisi TLA jika density null
+  const maxDens1 = Math.max(...density.filter(v=>v!==null&&v!==undefined), 5);
   const tlaData = rows.map((r,i)=>
-    hasTLAval(tla1vals[i],tla2vals[i]) && density[i]!==null
-      ? {x:labels[i], y:density[i]+1.5} : null).filter(Boolean);
+    hasTLAval(tla1vals[i],tla2vals[i])
+      ? {x:labels[i], y:(density[i]!==null ? density[i]+1.5 : maxDens1*0.5)} : null
+  ).filter(Boolean);
 
   if (modalDensityChart) modalDensityChart.destroy();
   modalDensityChart = new Chart(document.getElementById('c-modal-density'), {
@@ -1704,7 +1707,7 @@ function renderModalDensityChart(phtName) {
             return [
               '⚡ Density : '+(density[i]!==null?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
               '  Tahanan : '+(ohm[i]!==null?ohm[i]+' Ω':'no data'),
-              '▲ TLA I   : '+(tla1vals[i]||'–')+'   II: '+(tla2vals[i]||'–'),
+              '▲ TLA     : '+tlaLabel(tla1vals[i],tla2vals[i]),
             ];
           },
           label:()=>null
@@ -1767,7 +1770,17 @@ function getOhmBorder(v) {
   if (v===null||v===undefined) return '#4a5060';
   return v<=5?'#00d4aa': v<=10?'#f5a623':'#e84040';
 }
-const hasTLAval = (v1,v2) => (v1&&v1!=='-')||(v2&&v2!=='-');
+const hasTLAval = (v1,v2) => {
+  const ok = v => v && String(v).trim() !== '-' && String(v).trim() !== '';
+  return ok(v1) || ok(v2);
+};
+const tlaLabel = (v1,v2) => {
+  const ok = v => v && String(v).trim() !== '-' && String(v).trim() !== '';
+  const parts = [];
+  if (ok(v1)) parts.push('L1:'+String(v1).trim());
+  if (ok(v2)) parts.push('L2:'+String(v2).trim());
+  return parts.length ? parts.join(' ') : '–';
+};
 
 // Ekstrak nomor setelah '#' dari string BAY/TOWER, untuk sorting dan label
 function extractTowerNum(bay, twr) {
@@ -1839,9 +1852,12 @@ function renderDensityLine() {
   }
 
   // TLA scatter data
+  // Hitung max density untuk posisi TLA jika density null
+  const maxDens1 = Math.max(...density.filter(v=>v!==null&&v!==undefined), 5);
   const tlaData = rows.map((r,i)=>
-    hasTLAval(tla1vals[i],tla2vals[i]) && density[i]!==null
-      ? {x:labels[i], y:density[i]+1.5} : null).filter(Boolean);
+    hasTLAval(tla1vals[i],tla2vals[i])
+      ? {x:labels[i], y:(density[i]!==null ? density[i]+1.5 : maxDens1*0.5)} : null
+  ).filter(Boolean);
 
   if (densityChart) densityChart.destroy();
   densityChart = new Chart(document.getElementById('c-density-line'), {
