@@ -1624,7 +1624,7 @@ function closeModalDensity() {
 }
 
 function renderModalDensityChart(phtName) {
-  const rows = F_AHI.filter(r=>r[A_PHT]===phtName)
+  const rows = F_AHI.filter(r=>r[A_PHT]===phtName && r[A_PHT]!=='' && r[A_BAY]!=='')
     .sort((a,b)=>{
       const na = extractTowerNum(a[A_BAY], a[A_TWR]) ?? Number(a[A_NO]) ?? 0;
       const nb = extractTowerNum(b[A_BAY], b[A_TWR]) ?? Number(b[A_NO]) ?? 0;
@@ -1705,12 +1705,13 @@ function renderModalDensityChart(phtName) {
         tooltip:{callbacks:{
           title: ctx=>'Tower: '+ctx[0].label,
           beforeBody: ctx=>{
-            const lbl = ctx[0].label;
-            const i   = labels.indexOf(lbl); // index yang benar berdasarkan label
+            const lbl = String(ctx[0].label);
+            const i   = labels.findIndex(l=>String(l)===lbl);
+            const tla = i>=0 ? tlaLabel(tla1vals[i],tla2vals[i]) : (tlaByLabel[lbl]||'–');
             return [
               '⚡ Density : '+(i>=0&&density[i]!==null?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
               '  Tahanan : '+(i>=0&&ohm[i]!==null?ohm[i]+' Ω':'no data'),
-              '▲ TLA     : '+(tlaByLabel[lbl]||'–'),
+              '▲ TLA     : '+tla,
             ];
           },
           label:()=>null
@@ -1826,8 +1827,8 @@ function renderDensityLine() {
   }
   if (!pht) return;
 
-  // Ambil semua tower, urutkan by nomor # dari BAY/TOWER
-  const rows = F_AHI.filter(r=>r[A_PHT]===pht)
+  // Ambil semua tower, filter PHT valid, urutkan by nomor # dari BAY/TOWER
+  const rows = F_AHI.filter(r=>r[A_PHT]===pht && r[A_PHT]!=='' && r[A_BAY]!=='')
     .sort((a,b)=>{
       const na = extractTowerNum(a[A_BAY], a[A_TWR]) ?? Number(a[A_NO]) ?? 0;
       const nb = extractTowerNum(b[A_BAY], b[A_TWR]) ?? Number(b[A_NO]) ?? 0;
