@@ -1911,6 +1911,7 @@ function renderDensityLine() {
           },
           beforeBody: ctx=>{
             const i = ctx[0].dataIndex;
+            console.log('[density] i='+i+' label='+labels[i]+' tla1='+tla1vals[i]+' tla2='+tla2vals[i]+' density='+density[i]+' ohm='+ohm[i]);
             const tla = tlaLabel(tla1vals[i],tla2vals[i]);
             return [
               '⚡ Density : '+(density[i]!==null&&density[i]!==undefined?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
