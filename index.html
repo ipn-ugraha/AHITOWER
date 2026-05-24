@@ -1703,15 +1703,19 @@ function renderModalDensityChart(phtName) {
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{
-          title: ctx=>'Tower: '+ctx[0].label,
+          title: ctx=>{
+            // Cari context dari dataset line (bukan scatter/bar)
+            const lineCtx = ctx.find(c=>c.datasetIndex===1) || ctx[0];
+            return 'Tower: '+lineCtx.label;
+          },
           beforeBody: ctx=>{
-            const lbl = String(ctx[0].label);
-            const i   = labels.findIndex(l=>String(l)===lbl);
-            console.log('hover lbl='+lbl+' i='+i+' labels[0]='+labels[0]+' tla1='+tla1vals[i]);
-            const tla = i>=0 ? tlaLabel(tla1vals[i],tla2vals[i]) : (tlaByLabel[lbl]||'–');
+            // Selalu pakai index dari dataset line (index 1)
+            const lineCtx = ctx.find(c=>c.datasetIndex===1) || ctx[0];
+            const i = lineCtx.dataIndex;
+            const tla = i>=0 ? tlaLabel(tla1vals[i],tla2vals[i]) : '–';
             return [
-              '⚡ Density : '+(i>=0&&density[i]!==null?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
-              '  Tahanan : '+(i>=0&&ohm[i]!==null?ohm[i]+' Ω':'no data'),
+              '⚡ Density : '+(density[i]!==null&&density[i]!==undefined?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
+              '  Tahanan : '+(ohm[i]!==null&&ohm[i]!==undefined?ohm[i]+' Ω':'no data'),
               '▲ TLA     : '+tla,
             ];
           },
@@ -1899,14 +1903,18 @@ function renderDensityLine() {
       plugins:{
         legend:{display:false},
         tooltip:{callbacks:{
-          title: ctx=>'Tower: '+ctx[0].label,
+          title: ctx=>{
+            const lineCtx = ctx.find(c=>c.datasetIndex===1) || ctx[0];
+            return 'Tower: '+lineCtx.label;
+          },
           beforeBody: ctx=>{
-            const i=ctx[0].dataIndex;
-            const d=density[i], o=ohm[i], t1=tla1vals[i], t2=tla2vals[i];
+            const lineCtx = ctx.find(c=>c.datasetIndex===1) || ctx[0];
+            const i = lineCtx.dataIndex;
+            const tla = i>=0 ? tlaLabel(tla1vals[i],tla2vals[i]) : '–';
             return [
-              '⚡ Density : '+(d!==null?d.toFixed(2)+' flash/km²/thn  ('+getDensityCat(d)+')':'no data'),
-              '  Tahanan : '+(o!==null?o+' Ω':'no data'),
-              '▲ TLA I   : '+(t1||'–')+'   II: '+(t2||'–'),
+              '⚡ Density : '+(density[i]!==null&&density[i]!==undefined?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
+              '  Tahanan : '+(ohm[i]!==null&&ohm[i]!==undefined?ohm[i]+' Ω':'no data'),
+              '▲ TLA     : '+tla,
             ];
           },
           label:()=>null
