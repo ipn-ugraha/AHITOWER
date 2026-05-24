@@ -1484,11 +1484,16 @@ function renderPetirTab() {
   });
   PETIR_PHT_DATA = Object.values(phtMap);
 
-  // Build dropdown penghantar — hanya update jika belum terisi atau filter berubah
+  // Build dropdown penghantar — selalu rebuild dari F_AHI (sudah terfilter UPT dll)
   const sel = document.getElementById('f-pht-petir');
-  if (sel && sel.options.length <= 1) {
+  if (sel) {
+    const curVal = sel.value; // simpan pilihan sebelumnya
     const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">Semua Penghantar</option>';
     phts.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
+    // Pertahankan pilihan sebelumnya jika masih ada di list baru
+    if (curVal && phts.includes(curVal)) sel.value = curVal;
+    else sel.value = '';
   }
 
   // Hitung distribusi total
