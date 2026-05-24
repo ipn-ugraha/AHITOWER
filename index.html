@@ -543,8 +543,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="sl">Profil density petir per tower (per penghantar)</div>
       <div class="cc" id="cc-density-line">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-          <span style="font-size:11px;color:var(--text2);font-family:var(--mono)">Penghantar:</span>
-          <select class="fs" id="f-pht-density" onchange="renderDensityLine()" style="min-width:240px;font-size:11px"></select>
           <span id="density-stats" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:11px;color:var(--text2)">
@@ -1547,6 +1545,9 @@ function renderPetirTab() {
   PETIR_PAGES.thn  = 0;
   renderPetirPage('pht');
   renderPetirPage('thn');
+
+  // Sync filter penghantar ke grafik density
+  renderDensityLine();
 }
 
 function renderPetirPage(type) {
@@ -1790,23 +1791,19 @@ function bayLabel(bay, twr) {
 
 let densityChart = null;
 
-function buildDensityDropdown() {
-  if (!F_AHI) return;
-  const sel = document.getElementById('f-pht-density');
-  if (!sel||sel.options.length>1) return;
-  const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
-  phts.forEach(p=>{ const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
-  // Default: pilih penghantar yang mengandung KEBONAGUNG-LAWANG
-  const defaultPht = phts.find(p=>p.toUpperCase().includes('KEBONAGUNG') && p.toUpperCase().includes('LAWANG'));
-  if (defaultPht) sel.value = defaultPht;
-}
+function buildDensityDropdown() { /* tidak dipakai — pakai f-pht-petir */ }
 
 function renderDensityLine() {
   if (!F_AHI) return;
-  buildDensityDropdown();
-  const sel = document.getElementById('f-pht-density');
-  const pht = sel?.value;
-  if (!pht) { if(sel?.options.length>1) { sel.selectedIndex=1; } renderDensityLine(); return; }
+  // Pakai filter penghantar yang sama dengan filter utama tab Petir
+  const sel = document.getElementById('f-pht-petir');
+  let pht = sel?.value || '';
+  // Jika "Semua", pilih default KEBONAGUNG-LAWANG
+  if (!pht) {
+    const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
+    pht = phts.find(p=>p.toUpperCase().includes('KEBONAGUNG') && p.toUpperCase().includes('LAWANG')) || phts[0] || '';
+  }
+  if (!pht) return;
 
   // Ambil semua tower, urutkan by nomor # dari BAY/TOWER
   const rows = F_AHI.filter(r=>r[A_PHT]===pht)
@@ -1831,7 +1828,8 @@ function renderDensityLine() {
     const max=Math.max(...dValid).toFixed(1);
     const thnBad=ohm.filter(v=>v!==null&&v>10).length;
     const tlaCount=rows.filter((_,i)=>hasTLAval(tla1vals[i],tla2vals[i])).length;
-    document.getElementById('density-stats').textContent =
+    const densityPhtName = pht;
+    document.getElementById('density-stats').textContent = densityPhtName + ' · ' +
       rows.length+' tower · avg '+avg+' · max '+max+' · tahanan >10Ω: '+thnBad+' · TLA: '+tlaCount;
   }
 
