@@ -1860,15 +1860,14 @@ function renderDensityLine() {
       rows.length+' tower · avg '+avg+' · max '+max+' · tahanan >10Ω: '+thnBad+' · TLA: '+tlaCount;
   }
 
-  // TLA scatter data
-  // Buat lookup TLA per label untuk tooltip yang akurat
-  const tlaByLabel = {};
-  rows.forEach((r,i) => { tlaByLabel[labels[i]] = tlaLabel(tla1vals[i],tla2vals[i]); });
+  // TLA data — gunakan array sejajar dengan labels (null jika tidak ada TLA)
+  // Ini memastikan dataIndex selalu sinkron dengan posisi tower
   const maxDens1 = Math.max(...density.filter(v=>v!==null&&v!==undefined), 5);
-  const tlaData = rows.map((r,i)=>
+  const tlaDataArr = rows.map((r,i)=>
     hasTLAval(tla1vals[i],tla2vals[i])
-      ? {x:labels[i], y:(density[i]!==null ? density[i]+1.5 : maxDens1*0.5)} : null
-  ).filter(Boolean);
+      ? (density[i]!==null ? density[i]+1.5 : maxDens1*0.5)
+      : null
+  );
 
   if (densityChart) densityChart.destroy();
   densityChart = new Chart(document.getElementById('c-density-line'), {
@@ -1890,10 +1889,12 @@ function renderDensityLine() {
           tension:0.3,
           fill:{target:'origin',above:'rgba(59,122,255,0.04)'},
           yAxisID:'y1', order:2 },
-        { type:'scatter', label:'TLA',
-          data:tlaData,
-          pointStyle:'triangle', pointRadius:7,
-          backgroundColor:'#00d4aa', borderColor:'#009980', borderWidth:1,
+        { type:'line', label:'TLA',
+          data:tlaDataArr,
+          pointStyle:'triangle', pointRadius:tlaDataArr.map(v=>v!==null?7:0),
+          pointHoverRadius:tlaDataArr.map(v=>v!==null?9:0),
+          backgroundColor:'#00d4aa', borderColor:'transparent', borderWidth:0,
+          showLine:false,
           yAxisID:'y1', order:0 },
       ]
     },
@@ -1904,13 +1905,13 @@ function renderDensityLine() {
         legend:{display:false},
         tooltip:{callbacks:{
           title: ctx=>{
-            const lineCtx = ctx.find(c=>c.datasetIndex===1) || ctx[0];
-            return 'Tower: '+lineCtx.label;
+            // Gunakan dataIndex dari ctx pertama — semua dataset sejajar
+            const i = ctx[0].dataIndex;
+            return 'Tower: '+labels[i];
           },
           beforeBody: ctx=>{
-            const lineCtx = ctx.find(c=>c.datasetIndex===1) || ctx[0];
-            const i = lineCtx.dataIndex;
-            const tla = i>=0 ? tlaLabel(tla1vals[i],tla2vals[i]) : '–';
+            const i = ctx[0].dataIndex;
+            const tla = tlaLabel(tla1vals[i],tla2vals[i]);
             return [
               '⚡ Density : '+(density[i]!==null&&density[i]!==undefined?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
               '  Tahanan : '+(ohm[i]!==null&&ohm[i]!==undefined?ohm[i]+' Ω':'no data'),
