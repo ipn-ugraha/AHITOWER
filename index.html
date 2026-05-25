@@ -1473,9 +1473,10 @@ function renderPetirTab() {
       PETIR_ORDER.forEach(k => phtMap[p][k]=0);
     }
     phtMap[p].total++;
-    // Normalize nilai petir
-    const pet = String(r[A_PETIR]||'').trim().toUpperCase();
+    // Normalize nilai petir — kosong/null → TIDAK ADA DATA
+    const pet = String(r[A_PETIR]||'').trim().toUpperCase() || 'TIDAK ADA DATA';
     if (PETIR_ORDER.includes(pet)) phtMap[p][pet]++;
+    else phtMap[p]['TIDAK ADA DATA']++;
     // Tahanan
     const ohm = r[A_OHM];
     if (ohm===null||ohm===undefined) phtMap[p].ohmNull++;
@@ -1502,9 +1503,9 @@ function renderPetirTab() {
   PETIR_ORDER.forEach(k => petirCount[k]=0);
   let noData = 0;
   rows.forEach(r => {
-    const k = String(r[A_PETIR]||'').trim().toUpperCase();
+    const k = String(r[A_PETIR]||'').trim().toUpperCase() || 'TIDAK ADA DATA';
     if (PETIR_ORDER.includes(k)) petirCount[k]++;
-    else noData++;
+    else { petirCount['TIDAK ADA DATA']++; }
   });
 
   // Metrics
@@ -1514,14 +1515,13 @@ function renderPetirTab() {
     mc('Tinggi',        fmtNum(petirCount['TINGGI']),        pct(petirCount['TINGGI'],rows.length)+'%', 'warn') +
     mc('Sedang',        fmtNum(petirCount['SEDANG']),        pct(petirCount['SEDANG'],rows.length)+'%', '') +
     mc('Rendah',        fmtNum(petirCount['RENDAH']),        pct(petirCount['RENDAH'],rows.length)+'%', 'good') +
-    (noData>0 ? mc('Tidak Ada Data', fmtNum(noData), pct(noData,rows.length)+'%', '') : '');
+    mc('Tidak Ada Data',fmtNum(petirCount['TIDAK ADA DATA']),pct(petirCount['TIDAK ADA DATA'],rows.length)+'%', '');
 
-  // Doughnut distribusi — hanya tampilkan kategori yang ada data
+  // Doughnut distribusi — tampilkan semua kategori termasuk tidak ada data
   const distLabels = [], distVals = [], distColors = [];
   PETIR_ORDER.forEach(k => {
     if (petirCount[k]>0) { distLabels.push(k); distVals.push(petirCount[k]); distColors.push(PETIR_WARNA[k]); }
   });
-  if (noData>0) { distLabels.push('Tidak ada data'); distVals.push(noData); distColors.push('#4a5060'); }
   if (distVals.length > 0) {
     makeDoughnut('c-petir-dist', distLabels, distVals, distColors, 'leg-petir');
   }
@@ -1532,8 +1532,9 @@ function renderPetirTab() {
     const u = r[A_UPT]||'N/A';
     if (!u.toUpperCase().includes('UPT')) return;
     if (!uptPetir[u]) { uptPetir[u]={}; PETIR_ORDER.forEach(k=>uptPetir[u][k]=0); }
-    const k = String(r[A_PETIR]||'').trim().toUpperCase();
+    const k = String(r[A_PETIR]||'').trim().toUpperCase() || 'TIDAK ADA DATA';
     if (PETIR_ORDER.includes(k)) uptPetir[u][k]++;
+    else uptPetir[u]['TIDAK ADA DATA']++;
   });
   const uPetirKeys = Object.keys(uptPetir).sort((a,b)=>
     (uptPetir[b]['SANGAT TINGGI']||0)-(uptPetir[a]['SANGAT TINGGI']||0));
