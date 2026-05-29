@@ -1546,10 +1546,11 @@ function renderPetirTab() {
     const p   = r[A_PHT]||'N/A';
     if (p==='N/A') return;
     if (!phtMap[p]) {
-      phtMap[p] = {pht:p, total:0, ohm0_5:0, ohm5_10:0, ohm10plus:0, ohmNull:0};
+      phtMap[p] = {pht:p, total:0, tla:0, ohm0_5:0, ohm5_10:0, ohm10plus:0, ohmNull:0};
       PETIR_ORDER.forEach(k => phtMap[p][k]=0);
     }
     phtMap[p].total++;
+    if (r[A_TLA]===1) phtMap[p].tla++;
     // Normalize nilai petir — kosong/null → TIDAK ADA DATA
     const pet = String(r[A_PETIR]||'').trim().toUpperCase() || 'TIDAK ADA DATA';
     if (PETIR_ORDER.includes(pet)) phtMap[p][pet]++;
@@ -1659,7 +1660,7 @@ function renderPetirTab() {
     mc('TLA Terpasang', tlaEmpty ? '–' : fmtNum(tlaTotal), tlaEmpty ? 'belum ada data' : pct(tlaTotal,tlaGrandTotal)+'% terpasang', tlaEmpty?'':'good') +
     mc('Belum Terpasang', fmtNum(tlaGrandTotal-tlaTotal), pct(tlaGrandTotal-tlaTotal,tlaGrandTotal)+'%', tlaGrandTotal-tlaTotal>0?'warn':'');
 
-  AHI_SORTED.tla  = [...phtRows].sort((a,b)=>b.tla-a.tla);
+  AHI_SORTED.tla  = [...PETIR_PHT_DATA].sort((a,b)=>(b.tla||0)-(a.tla||0));
   AHI_PAGES.tla   = 0;
   const noTlaMsg = document.getElementById('no-tla-msg');
   if (noTlaMsg) noTlaMsg.style.display = 'none';
