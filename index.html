@@ -1650,12 +1650,8 @@ function renderPetirTab() {
   );
 
   // ── TLA di tab Petir ──────────────────────────────────
-  const tlaTotal = fPHT
-    ? (phtRows.find(g=>g.pht===fPHT)?.tla||0)
-    : phtRows.reduce((s,g)=>s+g.tla,0);
-  const tlaGrandTotal = fPHT
-    ? (phtRows.find(g=>g.pht===fPHT)?.total||0)
-    : phtRows.reduce((s,g)=>s+g.total,0);
+  const tlaTotal = PETIR_PHT_DATA.reduce((s,g)=>s+(g.tla||0),0);
+  const tlaGrandTotal = PETIR_PHT_DATA.reduce((s,g)=>s+(g.total||0),0);
   const tlaEmpty = tlaTotal === 0;
   const tlaM = document.getElementById('m-petir-tla');
   if (tlaM) tlaM.innerHTML =
