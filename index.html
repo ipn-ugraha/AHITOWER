@@ -1945,13 +1945,21 @@ function buildDensityDropdown() { /* tidak dipakai — pakai f-pht-petir */ }
 
 function renderDensityLine() {
   if (!F_AHI) return;
-  // Pakai filter penghantar yang sama dengan filter utama tab Petir
   const sel = document.getElementById('f-pht-petir');
   let pht = sel?.value || '';
-  // Jika "Semua", pilih default KEBONAGUNG-LAWANG
+
+  // Jika "Semua", pilih penghantar dengan data density terbanyak
   if (!pht) {
-    const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
-    pht = phts.find(p=>p.toUpperCase().includes('KEBONAGUNG') && p.toUpperCase().includes('LAWANG')) || phts[0] || '';
+    const densCount = {};
+    F_AHI.forEach(r => {
+      if (!r[A_PHT] || r[A_DENSITY]===null || r[A_DENSITY]===undefined) return;
+      densCount[r[A_PHT]] = (densCount[r[A_PHT]]||0) + 1;
+    });
+    // Sort by jumlah data density terbanyak
+    const sorted = Object.entries(densCount).sort((a,b)=>b[1]-a[1]);
+    pht = sorted.length ? sorted[0][0] : '';
+    // Update dropdown ke penghantar terpilih
+    if (pht && sel) sel.value = pht;
   }
   if (!pht) return;
 
