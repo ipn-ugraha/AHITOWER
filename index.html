@@ -723,6 +723,36 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 
+<!-- MODAL TLA -->
+<div class="modal-overlay" id="modal-tla" style="display:none" onclick="if(event.target===this)closeModalTLA()">
+  <div class="modal-box" style="max-width:800px">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title" id="modal-tla-title">Lokasi TLA</div>
+        <div class="modal-sub" id="modal-tla-sub"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input id="tla-search" type="text" placeholder="🔍 cari ULTG/BAY..." oninput="filterTLATable()"
+          style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);outline:none;width:180px"/>
+        <button class="modal-close" onclick="closeModalTLA()">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <table class="bay-table" id="tla-table">
+        <thead><tr>
+          <th>#</th>
+          <th onclick="sortTLATable('ultg')" style="cursor:pointer">ULTG <span id="ts-ultg"></span></th>
+          <th onclick="sortTLATable('bay')" style="cursor:pointer">BAY <span id="ts-bay"></span></th>
+          <th onclick="sortTLATable('tla1')" style="cursor:pointer">TLA Line I <span id="ts-tla1"></span></th>
+          <th onclick="sortTLATable('tla2')" style="cursor:pointer">TLA Line II <span id="ts-tla2"></span></th>
+        </tr></thead>
+        <tbody id="tla-tbody"></tbody>
+      </table>
+    </div>
+    <div style="padding:.75rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="tla-footer"></div>
+  </div>
+</div>
+
 <!-- MODAL BAY -->
 <div class="modal-overlay" id="modal-bay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
@@ -1440,36 +1470,41 @@ function renderAHICharts(rows) {
 }
 
 // ─── BAR CHART DENGAN LABEL JUMLAH ──────────────────────
-function makeBarWithLabel(id, labels, dataYa, dataTidak) {
+function makeBarWithLabel(id, labels, dataYa, dataTidak, onClickCb) {
   dc(id);
   charts[id] = new Chart(document.getElementById(id), {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label:'Terpasang',      data:dataYa,    backgroundColor:'#00d4aa', borderRadius:3, borderWidth:0 },
-        { label:'Belum Terpasang',data:dataTidak, backgroundColor:'#4a506088', borderRadius:3, borderWidth:0 },
+        { label:'Terpasang', data:dataYa, backgroundColor:'#00d4aa', borderRadius:3, borderWidth:0 },
       ]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: {
-        legend:{ display:true, position:'top', labels:{color:TC,font:{size:11},boxWidth:12,padding:14} },
-        tooltip:{ callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${fmtNum(ctx.raw)} tower` } },
-        datalabels: false,
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => ` Terpasang: ${fmtNum(ctx.raw)} tower` } },
       },
       scales: {
         x:{ ticks:{color:TC}, grid:{color:GC} },
         y:{ ticks:{color:TC}, grid:{color:GC}, beginAtZero:true }
       },
-      // Tampilkan angka di atas bar terpasang
+      onClick: (evt, elements) => {
+        if (!elements.length || !onClickCb) return;
+        const label = charts[id].data.labels[elements[0].index];
+        onClickCb(label);
+      },
+      onHover: (evt, elements) => {
+        evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      },
       animation: { onComplete: function() {
         const chart = this;
         const ctx2  = chart.ctx;
-        const ds    = chart.data.datasets[0]; // dataset Terpasang
         const meta  = chart.getDatasetMeta(0);
+        const ds    = chart.data.datasets[0];
         ctx2.save();
-        ctx2.font = '11px IBM Plex Mono, monospace';
+        ctx2.font = 'bold 11px IBM Plex Mono, monospace';
         ctx2.fillStyle = TC;
         ctx2.textAlign = 'center';
         ctx2.textBaseline = 'bottom';
@@ -1610,7 +1645,8 @@ function renderPetirTab() {
   makeBarWithLabel('c-petir-tla-upt',
     tlaUPTkeys.map(l=>l.replace('UPT ','')),
     tlaUPTkeys.map(k=>tlaUPTmap[k].ya),
-    tlaUPTkeys.map(k=>tlaUPTmap[k].tidak)
+    tlaUPTkeys.map(k=>tlaUPTmap[k].tidak),
+    (label) => showTLAModal('UPT ' + label)
   );
 
   // ── TLA di tab Petir ──────────────────────────────────
