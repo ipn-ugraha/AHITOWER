@@ -558,6 +558,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <span><span style="color:#e84040">▐</span> &gt;10Ω</span>
           <span style="margin-left:8px"><span style="color:#00d4aa">▲</span> TLA terpasang</span>
         </div>
+        <!-- Toggle checkbox layer -->
+        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
+          <span style="color:var(--text3)">Tampilkan:</span>
+          <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="dl-show-density" checked onchange="renderDensityLine()" style="accent-color:#3b7aff"> Density ⚡
+          </label>
+          <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="dl-show-ohm" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> Tahanan ▐
+          </label>
+          <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="dl-show-tla" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> TLA ▲
+          </label>
+        </div>
         <div class="cw" style="height:360px"><canvas id="c-density-line"></canvas></div>
       </div>
 
@@ -2003,33 +2016,44 @@ function renderDensityLine() {
   if (densityChart) densityChart.destroy();
   const densCanvas = document.getElementById('c-density-line');
   if (!densCanvas) return;
+
+  // Baca state checkbox — default checked jika belum ada element
+  const showDensity = document.getElementById('dl-show-density')?.checked ?? true;
+  const showOhm     = document.getElementById('dl-show-ohm')?.checked ?? true;
+  const showTla     = document.getElementById('dl-show-tla')?.checked ?? true;
+
+  // Pasang plugin lightning hanya jika density ditampilkan
+  const plugins = showDensity ? [DENSITY_LIGHTNING_PLUGIN] : [];
+
+  // Bangun datasets sesuai pilihan
+  const datasets = [];
+  if (showOhm) datasets.push({ type:'bar', label:'Tahanan (Ω)',
+    data:ohm.map(v=>v??0),
+    backgroundColor:ohm.map(getOhmColor),
+    borderColor:ohm.map(getOhmBorder),
+    borderWidth:1, borderRadius:2,
+    yAxisID:'y2', order:3 });
+  if (showDensity) datasets.push({ type:'line', label:'Density petir', _isLine:true,
+    data:density,
+    borderColor:'rgba(100,140,255,0.4)', borderWidth:1.5,
+    pointRadius:0, pointHoverRadius:0,
+    tension:0.3,
+    fill:{target:'origin',above:'rgba(59,122,255,0.04)'},
+    yAxisID:'y1', order:2 });
+  if (showTla) datasets.push({ type:'line', label:'TLA',
+    data:tlaDataArr,
+    pointStyle:'triangle', pointRadius:tlaDataArr.map(v=>v!==null?7:0),
+    pointHoverRadius:tlaDataArr.map(v=>v!==null?9:0),
+    backgroundColor:'#00d4aa', borderColor:'transparent', borderWidth:0,
+    showLine:false,
+    yAxisID:'y1', order:0 });
+
   densityChart = new Chart(densCanvas, {
     type:'bar',
-    plugins:[DENSITY_LIGHTNING_PLUGIN],
+    plugins,
     data:{
       labels,
-      datasets:[
-        { type:'bar', label:'Tahanan (Ω)',
-          data:ohm.map(v=>v??0),
-          backgroundColor:ohm.map(getOhmColor),
-          borderColor:ohm.map(getOhmBorder),
-          borderWidth:1, borderRadius:2,
-          yAxisID:'y2', order:3 },
-        { type:'line', label:'Density petir', _isLine:true,
-          data:density,
-          borderColor:'rgba(100,140,255,0.4)', borderWidth:1.5,
-          pointRadius:0, pointHoverRadius:0,
-          tension:0.3,
-          fill:{target:'origin',above:'rgba(59,122,255,0.04)'},
-          yAxisID:'y1', order:2 },
-        { type:'line', label:'TLA',
-          data:tlaDataArr,
-          pointStyle:'triangle', pointRadius:tlaDataArr.map(v=>v!==null?7:0),
-          pointHoverRadius:tlaDataArr.map(v=>v!==null?9:0),
-          backgroundColor:'#00d4aa', borderColor:'transparent', borderWidth:0,
-          showLine:false,
-          yAxisID:'y1', order:0 },
-      ]
+      datasets,
     },
     options:{
       responsive:true, maintainAspectRatio:false,
