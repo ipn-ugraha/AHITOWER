@@ -561,6 +561,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div class="cw" style="height:360px"><canvas id="c-density-line"></canvas></div>
       </div>
 
+      <div class="sl">Terpasang TLA per Penghantar</div>
+      <div class="metrics" id="m-petir-tla" style="margin-bottom:1rem"></div>
+      <div class="cc" style="margin-bottom:1rem">
+        <div class="cc-title">TLA terpasang per Penghantar</div>
+        <div id="pg-bar-tla" class="pg-wrap"></div>
+        <div class="cw" id="cw-ahi-pht-tla" style="height:520px"><canvas id="c-ahi-pht-tla"></canvas></div>
+      </div>
+
       <div class="sl">Distribusi kerapatan petir per Penghantar — top 20</div>
       <div class="cc"><div class="cc-title">Komposisi kategori kerapatan petir per penghantar</div>
         <div id="pg-bar-petir-pht" class="pg-wrap"></div>
@@ -651,19 +659,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
       </div>
 
-      <div class="accordion" id="acc-ahi-tla" style="margin-top:14px">
-        <div class="accordion-header" onclick="toggleAcc('acc-ahi-tla')">
-          <span><span class="accordion-title">Terpasang TLA per Penghantar</span><span class="accordion-meta">ada TLA · tidak ada · belum ada data</span></span>
-          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="accordion-body">
-          <div class="accordion-inner">
-            <div id="no-tla-msg" style="display:none;padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Belum ada data TLA</div>
-            <div id="pg-bar-tla" class="pg-wrap"></div>
-            <div class="cw" id="cw-ahi-pht-tla" style="height:520px"><canvas id="c-ahi-pht-tla"></canvas></div>
-          </div>
-        </div>
-      </div>
 
       <div class="accordion" id="acc-ahi-upt">
         <div class="accordion-header" onclick="toggleAcc('acc-ahi-upt')">
@@ -1356,8 +1351,6 @@ function renderAHICharts(rows) {
   const strukt= rows.filter(r=>r[A_STRUKT]===1).length;
   const antiB = rows.filter(r=>r[A_ANTIB] ===1).length;
 
-  const tlaAHI = rows.filter(r=>r[A_TLA]===1).length;
-  const tlaEmptyAHI = rows.every(r=>r[A_TLA]===0);
   document.getElementById('m-ahi-detail').innerHTML=
     mc('Total Dimonitor', fmtNum(total),  'data AHI','') +
     mc('AHI 2 (Baik)',    fmtNum(ce2),    pct(ce2,total)+'%','good') +
@@ -1365,8 +1358,7 @@ function renderAHICharts(rows) {
     mc('AHI 4–5 (Kritis)',fmtNum(ce45),   pct(ce45,total)+'%','danger') +
     mc('Pentanahan ⚠',    fmtNum(pentnh), 'tidak sesuai SPLN','warn') +
     mc('Struktur ⚠',      fmtNum(strukt), 'perlu tindak lanjut','warn') +
-    mc('Anti Binatang ✅', fmtNum(antiB),  'terpasang','') +
-    mc('TLA ✅',           tlaEmptyAHI ? '–' : fmtNum(tlaAHI), tlaEmptyAHI ? 'belum ada data' : pct(tlaAHI,total)+'% terpasang', '');
+    mc('Anti Binatang ✅', fmtNum(antiB),  'terpasang','');
 
   // Doughnut distribusi AHI
   makeDoughnut('c-ahi-dist',
@@ -1552,6 +1544,31 @@ function renderPetirTab() {
   PETIR_PAGES.thn  = 0;
   renderPetirPage('pht');
   renderPetirPage('thn');
+
+  // ── TLA di tab Petir ──────────────────────────────────
+  const tlaTotal = fPHT
+    ? (phtRows.find(g=>g.pht===fPHT)?.tla||0)
+    : phtRows.reduce((s,g)=>s+g.tla,0);
+  const tlaGrandTotal = fPHT
+    ? (phtRows.find(g=>g.pht===fPHT)?.total||0)
+    : phtRows.reduce((s,g)=>s+g.total,0);
+  const tlaEmpty = tlaTotal === 0;
+  const tlaM = document.getElementById('m-petir-tla');
+  if (tlaM) tlaM.innerHTML =
+    mc('Total Tower', fmtNum(tlaGrandTotal), 'data', '') +
+    mc('TLA Terpasang', tlaEmpty ? '–' : fmtNum(tlaTotal), tlaEmpty ? 'belum ada data' : pct(tlaTotal,tlaGrandTotal)+'% terpasang', tlaEmpty?'':'good') +
+    mc('Belum Terpasang', fmtNum(tlaGrandTotal-tlaTotal), pct(tlaGrandTotal-tlaTotal,tlaGrandTotal)+'%', tlaGrandTotal-tlaTotal>0?'warn':'');
+
+  AHI_SORTED.tla  = [...phtRows].sort((a,b)=>b.tla-a.tla);
+  AHI_PAGES.tla   = 0;
+  const noTlaMsg = document.getElementById('no-tla-msg');
+  if (noTlaMsg) noTlaMsg.style.display = 'none';
+  const tlaHasAnyPHT = AHI_SORTED.tla.some(g=>g.tla>0);
+  AHI_SORTED.tla.forEach(g=>{
+    if (!tlaHasAnyPHT) { g._nodata = g.total; g._tidak = 0; }
+    else { g._nodata = 0; g._tidak = g.total - g.tla; }
+  });
+  renderAHIPage('tla');
 
   // Sync filter penghantar ke grafik density
   renderDensityLine();
