@@ -1979,6 +1979,10 @@ function renderDensityLine() {
   const ohm      = rows.map(r=>r[A_OHM]);
   const tla1vals = rows.map(r=>r[A_TLA1]);
   const tla2vals = rows.map(r=>r[A_TLA2]);
+
+  // Stats
+  const dValid = density.filter(v=>v!==null&&v!==undefined);
+  if (dValid.length>0) {
     const avg=(dValid.reduce((s,v)=>s+v,0)/dValid.length).toFixed(1);
     const max=Math.max(...dValid).toFixed(1);
     const thnBad=ohm.filter(v=>v!==null&&v>10).length;
