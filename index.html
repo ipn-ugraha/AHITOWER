@@ -1971,17 +1971,14 @@ function renderDensityLine() {
       return na-nb;
     });
 
-  if (!rows.length) return;
+  if (!rows.length) { console.log('[density] no rows pht='+pht); return; }
+  console.log('[density] pht='+pht+' rows='+rows.length+' density[0]='+rows[0][A_DENSITY]+' bay[0]='+rows[0][A_BAY]);
 
   const labels   = rows.map(r=>bayLabel(r[A_BAY], r[A_TWR]));
   const density  = rows.map(r=>r[A_DENSITY]);
   const ohm      = rows.map(r=>r[A_OHM]);
   const tla1vals = rows.map(r=>r[A_TLA1]);
   const tla2vals = rows.map(r=>r[A_TLA2]);
-
-  // Stats
-  const dValid = density.filter(v=>v!==null&&v!==undefined);
-  if (dValid.length>0) {
     const avg=(dValid.reduce((s,v)=>s+v,0)/dValid.length).toFixed(1);
     const max=Math.max(...dValid).toFixed(1);
     const thnBad=ohm.filter(v=>v!==null&&v>10).length;
