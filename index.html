@@ -1796,7 +1796,9 @@ function renderModalDensityChart(phtName) {
   ).filter(Boolean);
 
   if (modalDensityChart) modalDensityChart.destroy();
-  modalDensityChart = new Chart(document.getElementById('c-modal-density'), {
+  const modalCanvas = document.getElementById('c-modal-density');
+  if (!modalCanvas) return;
+  modalDensityChart = new Chart(modalCanvas, {
     type:'bar',
     plugins:[DENSITY_LIGHTNING_PLUGIN],
     data:{
@@ -2002,7 +2004,9 @@ function renderDensityLine() {
   );
 
   if (densityChart) densityChart.destroy();
-  densityChart = new Chart(document.getElementById('c-density-line'), {
+  const densCanvas = document.getElementById('c-density-line');
+  if (!densCanvas) return;
+  densityChart = new Chart(densCanvas, {
     type:'bar',
     plugins:[DENSITY_LIGHTNING_PLUGIN],
     data:{
@@ -2152,6 +2156,7 @@ function gotoAHIPage(type, page) {
 function makeStackedBar(id, labels, datasets, onClickCb) {
   dc(id);
   const canvas = document.getElementById(id);
+  if (!canvas) return;
   charts[id] = new Chart(canvas, {
     type: 'bar',
     data: {
@@ -2388,7 +2393,17 @@ function toggleAcc(id) {
 
 // ─── CHART HELPERS ────────────────────────────────────────
 const TC='#8a90a0', GC='rgba(255,255,255,0.05)';
-function dc(id){ if(charts[id]){charts[id].destroy();delete charts[id];} }
+function dc(id){
+  if(charts[id]){charts[id].destroy();delete charts[id];}
+}
+function getCanvas(id) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  // Cek apakah canvas visible (tidak dalam hidden container)
+  if (el.offsetParent === null && el.closest('.accordion-body') && 
+      !el.closest('.accordion-body').style.height) return null;
+  return el;
+}
 
 function makeBar(id,labels,data,color,line=false){
   dc(id);
