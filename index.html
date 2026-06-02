@@ -1881,29 +1881,36 @@ function renderModalDensityChart(phtName) {
 const DENSITY_LIGHTNING_PLUGIN = {
   id: 'lightning',
   afterDatasetsDraw(chart) {
-    const dsIdx = chart.data.datasets.findIndex(d=>d._isLine);
-    if (dsIdx<0) return;
-    const meta = chart.getDatasetMeta(dsIdx);
-    const ds   = chart.data.datasets[dsIdx];
-    const ctx  = chart.ctx;
-    ds.data.forEach((v,i) => {
-      if (v===null||v===undefined) return;
-      const pt = meta.data[i];
-      if (!pt) return;
-      const color = getDensityColor(v);
-      const x=pt.x, y=pt.y, s=6;
-      ctx.save();
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.moveTo(x+1,   y-s);
-      ctx.lineTo(x-s*.4,y);
-      ctx.lineTo(x+s*.2,y);
-      ctx.lineTo(x-1,   y+s);
-      ctx.lineTo(x+s*.4,y);
-      ctx.lineTo(x-s*.2,y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.restore();
+    const ctx = chart.ctx;
+    // Loop semua dataset line yang ada _isLine flag
+    chart.data.datasets.forEach((ds, dsIdx) => {
+      if (!ds._isLine) return;
+      const meta = chart.getDatasetMeta(dsIdx);
+      const isLatest = ds._year === '2026';
+      const sz = isLatest ? 6 : 5;
+      ds.data.forEach((v,i) => {
+        if (v===null||v===undefined) return;
+        const pt = meta.data[i];
+        if (!pt) return;
+        // Warna simbol = warna kategori CIGRE (merah/oranye/kuning/hijau)
+        const color = getDensityColor(v);
+        const x=pt.x, y=pt.y, s=sz;
+        ctx.save();
+        ctx.fillStyle = color;
+        // Outline tipis untuk tahun non-2026 agar tetap kelihatan
+        if (!isLatest) { ctx.strokeStyle = YEAR_COLORS[ds._year]+'cc'; ctx.lineWidth = 0.5; }
+        ctx.beginPath();
+        ctx.moveTo(x+1,   y-s);
+        ctx.lineTo(x-s*.4,y);
+        ctx.lineTo(x+s*.2,y);
+        ctx.lineTo(x-1,   y+s);
+        ctx.lineTo(x+s*.4,y);
+        ctx.lineTo(x-s*.2,y);
+        ctx.closePath();
+        ctx.fill();
+        if (!isLatest) ctx.stroke();
+        ctx.restore();
+      });
     });
   }
 };
@@ -2099,19 +2106,18 @@ function renderDensityLine() {
     borderWidth:1, borderRadius:2,
     yAxisID:'y2', order:10 });
 
-  // Satu line per tahun aktif
+  // Satu line per tahun aktif — line tipis, simbol ⚡ di tiap titik
   activeYears.forEach((y,idx) => {
     const isLatest = (y === '2026');
     datasets.push({
-      type:'line', label:'Density '+y,
+      type:'line', label:'Density '+y, _isLine:true, _year:y,
       data: densByYear[y],
-      borderColor: YEAR_COLORS[y],
-      backgroundColor: YEAR_COLORS[y]+'22',
-      borderWidth: isLatest ? 2.5 : 1.5,
-      pointRadius: isLatest ? 4 : 2.5,
-      pointHoverRadius: 6,
-      pointBackgroundColor: YEAR_COLORS[y],
-      tension: 0.3,
+      borderColor: YEAR_COLORS[y]+'88',
+      backgroundColor: YEAR_COLORS[y]+'15',
+      borderWidth: isLatest ? 1.5 : 1,
+      pointRadius: 0,
+      pointHoverRadius: 0,
+      tension: 0.25,
       fill: false,
       spanGaps: false,
       yAxisID:'y1',
@@ -2129,6 +2135,7 @@ function renderDensityLine() {
 
   densityChart = new Chart(densCanvas, {
     type:'bar',
+    plugins:[DENSITY_LIGHTNING_PLUGIN],
     data:{ labels, datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
