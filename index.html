@@ -440,6 +440,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="tab-btn" onclick="switchTab('tower')">Data Tower</button>
       <button class="tab-btn" onclick="switchTab('ahi')">Kondisi AHI</button>
       <button class="tab-btn" onclick="switchTab('petir')">Petir</button>
+      <button class="tab-btn" onclick="switchTab('fisik')">Fisik</button>
     </div>
 
     <!-- TAB OVERVIEW -->
@@ -608,6 +609,34 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="cc"><div class="cc-title">≤5Ω · 5–10Ω · >10Ω · stacked — top 20 kritis</div>
         <div id="pg-bar-petir-thn" class="pg-wrap"></div>
         <div class="cw" id="cw-petir-thn" style="height:520px"><canvas id="c-petir-thn"></canvas></div></div>
+    </div>
+
+    <!-- TAB FISIK -->
+    <div class="tab-pane" id="tab-fisik">
+      <div class="sl">Filter Penghantar</div>
+      <div class="filter-bar" style="margin-bottom:1rem">
+        <div class="fg"><span class="fl">Penghantar</span>
+          <select class="fs" id="f-pht-fisik" onchange="renderFisikTab()"><option value="">Semua Penghantar</option></select>
+        </div>
+        <span class="filter-info" id="fisik-filter-info"></span>
+      </div>
+
+      <div class="sl">Rawan Layangan</div>
+      <div class="metrics" id="m-fisik-layangan"></div>
+
+      <div class="cg2">
+        <div class="cc"><div class="cc-title">Distribusi rawan layangan</div>
+          <div class="legend" id="leg-layangan"></div>
+          <div class="cw" style="height:240px"><canvas id="c-layangan-dist"></canvas></div></div>
+        <div class="cc"><div class="cc-title">Rawan layangan per UPT — jumlah tower</div>
+          <div class="cw" style="height:240px"><canvas id="c-layangan-upt"></canvas></div></div>
+      </div>
+
+      <div class="sl">Rawan layangan per Penghantar — top 20</div>
+      <div class="cc"><div class="cc-title">Komposisi rawan layangan per penghantar</div>
+        <div id="pg-bar-layangan" class="pg-wrap"></div>
+        <div class="cw" style="height:520px"><canvas id="c-layangan-pht"></canvas></div>
+      </div>
     </div>
 
     <!-- TAB AHI -->
@@ -851,7 +880,7 @@ const REF_DATA = {"TRS 150KV BANGIL-BUMICOKRO": {"kritikal": "tidak", "tier": ""
 // Row index constants — tower: [upt,status,tipe,teg,gi,thn,mat]
 const T_UPT=0,T_ST=1,T_TIPE=2,T_TEG=3,T_GI=4,T_THN=5,T_MAT=6;
 // AHI row: [upt, ce, pentanahan, struktur, antiBinatang]
-const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22,A_DENS_ALL=23,A_ELEV=24;
+const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22,A_DENS_ALL=23,A_ELEV=24,A_LAYANGAN=25;
 const DENS_YEARS = ['2021','2022','2023','2024','2025','2026'];
 const YEAR_COLORS = {'2021':'#7f7f7f','2022':'#9c6ade','2023':'#3b7aff','2024':'#00d4aa','2025':'#f5a623','2026':'#e84040'};
 
@@ -948,10 +977,11 @@ function switchPage(page) {
 }
 
 function switchTab(name) {
-  const tabs=['overview','tower','ahi','petir'];
+  const tabs=['overview','tower','ahi','petir','fisik'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===name));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
   if (name==='petir' && F_AHI) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); }
+  if (name==='fisik' && F_AHI) renderFisikTab();
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────
@@ -1157,6 +1187,8 @@ function renderAll() {
   // Render petir hanya jika tab aktif, atau update data internalnya
   const petirActive = document.getElementById('tab-petir')?.classList.contains('active');
   if (petirActive) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); }
+  const fisikActive = document.getElementById('tab-fisik')?.classList.contains('active');
+  if (fisikActive) renderFisikTab();
   else {
     // Update data internal agar siap saat tab dibuka
     PETIR_PHT_DATA = [];
@@ -1542,6 +1574,78 @@ function makeBarWithLabel(id, labels, dataYa, dataTidak, onClickCb) {
       }}
     }
   });
+}
+
+// ─── FISIK TAB ───────────────────────────────────────────
+function renderFisikTab() {
+  if (!F_AHI) return;
+
+  const fPHT = document.getElementById('f-pht-fisik')?.value || '';
+  const rows  = fPHT ? F_AHI.filter(r=>r[A_PHT]===fPHT) : F_AHI;
+
+  // Build dropdown penghantar — rebuild dari F_AHI (terfilter UPT dll)
+  const sel = document.getElementById('f-pht-fisik');
+  if (sel) {
+    const curVal = sel.value;
+    const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="">Semua Penghantar</option>';
+    phts.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
+    if (curVal && phts.includes(curVal)) sel.value = curVal;
+    else sel.value = '';
+  }
+
+  // Hitung total
+  const total = rows.length;
+  const rawan = rows.filter(r=>r[A_LAYANGAN]===1).length;
+  const tidak = total - rawan;
+
+  const info = document.getElementById('fisik-filter-info');
+  if (info) info.textContent = (fPHT?fPHT+' · ':'') + fmtNum(total) + ' tower';
+
+  // Metrics
+  document.getElementById('m-fisik-layangan').innerHTML =
+    mc('Total Tower',      fmtNum(total), 'data tersedia', '') +
+    mc('Rawan Layangan',   fmtNum(rawan), pct(rawan,total)+'%', rawan>0?'danger':'') +
+    mc('Tidak Rawan',      fmtNum(tidak), pct(tidak,total)+'%', 'good');
+
+  // Doughnut distribusi
+  if (rawan + tidak > 0) {
+    makeDoughnut('c-layangan-dist',
+      ['Rawan Layangan','Tidak Rawan'],
+      [rawan, tidak],
+      ['#e84040','#00d4aa'],
+      'leg-layangan');
+  }
+
+  // Bar per UPT — rawan layangan saja, dengan label angka
+  const uptMap = {};
+  rows.forEach(r => {
+    const u = r[A_UPT]||'N/A';
+    if (!u.toUpperCase().includes('UPT')) return;
+    if (!uptMap[u]) uptMap[u] = {rawan:0, tidak:0};
+    if (r[A_LAYANGAN]===1) uptMap[u].rawan++; else uptMap[u].tidak++;
+  });
+  const uKeys = Object.keys(uptMap).sort((a,b)=>uptMap[b].rawan - uptMap[a].rawan);
+  makeBarWithLabel('c-layangan-upt',
+    uKeys.map(l=>l.replace('UPT ','')),
+    uKeys.map(k=>uptMap[k].rawan),
+    uKeys.map(k=>uptMap[k].tidak),
+    null  // tidak ada click handler
+  );
+
+  // Per penghantar — top 20 rawan terbanyak
+  const phtMap = {};
+  rows.forEach(r => {
+    const p = r[A_PHT]||'N/A';
+    if (p==='N/A') return;
+    if (!phtMap[p]) phtMap[p] = {pht:p, rawan:0, tidak:0};
+    if (r[A_LAYANGAN]===1) phtMap[p].rawan++; else phtMap[p].tidak++;
+  });
+  const phtSorted = Object.values(phtMap).sort((a,b)=>b.rawan-a.rawan).slice(0,20);
+  makeStackedBar('c-layangan-pht', phtSorted.map(g=>g.pht), [
+    { label:'Rawan Layangan', data:phtSorted.map(g=>g.rawan), color:'#e84040' },
+    { label:'Tidak Rawan',    data:phtSorted.map(g=>g.tidak), color:'#00d4aa' },
+  ]);
 }
 
 // ─── PETIR TAB ───────────────────────────────────────────
