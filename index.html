@@ -558,12 +558,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <span><span style="color:#e84040">▐</span> &gt;10Ω</span>
           <span style="margin-left:8px"><span style="color:#00d4aa">▲</span> TLA terpasang</span>
         </div>
-        <!-- Toggle checkbox layer -->
+        <!-- Toggle layer & tahun -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
+          <span style="color:var(--text3)">Tahun:</span>
+          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2021" checked onchange="renderDensityLine()" style="accent-color:#7f7f7f"> <span style="color:#7f7f7f">2021</span></label>
+          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2022" checked onchange="renderDensityLine()" style="accent-color:#9c6ade"> <span style="color:#9c6ade">2022</span></label>
+          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2023" checked onchange="renderDensityLine()" style="accent-color:#3b7aff"> <span style="color:#3b7aff">2023</span></label>
+          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2024" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> <span style="color:#00d4aa">2024</span></label>
+          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2025" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> <span style="color:#f5a623">2025</span></label>
+          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2026" checked onchange="renderDensityLine()" style="accent-color:#e84040"> <span style="color:#e84040;font-weight:600">2026</span></label>
+        </div>
         <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
-          <span style="color:var(--text3)">Tampilkan:</span>
-          <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="dl-show-density" checked onchange="renderDensityLine()" style="accent-color:#3b7aff"> Density ⚡
-          </label>
+          <span style="color:var(--text3)">Layer:</span>
           <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
             <input type="checkbox" id="dl-show-ohm" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> Tahanan ▐
           </label>
@@ -571,6 +577,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <input type="checkbox" id="dl-show-tla" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> TLA ▲
           </label>
         </div>
+        <!-- Summary stats per penghantar -->
+        <div id="density-summary" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
         <div class="cw" style="height:360px"><canvas id="c-density-line"></canvas></div>
       </div>
 
@@ -840,7 +848,9 @@ const REF_DATA = {"TRS 150KV BANGIL-BUMICOKRO": {"kritikal": "tidak", "tier": ""
 // Row index constants — tower: [upt,status,tipe,teg,gi,thn,mat]
 const T_UPT=0,T_ST=1,T_TIPE=2,T_TEG=3,T_GI=4,T_THN=5,T_MAT=6;
 // AHI row: [upt, ce, pentanahan, struktur, antiBinatang]
-const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22;
+const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22,A_DENS_ALL=23;
+const DENS_YEARS = ['2021','2022','2023','2024','2025','2026'];
+const YEAR_COLORS = {'2021':'#7f7f7f','2022':'#9c6ade','2023':'#3b7aff','2024':'#00d4aa','2025':'#f5a623','2026':'#e84040'};
 
 // ─── STATE ────────────────────────────────────────────────
 let TOKEN='', USERNAME='', ROLE='';
@@ -1984,28 +1994,87 @@ function renderDensityLine() {
     });
 
   if (!rows.length) { console.log('[density] no rows pht='+pht); return; }
-  console.log('[density] pht='+pht+' rows='+rows.length+' density[0]='+rows[0][A_DENSITY]+' bay[0]='+rows[0][A_BAY]);
 
   const labels   = rows.map(r=>bayLabel(r[A_BAY], r[A_TWR]));
-  const density  = rows.map(r=>r[A_DENSITY]);
   const ohm      = rows.map(r=>r[A_OHM]);
   const tla1vals = rows.map(r=>r[A_TLA1]);
   const tla2vals = rows.map(r=>r[A_TLA2]);
+  // Density per tahun (object {2021:.., 2022:..})
+  const densAllArr = rows.map(r=>r[A_DENS_ALL]||{});
+  // Density per tahun untuk semua tower
+  const densByYear = {};
+  DENS_YEARS.forEach(y => {
+    densByYear[y] = densAllArr.map(d => (d[y]!==null && d[y]!==undefined) ? d[y] : null);
+  });
 
-  // Stats
+  // Tahun aktif (yang dicentang)
+  const activeYears = DENS_YEARS.filter(y => document.getElementById('dl-y'+y)?.checked ?? true);
+
+  // Density terbaru untuk tooltip & summary (fallback dari tahun terbaru ke terlama)
+  const density = rows.map((r,i) => {
+    for (const y of ['2026','2025','2024','2023','2022','2021']) {
+      if (densAllArr[i][y]!==null && densAllArr[i][y]!==undefined) return densAllArr[i][y];
+    }
+    return null;
+  });
+
+  // Stats top bar
   const dValid = density.filter(v=>v!==null&&v!==undefined);
   if (dValid.length>0) {
     const avg=(dValid.reduce((s,v)=>s+v,0)/dValid.length).toFixed(1);
     const max=Math.max(...dValid).toFixed(1);
     const thnBad=ohm.filter(v=>v!==null&&v>10).length;
     const tlaCount=rows.filter((_,i)=>hasTLAval(tla1vals[i],tla2vals[i])).length;
-    const densityPhtName = pht;
-    document.getElementById('density-stats').textContent = densityPhtName + ' · ' +
+    document.getElementById('density-stats').textContent = pht + ' · ' +
       rows.length+' tower · avg '+avg+' · max '+max+' · tahanan >10Ω: '+thnBad+' · TLA: '+tlaCount;
   }
 
-  // TLA data — gunakan array sejajar dengan labels (null jika tidak ada TLA)
-  // Ini memastikan dataIndex selalu sinkron dengan posisi tower
+  // Summary card per tahun
+  const summaryEl = document.getElementById('density-summary');
+  if (summaryEl) {
+    const cards = DENS_YEARS.map(y => {
+      const vals = densByYear[y].filter(v=>v!==null);
+      if (!vals.length) return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;min-width:80px;opacity:.5">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${y}</div>
+        <div style="font-size:13px;color:var(--text3)">–</div>
+      </div>`;
+      const avgY = (vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1);
+      const maxY = Math.max(...vals).toFixed(1);
+      const cat  = getDensityCat(+avgY).toLowerCase();
+      const color = YEAR_COLORS[y];
+      return `<div style="background:var(--bg2);border:1px solid ${color}44;border-left:3px solid ${color};border-radius:var(--radius-sm);padding:6px 12px;min-width:90px">
+        <div style="font-size:10px;color:${color};font-family:var(--mono);font-weight:600">${y}</div>
+        <div style="font-size:14px;color:var(--text);font-weight:500">avg ${avgY}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">max ${maxY} · n=${vals.length}</div>
+      </div>`;
+    }).join('');
+
+    // Hitung trend slope (linear regression: tahun vs avg density)
+    const yearPts = [];
+    DENS_YEARS.forEach((y,idx) => {
+      const vals = densByYear[y].filter(v=>v!==null);
+      if (vals.length) yearPts.push([idx, vals.reduce((s,v)=>s+v,0)/vals.length]);
+    });
+    let trendCard = '';
+    if (yearPts.length >= 2) {
+      const n = yearPts.length;
+      const sx = yearPts.reduce((s,p)=>s+p[0],0), sy = yearPts.reduce((s,p)=>s+p[1],0);
+      const sxy = yearPts.reduce((s,p)=>s+p[0]*p[1],0);
+      const sxx = yearPts.reduce((s,p)=>s+p[0]*p[0],0);
+      const slope = (n*sxy - sx*sy)/(n*sxx - sx*sx);
+      const arrow = slope > 0.5 ? '↑' : slope < -0.5 ? '↓' : '→';
+      const trendColor = slope > 0.5 ? '#e84040' : slope < -0.5 ? '#00d4aa' : '#f5a623';
+      const trendLabel = slope > 0.5 ? 'Naik' : slope < -0.5 ? 'Turun' : 'Stabil';
+      trendCard = `<div style="background:var(--bg2);border:1px solid ${trendColor}66;border-left:3px solid ${trendColor};border-radius:var(--radius-sm);padding:6px 12px;min-width:110px">
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">TREN 6-THN</div>
+        <div style="font-size:14px;color:${trendColor};font-weight:600">${arrow} ${trendLabel}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">slope ${slope.toFixed(2)}/thn</div>
+      </div>`;
+    }
+    summaryEl.innerHTML = cards + trendCard;
+  }
+
+  // TLA data
   const maxDens1 = Math.max(...density.filter(v=>v!==null&&v!==undefined), 5);
   const tlaDataArr = rows.map((r,i)=>
     hasTLAval(tla1vals[i],tla2vals[i])
@@ -2017,29 +2086,39 @@ function renderDensityLine() {
   const densCanvas = document.getElementById('c-density-line');
   if (!densCanvas) return;
 
-  // Baca state checkbox — default checked jika belum ada element
-  const showDensity = document.getElementById('dl-show-density')?.checked ?? true;
-  const showOhm     = document.getElementById('dl-show-ohm')?.checked ?? true;
-  const showTla     = document.getElementById('dl-show-tla')?.checked ?? true;
+  // Baca state checkbox layer
+  const showOhm = document.getElementById('dl-show-ohm')?.checked ?? true;
+  const showTla = document.getElementById('dl-show-tla')?.checked ?? true;
 
-  // Pasang plugin lightning hanya jika density ditampilkan
-  const plugins = showDensity ? [DENSITY_LIGHTNING_PLUGIN] : [];
-
-  // Bangun datasets sesuai pilihan
+  // Bangun datasets: bar tahanan + line per tahun aktif + scatter TLA
   const datasets = [];
   if (showOhm) datasets.push({ type:'bar', label:'Tahanan (Ω)',
     data:ohm.map(v=>v??0),
     backgroundColor:ohm.map(getOhmColor),
     borderColor:ohm.map(getOhmBorder),
     borderWidth:1, borderRadius:2,
-    yAxisID:'y2', order:3 });
-  if (showDensity) datasets.push({ type:'line', label:'Density petir', _isLine:true,
-    data:density,
-    borderColor:'rgba(100,140,255,0.4)', borderWidth:1.5,
-    pointRadius:0, pointHoverRadius:0,
-    tension:0.3,
-    fill:{target:'origin',above:'rgba(59,122,255,0.04)'},
-    yAxisID:'y1', order:2 });
+    yAxisID:'y2', order:10 });
+
+  // Satu line per tahun aktif
+  activeYears.forEach((y,idx) => {
+    const isLatest = (y === '2026');
+    datasets.push({
+      type:'line', label:'Density '+y,
+      data: densByYear[y],
+      borderColor: YEAR_COLORS[y],
+      backgroundColor: YEAR_COLORS[y]+'22',
+      borderWidth: isLatest ? 2.5 : 1.5,
+      pointRadius: isLatest ? 4 : 2.5,
+      pointHoverRadius: 6,
+      pointBackgroundColor: YEAR_COLORS[y],
+      tension: 0.3,
+      fill: false,
+      spanGaps: true,
+      yAxisID:'y1',
+      order: isLatest ? 1 : 5,
+    });
+  });
+
   if (showTla) datasets.push({ type:'line', label:'TLA',
     data:tlaDataArr,
     pointStyle:'triangle', pointRadius:tlaDataArr.map(v=>v!==null?7:0),
@@ -2050,31 +2129,27 @@ function renderDensityLine() {
 
   densityChart = new Chart(densCanvas, {
     type:'bar',
-    plugins,
-    data:{
-      labels,
-      datasets,
-    },
+    data:{ labels, datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
       interaction:{mode:'index',intersect:false},
       plugins:{
-        legend:{display:false},
+        legend:{ display:true, position:'top',
+          labels:{ color:TC, font:{size:10}, boxWidth:10, padding:8,
+            filter: l => l.text !== 'Tahanan (Ω)' && l.text !== 'TLA' } },
         tooltip:{callbacks:{
-          title: ctx=>{
-            // Gunakan dataIndex dari ctx pertama — semua dataset sejajar
-            const i = ctx[0].dataIndex;
-            return 'Tower: '+labels[i];
-          },
+          title: ctx=>'Tower: '+labels[ctx[0].dataIndex],
           beforeBody: ctx=>{
             const i = ctx[0].dataIndex;
-            console.log('[density] i='+i+' label='+labels[i]+' tla1='+tla1vals[i]+' tla2='+tla2vals[i]+' density='+density[i]+' ohm='+ohm[i]);
-            const tla = tlaLabel(tla1vals[i],tla2vals[i]);
-            return [
-              '⚡ Density : '+(density[i]!==null&&density[i]!==undefined?density[i].toFixed(2)+' flash/km²/thn  ('+getDensityCat(density[i])+')':'no data'),
-              '  Tahanan : '+(ohm[i]!==null&&ohm[i]!==undefined?ohm[i]+' Ω':'no data'),
-              '▲ TLA     : '+tla,
-            ];
+            const lines = [];
+            // Density per tahun aktif
+            activeYears.forEach(y => {
+              const v = densByYear[y][i];
+              lines.push('  '+y+' : '+(v!==null && v!==undefined ? v.toFixed(2)+' ('+getDensityCat(v)+')' : 'no data'));
+            });
+            lines.push('  Tahanan : '+(ohm[i]!==null&&ohm[i]!==undefined?ohm[i]+' Ω':'no data'));
+            lines.push('▲ TLA     : '+tlaLabel(tla1vals[i],tla2vals[i]));
+            return lines;
           },
           label:()=>null
         }}
