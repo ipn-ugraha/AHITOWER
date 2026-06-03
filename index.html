@@ -1678,9 +1678,17 @@ function renderFisikTab() {
   });
   const lastUpdEl = document.getElementById('hotspot-last-update');
   if (lastUpdEl) {
-    lastUpdEl.textContent = latestCheck
-      ? new Date(latestCheck).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) + ' WIB'
-      : 'belum ada data';
+    if (latestCheck) {
+      // Tampilkan apa adanya — data di sheet sudah dalam WIB
+      const d = new Date(latestCheck);
+      // Pakai UTC getter untuk menghindari konversi otomatis browser
+      const pad = n => String(n).padStart(2,'0');
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      lastUpdEl.textContent = pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear()+
+        ', '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+' WIB';
+    } else {
+      lastUpdEl.textContent = 'belum ada data';
+    }
   }
   // Anggap "terdeteksi hotspot" jika nilai hotspot bukan "TIDAK" dan bukan kosong
   const hsDetected = hsRows.filter(r => {
@@ -1746,7 +1754,12 @@ function renderFisikTab() {
         const hs = r[A_HOTSPOT];
         const conf = hs.conf !== null ? Number(hs.conf).toFixed(0)+'%' : '–';
         const jarak = hs.jarak !== null ? Number(hs.jarak).toFixed(2) : '–';
-        const tgl = hs.terakhir ? new Date(hs.terakhir).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '–';
+        const tgl = hs.terakhir ? (() => {
+          const d = new Date(hs.terakhir);
+          const pad = n => String(n).padStart(2,'0');
+          const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+          return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear()+', '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes());
+        })() : '–';
         html += `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
           <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
           <td style="font-size:11px;color:var(--text2)">${r[A_UPT]||'–'}</td>
