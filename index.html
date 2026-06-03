@@ -639,6 +639,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
 
       <div class="sl" style="margin-top:1.5rem">Kerawanan Kebakaran (Hotspot)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:.75rem;padding:.5rem .8rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
+        <span style="color:var(--text2)">📡 Sumber: <b style="color:var(--text)">FIRMS (Global) and FIRMS (US/Canada)</b></span>
+        <span style="color:var(--text3)">Update terakhir: <span id="hotspot-last-update" style="color:var(--text);font-weight:500">–</span></span>
+      </div>
       <div class="metrics" id="m-fisik-kebakaran"></div>
       <div class="cg2">
         <div class="cc"><div class="cc-title">Distribusi tower terdeteksi hotspot</div>
@@ -1665,6 +1669,19 @@ function renderFisikTab() {
   // ── KEBAKARAN HOTSPOT ─────────────────────────────────
   // Filter row yang punya data hotspot
   const hsRows = rows.filter(r => r[A_HOTSPOT] !== null && r[A_HOTSPOT] !== undefined);
+
+  // Ambil timestamp "Terakhir Dicek" paling baru
+  let latestCheck = '';
+  hsRows.forEach(r => {
+    const t = r[A_HOTSPOT]?.terakhir;
+    if (t && (!latestCheck || t > latestCheck)) latestCheck = t;
+  });
+  const lastUpdEl = document.getElementById('hotspot-last-update');
+  if (lastUpdEl) {
+    lastUpdEl.textContent = latestCheck
+      ? new Date(latestCheck).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) + ' WIB'
+      : 'belum ada data';
+  }
   // Anggap "terdeteksi hotspot" jika nilai hotspot bukan "TIDAK" dan bukan kosong
   const hsDetected = hsRows.filter(r => {
     const v = String(r[A_HOTSPOT]?.hotspot || '').trim().toUpperCase();
@@ -1748,6 +1765,40 @@ function renderFisikTab() {
     }
   }
 }
+
+// ─── AUTO REFRESH HOTSPOT (jam 05.30, 11.30, 17.30, 23.30 WIB) ──
+let hotspotRefreshTimer = null;
+
+function scheduleHotspotRefresh() {
+  if (hotspotRefreshTimer) clearTimeout(hotspotRefreshTimer);
+  const targets = [[5,30],[11,30],[17,30],[23,30]];
+  const now = new Date();
+  // Asumsi server berjalan di WIB; jika beda timezone, JS Date sudah pakai local time browser
+  let next = null;
+  for (let d = 0; d < 2 && !next; d++) {
+    for (const [h,m] of targets) {
+      const cand = new Date(now);
+      cand.setDate(now.getDate() + d);
+      cand.setHours(h, m, 0, 0);
+      if (cand > now) { next = cand; break; }
+    }
+  }
+  if (!next) return;
+  const delay = next - now;
+  console.log('[hotspot] next refresh in '+Math.round(delay/60000)+' min @ '+next.toLocaleTimeString('id-ID'));
+  hotspotRefreshTimer = setTimeout(() => {
+    // Refresh hanya jika tab Kerawanan aktif
+    const fisikActive = document.getElementById('tab-fisik')?.classList.contains('active');
+    if (fisikActive && typeof loadDashboard === 'function') {
+      console.log('[hotspot] auto-refresh triggered');
+      loadDashboard();
+    }
+    scheduleHotspotRefresh(); // jadwalkan lagi
+  }, delay);
+}
+
+// Jadwalkan saat halaman load
+window.addEventListener('load', () => setTimeout(scheduleHotspotRefresh, 5000));
 
 // ─── PETIR TAB ───────────────────────────────────────────
 const PETIR_WARNA = {
