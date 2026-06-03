@@ -655,9 +655,34 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
       </div>
       <div class="cc" style="margin-top:1rem">
-        <div class="cc-title">Daftar tower terdeteksi hotspot</div>
+        <div class="cc-title">Daftar tower terdeteksi hotspot saat ini</div>
         <div id="hotspot-table-wrap" style="max-height:400px;overflow:auto"></div>
         <div style="padding:.5rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="hotspot-footer"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-top:1.5rem;margin-bottom:.5rem">
+        <span style="color:var(--text3);font-size:11px;font-family:var(--mono);letter-spacing:.05em">⏱ RIWAYAT 6 BULAN TERAKHIR</span>
+        <span style="flex:1;border-top:1px solid var(--border)"></span>
+      </div>
+      <div class="metrics" id="m-fisik-historis"></div>
+
+      <div class="cg2" style="margin-top:1rem">
+        <div class="cc">
+          <div class="cc-title">Pernah hotspot 6 bulan per UPT</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;padding:0 12px">tower yang pernah terdeteksi</div>
+          <div class="cw" style="height:240px"><canvas id="c-hist-upt"></canvas></div>
+        </div>
+        <div class="cc">
+          <div class="cc-title">Distribusi FRP maks vs Jarak terdekat</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;padding:0 12px">ukuran bubble = hari terdeteksi</div>
+          <div class="cw" style="height:240px"><canvas id="c-hist-scatter"></canvas></div>
+        </div>
+      </div>
+
+      <div class="cc" style="margin-top:1rem">
+        <div class="cc-title">Top tower paling sering hotspot — 6 bulan</div>
+        <div id="hist-table-wrap" style="max-height:400px;overflow:auto"></div>
+        <div style="padding:.5rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="hist-footer"></div>
       </div>
     </div>
 
@@ -1786,6 +1811,136 @@ function renderFisikTab() {
       html += '</tbody></table>';
       wrap.innerHTML = html;
       if (footer) footer.textContent = fmtNum(sorted.length) + ' tower terdeteksi hotspot · diurutkan jarak terdekat';
+    }
+  }
+
+  // ── HISTORIS 6 BULAN ─────────────────────────────────
+  const histRows = rows.filter(r => {
+    const h = r[A_HOTSPOT];
+    return h && (h.histDays > 0 || h.histLast || h.histJarak !== null || h.histFRP !== null);
+  });
+  const histTotal     = histRows.length;
+  const histMaxDays   = histRows.length ? Math.max(...histRows.map(r=>r[A_HOTSPOT].histDays||0)) : 0;
+  const histMaxFRP    = histRows.length ? Math.max(...histRows.map(r=>r[A_HOTSPOT].histFRP||0)) : 0;
+  const histValidJrk  = histRows.map(r=>r[A_HOTSPOT].histJarak).filter(v=>v!==null&&v>0);
+  const histMinJarak  = histValidJrk.length ? Math.min(...histValidJrk) : 0;
+
+  // Metrics historis
+  const mHist = document.getElementById('m-fisik-historis');
+  if (mHist) mHist.innerHTML =
+    mc('Pernah Terdeteksi', fmtNum(histTotal), total>0?pct(histTotal,total)+'%':'–', histTotal>0?'warn':'') +
+    mc('Hari Terbanyak',    histMaxDays>0 ? fmtNum(histMaxDays)+' hari' : '–', 'tower paling sering', histMaxDays>0?'danger':'') +
+    mc('FRP Maks',          histMaxFRP>0 ? Number(histMaxFRP).toFixed(1)+' MW' : '–', 'api terbesar', histMaxFRP>0?'warn':'') +
+    mc('Jarak Min',         histMinJarak>0 ? Number(histMinJarak).toFixed(2)+' km' : '–', 'jarak terdekat', '');
+
+  // Bar per UPT — pernah terdeteksi 6 bulan
+  const histUptMap = {};
+  histRows.forEach(r => {
+    const u = r[A_UPT]||'N/A';
+    if (!u.toUpperCase().includes('UPT')) return;
+    histUptMap[u] = (histUptMap[u]||0) + 1;
+  });
+  const histUKeys = Object.keys(histUptMap).sort((a,b)=>histUptMap[b]-histUptMap[a]);
+  if (histUKeys.length > 0) {
+    makeBarWithLabel('c-hist-upt',
+      histUKeys.map(l=>l.replace('UPT ','')),
+      histUKeys.map(k=>histUptMap[k]),
+      histUKeys.map(()=>0),
+      null
+    );
+  }
+
+  // Scatter FRP vs Jarak — top 15 tower
+  const scatterData = histRows
+    .filter(r => {
+      const h = r[A_HOTSPOT];
+      return h.histJarak !== null && h.histFRP !== null && h.histJarak > 0 && h.histFRP > 0;
+    })
+    .sort((a,b) => (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0))
+    .slice(0, 15)
+    .map(r => {
+      const h = r[A_HOTSPOT];
+      return {
+        x: h.histJarak,
+        y: h.histFRP,
+        r: Math.max(4, Math.min(18, (h.histDays||1) * 0.4)),
+        label: r[A_BAY]||'–',
+        days: h.histDays||0
+      };
+    });
+  const sCanvas = document.getElementById('c-hist-scatter');
+  if (sCanvas) {
+    dc('c-hist-scatter');
+    if (scatterData.length > 0) {
+      charts['c-hist-scatter'] = new Chart(sCanvas, {
+        type: 'bubble',
+        data: { datasets: [{
+          label: 'Tower',
+          data: scatterData,
+          backgroundColor: 'rgba(186,117,23,0.55)',
+          borderColor: '#854F0B', borderWidth: 1
+        }]},
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: {
+              title: ctx => ctx[0].raw.label,
+              label: ctx => ` Jarak ${ctx.raw.x.toFixed(2)} km · FRP ${ctx.raw.y.toFixed(1)} MW · ${ctx.raw.days} hari`
+            } }
+          },
+          scales: {
+            x: { title: {display:true, text:'Jarak terdekat (km)', color:TC, font:{size:10}}, ticks:{color:TC}, grid:{color:GC} },
+            y: { title: {display:true, text:'FRP maks (MW)', color:TC, font:{size:10}}, ticks:{color:TC}, grid:{color:GC}, beginAtZero: true }
+          },
+          layout: { padding: 15 }
+        }
+      });
+    }
+  }
+
+  // Tabel top tower historis
+  const hwrap = document.getElementById('hist-table-wrap');
+  const hfoot = document.getElementById('hist-footer');
+  if (hwrap) {
+    const sortedHist = [...histRows].sort((a,b) => (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0));
+    if (sortedHist.length === 0) {
+      hwrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Belum ada riwayat hotspot</div>';
+      if (hfoot) hfoot.textContent = '';
+    } else {
+      const fmtTime = ts => {
+        if (!ts) return '–';
+        const d = new Date(ts);
+        const pad = n => String(n).padStart(2,'0');
+        const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear();
+      };
+      let html = '<table class="bay-table"><thead><tr>';
+      html += '<th>#</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>';
+      html += '<th>Hari</th><th>Jarak Min</th><th>FRP Maks</th><th>Terakhir Terdeteksi</th>';
+      html += '</tr></thead><tbody>';
+      sortedHist.slice(0, 50).forEach((r,i) => {
+        const h = r[A_HOTSPOT];
+        const days = h.histDays !== null ? Number(h.histDays) : 0;
+        const jrk  = h.histJarak !== null ? Number(h.histJarak).toFixed(2) : '–';
+        const frp  = h.histFRP !== null ? Number(h.histFRP).toFixed(1) : '–';
+        const dColor = days >= 30 ? '#e84040' : days >= 15 ? '#f5a623' : 'var(--text)';
+        const fColor = h.histFRP >= 50 ? '#e84040' : h.histFRP >= 20 ? '#f5a623' : 'var(--text2)';
+        html += `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
+          <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
+          <td style="font-size:11px;color:var(--text2)">${r[A_UPT]||'–'}</td>
+          <td style="font-size:11px;color:var(--text2)">${r[A_ULTG]||'–'}</td>
+          <td style="font-size:11px;color:var(--text2)">${r[A_PHT]||'–'}</td>
+          <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${r[A_BAY]||'–'}</td>
+          <td style="font-size:11px;font-family:var(--mono);color:${dColor};font-weight:500">${days}</td>
+          <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${jrk}</td>
+          <td style="font-size:11px;font-family:var(--mono);color:${fColor}">${frp}</td>
+          <td style="font-size:10px;font-family:var(--mono);color:var(--text3)">${fmtTime(h.histLast)}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      hwrap.innerHTML = html;
+      if (hfoot) hfoot.textContent = fmtNum(sortedHist.length) + ' tower pernah terdeteksi · top 50 ditampilkan · diurutkan hari terbanyak';
     }
   }
 }
