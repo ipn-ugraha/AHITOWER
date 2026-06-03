@@ -440,7 +440,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="tab-btn" onclick="switchTab('tower')">Data Tower</button>
       <button class="tab-btn" onclick="switchTab('ahi')">Kondisi AHI</button>
       <button class="tab-btn" onclick="switchTab('petir')">Petir</button>
-      <button class="tab-btn" onclick="switchTab('fisik')">Fisik</button>
+      <button class="tab-btn" onclick="switchTab('fisik')">Kerawanan</button>
     </div>
 
     <!-- TAB OVERVIEW -->
@@ -636,6 +636,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="cc"><div class="cc-title">Komposisi rawan layangan per penghantar</div>
         <div id="pg-bar-layangan" class="pg-wrap"></div>
         <div class="cw" style="height:520px"><canvas id="c-layangan-pht"></canvas></div>
+      </div>
+
+      <div class="sl" style="margin-top:1.5rem">Kerawanan Kebakaran (Hotspot)</div>
+      <div class="metrics" id="m-fisik-kebakaran"></div>
+      <div class="cg2">
+        <div class="cc"><div class="cc-title">Distribusi tower terdeteksi hotspot</div>
+          <div class="legend" id="leg-hotspot"></div>
+          <div class="cw" style="height:240px"><canvas id="c-hotspot-dist"></canvas></div></div>
+        <div class="cc"><div class="cc-title">Tower terdeteksi hotspot per UPT</div>
+          <div class="cw" style="height:240px"><canvas id="c-hotspot-upt"></canvas></div></div>
+      </div>
+      <div class="cc" style="margin-top:1rem">
+        <div class="cc-title">Daftar tower terdeteksi hotspot</div>
+        <div id="hotspot-table-wrap" style="max-height:400px;overflow:auto"></div>
+        <div style="padding:.5rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="hotspot-footer"></div>
       </div>
     </div>
 
@@ -880,7 +895,7 @@ const REF_DATA = {"TRS 150KV BANGIL-BUMICOKRO": {"kritikal": "tidak", "tier": ""
 // Row index constants — tower: [upt,status,tipe,teg,gi,thn,mat]
 const T_UPT=0,T_ST=1,T_TIPE=2,T_TEG=3,T_GI=4,T_THN=5,T_MAT=6;
 // AHI row: [upt, ce, pentanahan, struktur, antiBinatang]
-const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22,A_DENS_ALL=23,A_ELEV=24,A_LAYANGAN=25;
+const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22,A_DENS_ALL=23,A_ELEV=24,A_LAYANGAN=25,A_HOTSPOT=26;
 const DENS_YEARS = ['2021','2022','2023','2024','2025','2026'];
 const YEAR_COLORS = {'2021':'#7f7f7f','2022':'#9c6ade','2023':'#3b7aff','2024':'#00d4aa','2025':'#f5a623','2026':'#e84040'};
 
@@ -1646,6 +1661,92 @@ function renderFisikTab() {
     { label:'Rawan Layangan', data:phtSorted.map(g=>g.rawan), color:'#e84040' },
     { label:'Tidak Rawan',    data:phtSorted.map(g=>g.tidak), color:'#00d4aa' },
   ]);
+
+  // ── KEBAKARAN HOTSPOT ─────────────────────────────────
+  // Filter row yang punya data hotspot
+  const hsRows = rows.filter(r => r[A_HOTSPOT] !== null && r[A_HOTSPOT] !== undefined);
+  // Anggap "terdeteksi hotspot" jika nilai hotspot bukan "TIDAK" dan bukan kosong
+  const hsDetected = hsRows.filter(r => {
+    const v = String(r[A_HOTSPOT]?.hotspot || '').trim().toUpperCase();
+    return v && v !== 'TIDAK' && v !== '-';
+  });
+  const hsTotal = hsRows.length;
+  const hsCount = hsDetected.length;
+  const hsAman  = hsTotal - hsCount;
+
+  // Metrics kebakaran
+  document.getElementById('m-fisik-kebakaran').innerHTML =
+    mc('Total Dicek',        fmtNum(hsTotal),  'tower discan hotspot', '') +
+    mc('Terdeteksi Hotspot', fmtNum(hsCount),  hsTotal>0?pct(hsCount,hsTotal)+'%':'–', hsCount>0?'danger':'') +
+    mc('Aman',               fmtNum(hsAman),   hsTotal>0?pct(hsAman,hsTotal)+'%':'–', 'good');
+
+  // Doughnut distribusi
+  if (hsTotal > 0) {
+    makeDoughnut('c-hotspot-dist',
+      ['Terdeteksi Hotspot','Aman'],
+      [hsCount, hsAman],
+      ['#e84040','#00d4aa'],
+      'leg-hotspot');
+  }
+
+  // Bar per UPT — terdeteksi hotspot saja
+  const hsUptMap = {};
+  hsRows.forEach(r => {
+    const u = r[A_UPT]||'N/A';
+    if (!u.toUpperCase().includes('UPT')) return;
+    if (!hsUptMap[u]) hsUptMap[u] = {detected:0, aman:0};
+    const v = String(r[A_HOTSPOT]?.hotspot || '').trim().toUpperCase();
+    if (v && v !== 'TIDAK' && v !== '-') hsUptMap[u].detected++;
+    else hsUptMap[u].aman++;
+  });
+  const hsUKeys = Object.keys(hsUptMap).sort((a,b)=>hsUptMap[b].detected - hsUptMap[a].detected);
+  makeBarWithLabel('c-hotspot-upt',
+    hsUKeys.map(l=>l.replace('UPT ','')),
+    hsUKeys.map(k=>hsUptMap[k].detected),
+    hsUKeys.map(k=>hsUptMap[k].aman),
+    null
+  );
+
+  // Tabel daftar tower terdeteksi hotspot
+  const wrap = document.getElementById('hotspot-table-wrap');
+  const footer = document.getElementById('hotspot-footer');
+  if (wrap) {
+    if (hsDetected.length === 0) {
+      wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Belum ada tower terdeteksi hotspot</div>';
+      if (footer) footer.textContent = '';
+    } else {
+      // Sort by jarak terdekat (ascending) atau confidence (descending)
+      const sorted = [...hsDetected].sort((a,b) => {
+        const ja = a[A_HOTSPOT]?.jarak ?? Infinity;
+        const jb = b[A_HOTSPOT]?.jarak ?? Infinity;
+        return ja - jb;
+      });
+      let html = '<table class="bay-table"><thead><tr>';
+      html += '<th>#</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>';
+      html += '<th>Status</th><th>Jarak (km)</th><th>Confidence</th><th>Terakhir Dicek</th>';
+      html += '</tr></thead><tbody>';
+      sorted.forEach((r,i) => {
+        const hs = r[A_HOTSPOT];
+        const conf = hs.conf !== null ? Number(hs.conf).toFixed(0)+'%' : '–';
+        const jarak = hs.jarak !== null ? Number(hs.jarak).toFixed(2) : '–';
+        const tgl = hs.terakhir ? new Date(hs.terakhir).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '–';
+        html += `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
+          <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
+          <td style="font-size:11px;color:var(--text2)">${r[A_UPT]||'–'}</td>
+          <td style="font-size:11px;color:var(--text2)">${r[A_ULTG]||'–'}</td>
+          <td style="font-size:11px;color:var(--text2)">${r[A_PHT]||'–'}</td>
+          <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${r[A_BAY]||'–'}</td>
+          <td style="font-size:11px"><span style="color:#e84040;font-weight:500">🔥 ${hs.hotspot}</span></td>
+          <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${jarak}</td>
+          <td style="font-size:11px;font-family:var(--mono);color:${hs.conf>=70?'#e84040':hs.conf>=40?'#f5a623':'var(--text2)'}">${conf}</td>
+          <td style="font-size:10px;font-family:var(--mono);color:var(--text3)">${tgl}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      wrap.innerHTML = html;
+      if (footer) footer.textContent = fmtNum(sorted.length) + ' tower terdeteksi hotspot · diurutkan jarak terdekat';
+    }
+  }
 }
 
 // ─── PETIR TAB ───────────────────────────────────────────
