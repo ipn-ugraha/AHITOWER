@@ -836,20 +836,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <table class="bay-table">
+      <table class="bay-table" id="modal-table">
         <thead>
-          <tr>
-            <th style="color:var(--text3);font-size:10px;padding:7px 10px;font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--bg3);position:sticky;top:0;white-space:nowrap;">#</th>
-            <th style="cursor:pointer" onclick="sortModal('ultg')">ULTG <span id="ms-ultg"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('bay')">BAY <span id="ms-bay"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('ce')">AHI <span id="ms-ce"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('ohm')">Tahanan (Ω) <span id="ms-ohm"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('pentnh')">Pentanahan <span id="ms-pentnh"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('strukt')">Struktur <span id="ms-strukt"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('antib')">Anti Binatang <span id="ms-antib"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('tla1')">TLA Line I <span id="ms-tla1"></span></th>
-            <th style="cursor:pointer" onclick="sortModal('tla2')">TLA Line II <span id="ms-tla2"></span></th>
-          </tr>
+          <tr><!-- header diisi dinamis oleh renderModalTable --></tr>
         </thead>
         <tbody id="modal-tbody"></tbody>
       </table>
@@ -1664,7 +1653,7 @@ function renderFisikTab() {
   makeStackedBar('c-layangan-pht', phtSorted.map(g=>g.pht), [
     { label:'Rawan Layangan', data:phtSorted.map(g=>g.rawan), color:'#e84040' },
     { label:'Tidak Rawan',    data:phtSorted.map(g=>g.tidak), color:'#00d4aa' },
-  ]);
+  ], null, 'layangan');
 
   // ── KEBAKARAN HOTSPOT ─────────────────────────────────
   // Filter row yang punya data hotspot
@@ -2487,29 +2476,29 @@ function renderAHIPage(type) {
       { label:'AHI 4',          data:slice.map(g=>g.ce4), color:'#f5a623' },
       { label:'AHI 3',          data:slice.map(g=>g.ce3), color:'#3b7aff' },
       { label:'AHI 2 (Baik)',   data:slice.map(g=>g.ce2), color:'#00d4aa' },
-    ]);
+    ], null, 'ahi');
   } else if (type === 'pentnh') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
       { label:'Tidak sesuai SPLN', data:slice.map(g=>g.pentnh),         color:'#e84040' },
       { label:'Sesuai SPLN',       data:slice.map(g=>g.total-g.pentnh), color:'#00d4aa' },
-    ]);
+    ], null, 'pentnh');
   } else if (type === 'strukt') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
       { label:'Warning', data:slice.map(g=>g.strukt),         color:'#f5a623' },
       { label:'Normal',  data:slice.map(g=>g.total-g.strukt), color:'#00d4aa' },
-    ]);
+    ], null, 'strukt');
   } else if (type === 'antib') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
       { label:'Terpasang',      data:slice.map(g=>g.antiB),           color:'#00d4aa' },
       { label:'Belum terpasang',data:slice.map(g=>g.total-g.antiB),   color:'#4a5060' },
-    ]);
+    ], null, 'antib');
   } else if (type === 'tahanan') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
       { label:'Tidak ada data', data:slice.map(g=>g.ohmNull),   color:'#4a5060' },
       { label:'> 10 Ω (lebih)', data:slice.map(g=>g.ohm10plus),color:'#e84040' },
       { label:'5–10 Ω (batas)', data:slice.map(g=>g.ohm5_10),  color:'#f5a623' },
       { label:'≤ 5 Ω (baik)',   data:slice.map(g=>g.ohm0_5),   color:'#00d4aa' },
-    ]);
+    ], null, 'tahanan');
   } else if (type === 'tla') {
     makeStackedBar(canvasId, slice.map(g=>g.pht), [
       { label:'Ada TLA',        data:slice.map(g=>g.tla),       color:'#00d4aa' },
@@ -2548,7 +2537,7 @@ function gotoAHIPage(type, page) {
 }
 
 // ─── STACKED BAR ──────────────────────────────────────────
-function makeStackedBar(id, labels, datasets, onClickCb) {
+function makeStackedBar(id, labels, datasets, onClickCb, chartType) {
   dc(id);
   const canvas = document.getElementById(id);
   if (!canvas) return;
@@ -2591,7 +2580,7 @@ function makeStackedBar(id, labels, datasets, onClickCb) {
         if (!elements.length) return;
         const label = charts[id].data.labels[elements[0].index];
         if (onClickCb) onClickCb(label);
-        else showBayModal(label);
+        else showBayModal(label, charts[id]._chartType);
       },
       onHover: (evt, elements) => {
         evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
@@ -2604,14 +2593,44 @@ function makeStackedBar(id, labels, datasets, onClickCb) {
 let MODAL_ROWS = [];
 let MODAL_SORT = { col:'ce', dir:1 };
 
-function showBayModal(phtName) {
+// Definisi kolom per tipe grafik
+const MODAL_COL_DEFS = {
+  default: ['ultg','bay','ce','ohm','pentnh','strukt','antib','tla1','tla2'],
+  ahi:     ['ultg','bay','ce','ohm','pentnh','strukt','antib'],
+  pentnh:  ['ultg','bay','ohm','pentnh'],
+  strukt:  ['ultg','bay','strukt'],
+  antib:   ['ultg','bay','antib'],
+  tahanan: ['ultg','bay','ohm','pentnh'],
+  tla:     ['ultg','bay','tla1','tla2'],
+  petir:   ['ultg','bay','density','katpetir','ohm'],
+  layangan:['ultg','bay','layangan'],
+};
+const COL_HEADERS = {
+  ultg:'ULTG', bay:'BAY', ce:'AHI', ohm:'Tahanan (Ω)',
+  pentnh:'Pentanahan', strukt:'Struktur', antib:'Anti Binatang',
+  tla1:'TLA Line I', tla2:'TLA Line II',
+  density:'Density', katpetir:'Kategori', layangan:'Rawan Layangan'
+};
+
+let MODAL_COLS = MODAL_COL_DEFS.default;
+
+function showBayModal(phtName, chartType) {
   if (!F_AHI_PHT) return;
   const rows = F_AHI_PHT.filter(r => r[A_PHT] === phtName);
   if (!rows.length) return;
 
+  MODAL_COLS = MODAL_COL_DEFS[chartType] || MODAL_COL_DEFS.default;
   document.getElementById('modal-title').textContent = phtName;
   MODAL_ROWS = rows;
-  MODAL_SORT = { col:'ce', dir:1 };
+  // Default sort: kolom pertama yang punya data sortable
+  const defaultSort = chartType === 'petir' ? 'density'
+    : chartType === 'pentnh' || chartType === 'tahanan' ? 'ohm'
+    : chartType === 'tla' ? 'tla1'
+    : chartType === 'layangan' ? 'layangan'
+    : chartType === 'strukt' ? 'strukt'
+    : chartType === 'antib' ? 'antib'
+    : 'ce';
+  MODAL_SORT = { col: defaultSort, dir: -1 }; // desc untuk lihat yang paling kritis dulu
   renderModalTable();
   document.getElementById('modal-bay').style.display = 'flex';
 }
@@ -2623,24 +2642,31 @@ function renderModalTable() {
   // Sort
   rows.sort((a,b) => {
     let av, bv;
-    if (col==='ce')     { const o={'5':0,'4':1,'3':2,'2':3}; av=o[a[A_CE]]??4; bv=o[b[A_CE]]??4; }
-    else if (col==='ohm')    { av=a[A_OHM]??999;        bv=b[A_OHM]??999; }
+    if (col==='ce')          { const o={'5':0,'4':1,'3':2,'2':3}; av=o[a[A_CE]]??4; bv=o[b[A_CE]]??4; }
+    else if (col==='ohm')    { av=a[A_OHM]??-1;          bv=b[A_OHM]??-1; }
     else if (col==='pentnh') { av=a[A_PENTNH];          bv=b[A_PENTNH]; }
     else if (col==='strukt') { av=a[A_STRUKT];          bv=b[A_STRUKT]; }
     else if (col==='antib')  { av=a[A_ANTIB];           bv=b[A_ANTIB]; }
-    else if (col==='tla')    { av=a[A_TLA];             bv=b[A_TLA]; }
     else if (col==='tla1')   { av=String(a[A_TLA1]||''); bv=String(b[A_TLA1]||''); }
     else if (col==='tla2')   { av=String(a[A_TLA2]||''); bv=String(b[A_TLA2]||''); }
     else if (col==='ultg')   { av=a[A_ULTG]||'';        bv=b[A_ULTG]||''; }
-    else if (col==='ultg')   { av=a[A_ULTG]||'';        bv=b[A_ULTG]||''; }
     else if (col==='bay')    { av=a[A_BAY]||'';         bv=b[A_BAY]||''; }
-    else if (col==='tower')  { av=a[A_TWR]||'';         bv=b[A_TWR]||''; }
+    else if (col==='density'){ av=a[A_DENSITY]??-1;     bv=b[A_DENSITY]??-1; }
+    else if (col==='katpetir'){ av=a[A_PETIR]||'';      bv=b[A_PETIR]||''; }
+    else if (col==='layangan'){ av=a[A_LAYANGAN];       bv=b[A_LAYANGAN]; }
     else { av=0; bv=0; }
     return av<bv ? -dir : av>bv ? dir : 0;
   });
 
+  // Build dynamic table header
+  const thHtml = '<th>#</th>' + MODAL_COLS.map(c =>
+    `<th style="cursor:pointer" onclick="sortModal('${c}')">${COL_HEADERS[c]||c} <span id="ms-${c}"></span></th>`
+  ).join('');
+  const thead = document.getElementById('modal-table')?.querySelector('thead tr');
+  if (thead) thead.innerHTML = thHtml;
+
   // Update sort indicators
-  ['ultg','bay','ce','ohm','pentnh','strukt','antib','tla1','tla2'].forEach(c => {
+  MODAL_COLS.forEach(c => {
     const el = document.getElementById('ms-'+c);
     if (el) el.textContent = col===c ? (dir===1?'↑':'↓') : '';
   });
@@ -2657,26 +2683,47 @@ function renderModalTable() {
   };
   const ohmFmt = v => {
     if (v===null||v===undefined) return '<span style="color:var(--text3)">–</span>';
-    const cls = v>10 ? 'style="color:#e84040;font-weight:500"' : 'style="color:#00d4aa"';
+    const cls = v>10 ? 'style="color:#e84040;font-weight:500"' : v>5 ? 'style="color:#f5a623"' : 'style="color:#00d4aa"';
     return `<span ${cls}>${v} Ω</span>`;
   };
+  const densFmt = v => {
+    if (v===null||v===undefined) return '<span style="color:var(--text3)">–</span>';
+    const c = v>15?'#e84040':v>=6?'#f5a623':v>=2?'#d4bf00':'#00d4aa';
+    return `<span style="color:${c};font-family:var(--mono);font-weight:500">${v.toFixed(2)}</span>`;
+  };
+  const katFmt = v => {
+    if (!v||v==='TIDAK ADA DATA') return '<span style="color:var(--text3)">–</span>';
+    const c = v==='SANGAT TINGGI'?'#e84040':v==='TINGGI'?'#f5a623':v==='SEDANG'?'#d4bf00':'#00d4aa';
+    return `<span style="color:${c};font-size:10px;font-family:var(--mono)">${v}</span>`;
+  };
+  const layFmt = v => v===1
+    ? '<span style="color:#e84040">🪁 Rawan</span>'
+    : '<span style="color:#00d4aa">– Aman</span>';
 
-  document.getElementById('modal-tbody').innerHTML = rows.map((r,i) => {
-    const ce  = r[A_CE]||'–';
-    const cls = ceColor[ce]||'';
-    return `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
+  // Render cell per kolom
+  const renderCell = (r, c) => {
+    switch(c) {
+      case 'ultg':    return `<td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${r[A_ULTG]||'–'}</td>`;
+      case 'bay':     return `<td style="font-family:var(--mono);font-size:12px;color:var(--text)">${r[A_BAY]||'–'}</td>`;
+      case 'ce':      { const ce=r[A_CE]||'–'; return `<td><span class="ahi-badge ${ceColor[ce]||''}">AHI ${ce}</span></td>`; }
+      case 'ohm':     return `<td>${ohmFmt(r[A_OHM])}</td>`;
+      case 'pentnh':  return `<td>${yn(r[A_PENTNH])}</td>`;
+      case 'strukt':  return `<td>${yn(r[A_STRUKT])}</td>`;
+      case 'antib':   return `<td>${ynb(r[A_ANTIB])}</td>`;
+      case 'tla1':    return `<td>${tlaVal(r[A_TLA1])}</td>`;
+      case 'tla2':    return `<td>${tlaVal(r[A_TLA2])}</td>`;
+      case 'density': return `<td>${densFmt(r[A_DENSITY])}</td>`;
+      case 'katpetir':return `<td>${katFmt(r[A_PETIR])}</td>`;
+      case 'layangan':return `<td>${layFmt(r[A_LAYANGAN])}</td>`;
+      default: return '<td>–</td>';
+    }
+  };
+
+  document.getElementById('modal-tbody').innerHTML = rows.map((r,i) => `
+    <tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
       <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
-      <td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${r[A_ULTG]||'–'}</td>
-      <td style="font-family:var(--mono);font-size:12px;color:var(--text)">${r[A_BAY]||'–'}</td>
-      <td><span class="ahi-badge ${cls}">AHI ${ce}</span></td>
-      <td>${ohmFmt(r[A_OHM])}</td>
-      <td>${yn(r[A_PENTNH])}</td>
-      <td>${yn(r[A_STRUKT])}</td>
-      <td>${ynb(r[A_ANTIB])}</td>
-      <td>${tlaVal(r[A_TLA1])}</td>
-      <td>${tlaVal(r[A_TLA2])}</td>
-    </tr>`;
-  }).join('');
+      ${MODAL_COLS.map(c => renderCell(r,c)).join('')}
+    </tr>`).join('');
 }
 
 function sortModal(col) {
