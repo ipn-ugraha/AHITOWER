@@ -2587,6 +2587,7 @@ function makeStackedBar(id, labels, datasets, onClickCb, chartType) {
       }
     }
   });
+  if (chartType) charts[id]._chartType = chartType;
 }
 
 // ─── MODAL BAY ───────────────────────────────────────────
