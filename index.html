@@ -641,15 +641,18 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="sl" style="margin-top:1.5rem">Kerawanan Kebakaran (Hotspot)</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:.75rem;padding:.5rem .8rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
         <span style="color:var(--text2)">📡 Sumber: <b style="color:var(--text)">FIRMS (Global) and FIRMS (US/Canada)</b></span>
-        <span style="color:var(--text3)">Update terakhir: <span id="hotspot-last-update" style="color:var(--text);font-weight:500">–</span></span>
+        <span style="color:var(--text3)">Update terakhir: <span id="hotspot-last-update" style="color:var(--text);font-weight:500">–</span> <span id="hotspot-stale-badge" style="display:none;margin-left:6px;padding:1px 6px;border-radius:3px;background:rgba(245,166,35,0.15);color:#f5a623;font-size:10px">⚠ data lama</span></span>
       </div>
       <div class="metrics" id="m-fisik-kebakaran"></div>
       <div class="cg2">
         <div class="cc"><div class="cc-title">Distribusi tower terdeteksi hotspot</div>
           <div class="legend" id="leg-hotspot"></div>
           <div class="cw" style="height:240px"><canvas id="c-hotspot-dist"></canvas></div></div>
-        <div class="cc"><div class="cc-title">Tower terdeteksi hotspot per UPT</div>
-          <div class="cw" style="height:240px"><canvas id="c-hotspot-upt"></canvas></div></div>
+        <div class="cc">
+          <div class="cc-title">Tower terdeteksi hotspot per UPT</div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;padding:0 12px" id="hotspot-upt-subtitle">data per –</div>
+          <div class="cw" style="height:240px"><canvas id="c-hotspot-upt"></canvas></div>
+        </div>
       </div>
       <div class="cc" style="margin-top:1rem">
         <div class="cc-title">Daftar tower terdeteksi hotspot</div>
@@ -1665,20 +1668,33 @@ function renderFisikTab() {
     const t = r[A_HOTSPOT]?.terakhir;
     if (t && (!latestCheck || t > latestCheck)) latestCheck = t;
   });
+  // Format timestamp untuk ditampilkan
+  const fmtHsTime = ts => {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2,'0');
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear()+', '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+' WIB';
+  };
+  const hsTimeStr = latestCheck ? fmtHsTime(latestCheck) : 'belum ada data';
+
+  // Cek apakah data lama (>6 jam dari sekarang)
+  let isStale = false;
+  if (latestCheck) {
+    const ageMs = Date.now() - new Date(latestCheck).getTime();
+    isStale = ageMs > 6*60*60*1000; // > 6 jam
+  }
+
   const lastUpdEl = document.getElementById('hotspot-last-update');
   if (lastUpdEl) {
-    if (latestCheck) {
-      // Tampilkan apa adanya — data di sheet sudah dalam WIB
-      const d = new Date(latestCheck);
-      // Pakai UTC getter untuk menghindari konversi otomatis browser
-      const pad = n => String(n).padStart(2,'0');
-      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-      lastUpdEl.textContent = pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear()+
-        ', '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+' WIB';
-    } else {
-      lastUpdEl.textContent = 'belum ada data';
-    }
+    lastUpdEl.textContent = hsTimeStr;
+    lastUpdEl.style.color = isStale ? '#f5a623' : 'var(--text)';
   }
+  const staleEl = document.getElementById('hotspot-stale-badge');
+  if (staleEl) staleEl.style.display = isStale ? 'inline' : 'none';
+
+  // Simpan ke window untuk diakses oleh sub-label grafik
+  window._hsTimeStr = hsTimeStr;
   // Anggap "terdeteksi hotspot" jika nilai hotspot bukan "TIDAK" dan bukan kosong
   const hsDetected = hsRows.filter(r => {
     const v = String(r[A_HOTSPOT]?.hotspot || '').trim().toUpperCase();
@@ -1720,6 +1736,12 @@ function renderFisikTab() {
     hsUKeys.map(k=>hsUptMap[k].aman),
     null
   );
+  // Update sub-label dengan timestamp
+  const uptSubEl = document.getElementById('hotspot-upt-subtitle');
+  if (uptSubEl) {
+    uptSubEl.textContent = 'data per ' + hsTimeStr;
+    uptSubEl.style.color = isStale ? '#f5a623' : 'var(--text3)';
+  }
 
   // Tabel daftar tower terdeteksi hotspot
   const wrap = document.getElementById('hotspot-table-wrap');
@@ -1789,10 +1811,9 @@ function scheduleHotspotRefresh() {
   const delay = next - now;
   console.log('[hotspot] next refresh in '+Math.round(delay/60000)+' min @ '+next.toLocaleTimeString('id-ID'));
   hotspotRefreshTimer = setTimeout(() => {
-    // Refresh hanya jika tab Kerawanan aktif
-    const fisikActive = document.getElementById('tab-fisik')?.classList.contains('active');
-    if (fisikActive && typeof loadDashboard === 'function') {
-      console.log('[hotspot] auto-refresh triggered');
+    // Auto-refresh selalu jalan walau tab tidak aktif
+    if (typeof loadDashboard === 'function') {
+      console.log('[hotspot] auto-refresh triggered @ '+new Date().toLocaleTimeString('id-ID'));
       loadDashboard();
     }
     scheduleHotspotRefresh(); // jadwalkan lagi
