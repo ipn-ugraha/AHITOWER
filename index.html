@@ -680,8 +680,19 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
 
       <div class="cc" style="margin-top:1rem">
-        <div class="cc-title">Top tower paling sering hotspot — 6 bulan</div>
-        <div id="hist-table-wrap" style="max-height:400px;overflow:auto"></div>
+        <div class="cc-title">Daftar tower historis hotspot — 6 bulan</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;padding:.6rem 1rem;border-bottom:1px solid var(--border);align-items:center">
+          <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">Filter:</span>
+          <select id="f-hist-upt" onchange="renderHistTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;font-family:var(--mono);outline:none;min-width:120px">
+            <option value="">Semua UPT</option>
+          </select>
+          <select id="f-hist-ultg" onchange="renderHistTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;font-family:var(--mono);outline:none;min-width:140px">
+            <option value="">Semua ULTG</option>
+          </select>
+          <input id="f-hist-search" type="text" placeholder="🔍 cari BAY/penghantar..." oninput="renderHistTable()"
+            style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:200px;flex:1"/>
+        </div>
+        <div id="hist-table-wrap" style="max-height:500px;overflow:auto"></div>
         <div style="padding:.5rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="hist-footer"></div>
       </div>
     </div>
@@ -1899,50 +1910,89 @@ function renderFisikTab() {
     }
   }
 
-  // Tabel top tower historis
+  // Simpan data historis ke global untuk diakses renderHistTable()
+  window._histRows = histRows;
+  // Build filter dropdown UPT & ULTG
+  const upts = [...new Set(histRows.map(r=>r[A_UPT]).filter(Boolean))].sort();
+  const ultgs = [...new Set(histRows.map(r=>r[A_ULTG]).filter(Boolean))].sort();
+  const selUpt = document.getElementById('f-hist-upt');
+  const selUltg = document.getElementById('f-hist-ultg');
+  if (selUpt) {
+    const cur = selUpt.value;
+    selUpt.innerHTML = '<option value="">Semua UPT</option>' + upts.map(u=>`<option value="${u}">${u}</option>`).join('');
+    if (cur && upts.includes(cur)) selUpt.value = cur;
+  }
+  if (selUltg) {
+    const cur = selUltg.value;
+    selUltg.innerHTML = '<option value="">Semua ULTG</option>' + ultgs.map(u=>`<option value="${u}">${u}</option>`).join('');
+    if (cur && ultgs.includes(cur)) selUltg.value = cur;
+  }
+
+  renderHistTable();
+}
+
+function renderHistTable() {
+  const histRows = window._histRows || [];
+  const fUpt   = document.getElementById('f-hist-upt')?.value || '';
+  const fUltg  = document.getElementById('f-hist-ultg')?.value || '';
+  const fSearch = (document.getElementById('f-hist-search')?.value || '').toLowerCase();
+
+  const filtered = histRows.filter(r => {
+    if (fUpt && r[A_UPT] !== fUpt) return false;
+    if (fUltg && r[A_ULTG] !== fUltg) return false;
+    if (fSearch) {
+      const hay = (r[A_BAY]+' '+r[A_PHT]+' '+r[A_ULTG]).toLowerCase();
+      if (!hay.includes(fSearch)) return false;
+    }
+    return true;
+  });
+
   const hwrap = document.getElementById('hist-table-wrap');
   const hfoot = document.getElementById('hist-footer');
-  if (hwrap) {
-    const sortedHist = [...histRows].sort((a,b) => (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0));
-    if (sortedHist.length === 0) {
-      hwrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Belum ada riwayat hotspot</div>';
-      if (hfoot) hfoot.textContent = '';
-    } else {
-      const fmtTime = ts => {
-        if (!ts) return '–';
-        const d = new Date(ts);
-        const pad = n => String(n).padStart(2,'0');
-        const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-        return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear();
-      };
-      let html = '<table class="bay-table"><thead><tr>';
-      html += '<th>#</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>';
-      html += '<th>Hari</th><th>Jarak Min</th><th>FRP Maks</th><th>Terakhir Terdeteksi</th>';
-      html += '</tr></thead><tbody>';
-      sortedHist.slice(0, 50).forEach((r,i) => {
-        const h = r[A_HOTSPOT];
-        const days = h.histDays !== null ? Number(h.histDays) : 0;
-        const jrk  = h.histJarak !== null ? Number(h.histJarak).toFixed(2) : '–';
-        const frp  = h.histFRP !== null ? Number(h.histFRP).toFixed(1) : '–';
-        const dColor = days >= 30 ? '#e84040' : days >= 15 ? '#f5a623' : 'var(--text)';
-        const fColor = h.histFRP >= 50 ? '#e84040' : h.histFRP >= 20 ? '#f5a623' : 'var(--text2)';
-        html += `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
-          <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
-          <td style="font-size:11px;color:var(--text2)">${r[A_UPT]||'–'}</td>
-          <td style="font-size:11px;color:var(--text2)">${r[A_ULTG]||'–'}</td>
-          <td style="font-size:11px;color:var(--text2)">${r[A_PHT]||'–'}</td>
-          <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${r[A_BAY]||'–'}</td>
-          <td style="font-size:11px;font-family:var(--mono);color:${dColor};font-weight:500">${days}</td>
-          <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${jrk}</td>
-          <td style="font-size:11px;font-family:var(--mono);color:${fColor}">${frp}</td>
-          <td style="font-size:10px;font-family:var(--mono);color:var(--text3)">${fmtTime(h.histLast)}</td>
-        </tr>`;
-      });
-      html += '</tbody></table>';
-      hwrap.innerHTML = html;
-      if (hfoot) hfoot.textContent = fmtNum(sortedHist.length) + ' tower pernah terdeteksi · top 50 ditampilkan · diurutkan hari terbanyak';
-    }
+  if (!hwrap) return;
+
+  const sortedHist = [...filtered].sort((a,b) => (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0));
+
+  if (sortedHist.length === 0) {
+    hwrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Tidak ada data sesuai filter</div>';
+    if (hfoot) hfoot.textContent = '';
+    return;
   }
+
+  const fmtTime = ts => {
+    if (!ts) return '–';
+    const d = new Date(ts);
+    const pad = n => String(n).padStart(2,'0');
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear();
+  };
+
+  let html = '<table class="bay-table"><thead><tr>';
+  html += '<th>#</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>';
+  html += '<th>Hari</th><th>Jarak Min</th><th>FRP Maks</th><th>Terakhir Terdeteksi</th>';
+  html += '</tr></thead><tbody>';
+  sortedHist.forEach((r,i) => {
+    const h = r[A_HOTSPOT];
+    const days = h.histDays !== null ? Number(h.histDays) : 0;
+    const jrk  = h.histJarak !== null ? Number(h.histJarak).toFixed(2) : '–';
+    const frp  = h.histFRP !== null ? Number(h.histFRP).toFixed(1) : '–';
+    const dColor = days >= 30 ? '#e84040' : days >= 15 ? '#f5a623' : 'var(--text)';
+    const fColor = h.histFRP >= 50 ? '#e84040' : h.histFRP >= 20 ? '#f5a623' : 'var(--text2)';
+    html += `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
+      <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
+      <td style="font-size:11px;color:var(--text2)">${r[A_UPT]||'–'}</td>
+      <td style="font-size:11px;color:var(--text2)">${r[A_ULTG]||'–'}</td>
+      <td style="font-size:11px;color:var(--text2)">${r[A_PHT]||'–'}</td>
+      <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${r[A_BAY]||'–'}</td>
+      <td style="font-size:11px;font-family:var(--mono);color:${dColor};font-weight:500">${days}</td>
+      <td style="font-size:11px;font-family:var(--mono);color:var(--text)">${jrk}</td>
+      <td style="font-size:11px;font-family:var(--mono);color:${fColor}">${frp}</td>
+      <td style="font-size:10px;font-family:var(--mono);color:var(--text3)">${fmtTime(h.histLast)}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  hwrap.innerHTML = html;
+  if (hfoot) hfoot.textContent = fmtNum(sortedHist.length) + ' tower pernah terdeteksi · diurutkan hari terbanyak';
 }
 
 // ─── AUTO REFRESH HOTSPOT (jam 05.30, 11.30, 17.30, 23.30 WIB) ──
