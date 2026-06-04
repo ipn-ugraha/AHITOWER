@@ -3415,32 +3415,34 @@ function makeDoughnut(id,labels,data,colors,legendId){
 
 // ─── REBUILD CACHE ────────────────────────────────────────
 async function doRebuildCache(){
-  if(!confirm('Rebuild cache di background?\n\nProses ±2-5 menit di server.\nHalaman tidak perlu ditunggu — refresh manual setelah selesai.')) return;
+  if(!confirm('Rebuild cache?\n\nProses dijadwalkan jalan ±1 menit dari sekarang, total ±3-5 menit.\nRefresh halaman setelah selesai.')) return;
   const btn=document.getElementById('btn-rebuild');
-  btn.textContent='⏳ Triggering...'; btn.disabled=true;
+  btn.textContent='⏳ Scheduling...'; btn.disabled=true;
 
   const url = API_URL + '?' + new URLSearchParams({action:'rebuild_cache', token:TOKEN, _t:Date.now()}).toString();
 
-  // Fire-and-forget: timeout pendek (15 detik) — kalau dalam 15s belum response,
-  // berarti rebuild masih berjalan di server. User refresh manual nanti.
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(()=>ctrl.abort(), 15000); // 15 detik saja
+    const t = setTimeout(()=>ctrl.abort(), 30000); // 30 detik cukup untuk schedule trigger
     const r = await fetch(url, {method:'GET', redirect:'follow', signal:ctrl.signal, cache:'no-store'});
     clearTimeout(t);
     const res = await r.json();
     btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
     if(res.ok){
-      // Rebuild selesai super cepat
-      alert('✅ Cache berhasil diperbarui!\nTower: '+fmtNum(res.rows)+'\nAHI: '+fmtNum(res.ahiRows));
-      window.location.reload(true);
+      if (res.scheduled) {
+        alert('🔄 ' + (res.message || 'Rebuild dijadwalkan.') +
+              '\n\n• Tunggu 3-5 menit (rebuild jalan di background)\n• Lalu Ctrl+Shift+R untuk refresh halaman\n• Data baru akan tampil');
+      } else {
+        alert('✅ Cache berhasil diperbarui!\nTower: '+fmtNum(res.rows)+'\nAHI: '+fmtNum(res.ahiRows));
+        window.location.reload(true);
+      }
     } else {
       alert('❌ Gagal: '+res.error);
     }
   } catch(e) {
     btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
     if(e.name==='AbortError') {
-      alert('🔄 Rebuild sedang berjalan di server (proses 2-5 menit).\n\n• Tutup notifikasi ini\n• Tunggu 3-5 menit\n• Refresh halaman dengan Ctrl+Shift+R\n\nData akan tampil setelah rebuild selesai.');
+      alert('⏱ Timeout saat menjadwalkan. Coba lagi.');
     } else {
       alert('❌ Error: '+e.message);
     }
