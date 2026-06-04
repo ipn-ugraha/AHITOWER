@@ -3430,7 +3430,10 @@ async function doRebuildCache(){
     btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
     if(res.ok){
       alert('✅ Cache berhasil diperbarui!\nTower: '+fmtNum(res.rows)+'\nAHI: '+fmtNum(res.ahiRows));
-      window.location.reload(true);
+      // Force reload + cache bypass — tambah timestamp ke URL agar fully fresh
+      const u = new URL(window.location.href);
+      u.searchParams.set('_r', Date.now());
+      window.location.replace(u.toString());
     } else {
       alert('❌ Gagal: '+res.error);
     }
