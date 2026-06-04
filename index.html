@@ -3423,7 +3423,7 @@ async function doRebuildCache(){
 
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(()=>ctrl.abort(), 30000); // 30 detik cukup untuk schedule trigger
+    const t = setTimeout(()=>ctrl.abort(), 60000); // 60 detik (rebuild biasa selesai ~30s)
     const r = await fetch(url, {method:'GET', redirect:'follow', signal:ctrl.signal, cache:'no-store'});
     clearTimeout(t);
     const res = await r.json();
