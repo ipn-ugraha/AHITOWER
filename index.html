@@ -576,7 +576,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:4px" id="d-mt-2026-n">–</div>
           </div>
           <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px;text-align:center;grid-column:span 2;border-left:3px solid var(--text2)">
-            <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-bottom:4px;font-weight:500">KATEGORI JBM</div>
+            <div style="font-size:10px;color:var(--text2);font-family:var(--mono);margin-bottom:4px;font-weight:500">KATEGORI SOURCE (kolom spreadsheet)</div>
             <div style="position:relative;height:88px;max-width:280px;margin:0 auto"><canvas id="d-mt-src"></canvas></div>
             <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:4px" id="d-mt-src-n">–</div>
           </div>
@@ -3415,29 +3415,34 @@ function makeDoughnut(id,labels,data,colors,legendId){
 
 // ─── REBUILD CACHE ────────────────────────────────────────
 async function doRebuildCache(){
-  if(!confirm('Rebuild cache? Proses ±30–60 detik.')) return;
+  if(!confirm('Rebuild cache? Proses ±60–180 detik.')) return;
   const btn=document.getElementById('btn-rebuild');
   btn.textContent='⏳ Building...'; btn.disabled=true;
 
-  // Gunakan fetch langsung dengan timeout lebih lama (120 detik)
+  // Gunakan fetch langsung dengan timeout lebih lama (180 detik)
   try {
-    const url = API_URL + '?' + new URLSearchParams({action:'rebuild_cache', token:TOKEN}).toString();
+    const url = API_URL + '?' + new URLSearchParams({action:'rebuild_cache', token:TOKEN, _t:Date.now()}).toString();
     const ctrl = new AbortController();
-    const t = setTimeout(()=>ctrl.abort(), 120000); // 120 detik
-    const r = await fetch(url, {method:'GET', redirect:'follow', signal:ctrl.signal});
+    const t = setTimeout(()=>ctrl.abort(), 180000); // 180 detik
+    const r = await fetch(url, {method:'GET', redirect:'follow', signal:ctrl.signal, cache:'no-store'});
     clearTimeout(t);
     const res = await r.json();
     btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
     if(res.ok){
       alert('✅ Cache berhasil diperbarui!\nTower: '+fmtNum(res.rows)+'\nAHI: '+fmtNum(res.ahiRows));
-      loadDashboard();
+      // Force hard reload — bypass semua cache browser
+      window.location.reload(true);
     } else {
       alert('❌ Gagal: '+res.error);
     }
   } catch(e) {
     btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
-    if(e.name==='AbortError') alert('⏱ Timeout — rebuild mungkin masih berjalan di server.\nTunggu 1-2 menit lalu refresh halaman.');
-    else alert('❌ Error: '+e.message);
+    if(e.name==='AbortError') {
+      // Timeout — tapi cache mungkin sudah selesai. Coba force reload sekalian
+      if (confirm('⏱ Timeout 180 detik tercapai — rebuild mungkin sudah selesai di server.\n\nReload halaman sekarang?')) {
+        window.location.reload(true);
+      }
+    } else alert('❌ Error: '+e.message);
   }
 }
 
@@ -3453,10 +3458,10 @@ function pct(a,b){ return b?Math.round(a/b*100):0; }
 // ─── API via Cloudflare Workers ───────────────────────────
 function api(params){
   return new Promise(resolve=>{
-    const p = {...params};
+    const p = {...params, _t: Date.now()}; // cache-bust setiap request
     delete p.callback;
     const url = API_URL + '?' + new URLSearchParams(p).toString();
-    fetch(url, { method:'GET', redirect:'follow' })
+    fetch(url, { method:'GET', redirect:'follow', cache:'no-store' })
       .then(r => r.json())
       .then(d => resolve(d))
       .catch(err => resolve({ok:false, error:'Koneksi gagal: '+err.message}));
