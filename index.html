@@ -583,8 +583,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
 
       <div class="cc">
-        <div class="cc-title">Kerapatan petir per UPT (stacked, basis 2026)</div>
-        <div class="cw" style="height:240px"><canvas id="c-petir-upt"></canvas></div>
+        <div class="cc-title">Kerapatan petir per UPT</div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;padding:0 12px">stacked horizontal, basis density 2026 — klik bar untuk detail</div>
+        <div class="cw" style="height:300px"><canvas id="c-petir-upt"></canvas></div>
       </div>
 
       <div class="sl">Profil density petir per tower (per penghantar)</div>
@@ -1642,6 +1643,57 @@ function renderAHICharts(rows) {
 }
 
 // ─── BAR CHART DENGAN LABEL JUMLAH ──────────────────────
+function makeStackedBarH(id, labels, datasets, onClickCb, chartType) {
+  dc(id);
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  charts[id] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        backgroundColor: ds.color,
+        borderWidth: 0,
+        borderRadius: 2,
+      }))
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'bottom',
+          labels: { color: TC, font:{size:10}, boxWidth:10, padding:8 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtNum(ctx.raw)} tower`,
+            footer: items => {
+              const total = items[0].chart.data.datasets.reduce((s,ds) => s + (ds.data[items[0].dataIndex]||0), 0);
+              return 'Total: ' + fmtNum(total);
+            }
+          }
+        }
+      },
+      scales: {
+        x: { stacked: true, beginAtZero: true, ticks: { color: TC, font:{size:10} }, grid: { color: GC } },
+        y: { stacked: true, ticks: { color: TC, font:{size:11} }, grid: { display: false } }
+      },
+      onClick: (evt, elements) => {
+        if (!elements.length) return;
+        const label = charts[id].data.labels[elements[0].index];
+        if (onClickCb) onClickCb(label);
+        else showBayModal(label, charts[id]._chartType);
+      },
+      onHover: (evt, elements) => {
+        evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      },
+      animation: { duration: 500 }
+    }
+  });
+  if (chartType) charts[id]._chartType = chartType;
+}
+
 function makeBarWithLabel(id, labels, dataYa, dataTidak, onClickCb) {
   dc(id);
   charts[id] = new Chart(document.getElementById(id), {
@@ -2282,24 +2334,31 @@ function renderPetirTab() {
   // ── 7 doughnut multi-tahun + source ──
   renderMultiYearDoughnuts(rows);
 
-  // Stacked per UPT
+  // Stacked per UPT — basis density 2026 saja (sinkron dengan doughnut 2026)
   const uptPetir = {};
   rows.forEach(r => {
     const u = r[A_UPT]||'N/A';
     if (!u.toUpperCase().includes('UPT')) return;
     if (!uptPetir[u]) { uptPetir[u]={}; PETIR_ORDER.forEach(k=>uptPetir[u][k]=0); }
-    const k = String(r[A_PETIR]||'').trim().toUpperCase() || 'TIDAK ADA DATA';
-    if (PETIR_ORDER.includes(k)) uptPetir[u][k]++;
-    else uptPetir[u]['TIDAK ADA DATA']++;
+    // Ambil density 2026 saja
+    const d2026 = r[A_DENS_ALL]?.['2026'];
+    let k;
+    if (d2026 === null || d2026 === undefined) k = 'TIDAK ADA DATA';
+    else if (d2026 > 15) k = 'SANGAT TINGGI';
+    else if (d2026 >= 6) k = 'TINGGI';
+    else if (d2026 >= 2) k = 'SEDANG';
+    else k = 'RENDAH';
+    uptPetir[u][k]++;
   });
+  // Sort by Sangat Tinggi descending
   const uPetirKeys = Object.keys(uptPetir).sort((a,b)=>
     (uptPetir[b]['SANGAT TINGGI']||0)-(uptPetir[a]['SANGAT TINGGI']||0));
   if (uPetirKeys.length > 0) {
-    makeStackedBar('c-petir-upt', uPetirKeys.map(l=>l.replace('UPT ','')),
+    makeStackedBarH('c-petir-upt', uPetirKeys.map(l=>l.replace('UPT ','')),
       PETIR_ORDER.filter(k=>uPetirKeys.some(u=>uptPetir[u][k]>0))
-        .map(k=>({ label:k, data:uPetirKeys.map(u=>uptPetir[u][k]||0), color:PETIR_WARNA[k] }))
-    , null, 'petir'
-  );
+        .map(k=>({ label:k, data:uPetirKeys.map(u=>uptPetir[u][k]||0), color:PETIR_WARNA[k] })),
+      null, 'petir'
+    );
   }
 
   // Per penghantar — sort sangat tinggi terbanyak
