@@ -1708,21 +1708,22 @@ function makeStackedBarH(id, labels, datasets, onClickCb, chartType) {
   if (chartType) charts[id]._chartType = chartType;
 }
 
-function makeBarWithLabel(id, labels, dataYa, dataTidak, onClickCb) {
+function makeBarWithLabel(id, labels, dataYa, dataTidak, onClickCb, barColor) {
   dc(id);
+  const color = barColor || '#00d4aa';
   charts[id] = new Chart(document.getElementById(id), {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label:'Terpasang', data:dataYa, backgroundColor:'#00d4aa', borderRadius:3, borderWidth:0 },
+        { label:'Jumlah', data:dataYa, backgroundColor:color, borderRadius:3, borderWidth:0 },
       ]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: {
         legend:{ display:false },
-        tooltip:{ callbacks:{ label: ctx => ` Terpasang: ${fmtNum(ctx.raw)} tower` } },
+        tooltip:{ callbacks:{ label: ctx => ` ${fmtNum(ctx.raw)} tower` } },
       },
       scales: {
         x:{ ticks:{color:TC}, grid:{color:GC} },
@@ -1810,7 +1811,8 @@ function renderFisikTab() {
     uKeys.map(l=>l.replace('UPT ','')),
     uKeys.map(k=>uptMap[k].rawan),
     uKeys.map(k=>uptMap[k].tidak),
-    null  // tidak ada click handler
+    null,  // tidak ada click handler
+    '#e84040' // merah — rawan
   );
 
   // Per penghantar — top 20 rawan terbanyak
@@ -1903,7 +1905,8 @@ function renderFisikTab() {
     hsUKeys.map(l=>l.replace('UPT ','')),
     hsUKeys.map(k=>hsUptMap[k].detected),
     hsUKeys.map(k=>hsUptMap[k].aman),
-    null
+    null,
+    '#e84040'
   );
   // Update sub-label dengan timestamp
   const uptSubEl = document.getElementById('hotspot-upt-subtitle');
@@ -1990,7 +1993,8 @@ function renderFisikTab() {
       histUKeys.map(l=>l.replace('UPT ','')),
       histUKeys.map(k=>histUptMap[k]),
       histUKeys.map(()=>0),
-      null
+      null,
+      '#BA7517'  // amber — historis
     );
   }
 
