@@ -589,46 +589,68 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
       <div class="sl">Profil density petir per tower (per penghantar)</div>
       <div class="cc" id="cc-density-line">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <!-- Dropdown Penghantar — user harus pilih -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <select id="f-pht-density" onchange="renderDensityLine()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);min-width:280px;flex:1">
+            <option value="">— Pilih penghantar —</option>
+          </select>
           <span id="density-stats" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
+          <button onclick="toggleDensityOptions()" id="btn-density-opts" style="padding:4px 10px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer">⚙ Opsi</button>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:8px;font-size:11px;color:var(--text2)">
-          <span>⚡ Density:</span>
-          <span><span style="color:#e84040">⚡</span> Sangat Tinggi (&gt;15)</span>
-          <span><span style="color:#f5a623">⚡</span> Tinggi (6–15)</span>
-          <span><span style="color:#d4bf00">⚡</span> Sedang (2–6)</span>
-          <span><span style="color:#00d4aa">⚡</span> Rendah (&lt;2)</span>
-          <span style="margin-left:8px">▐ Bar:</span>
-          <span><span style="color:#00d4aa">▐</span> ≤5Ω</span>
-          <span><span style="color:#f5a623">▐</span> 5–10Ω</span>
-          <span><span style="color:#e84040">▐</span> &gt;10Ω</span>
-          <span style="margin-left:8px"><span style="color:#00d4aa">▲</span> TLA terpasang</span>
+
+        <!-- Panel opsi (collapsed by default) -->
+        <div id="density-options" style="display:none;margin-bottom:10px">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono);margin-bottom:6px">
+            <span style="color:var(--text3)">Tahun:</span>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2021" checked onchange="renderDensityLine()" style="accent-color:#7f7f7f"> <span style="color:#7f7f7f">2021</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2022" checked onchange="renderDensityLine()" style="accent-color:#9c6ade"> <span style="color:#9c6ade">2022</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2023" checked onchange="renderDensityLine()" style="accent-color:#3b7aff"> <span style="color:#3b7aff">2023</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2024" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> <span style="color:#00d4aa">2024</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2025" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> <span style="color:#f5a623">2025</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2026" checked onchange="renderDensityLine()" style="accent-color:#e84040"> <span style="color:#e84040;font-weight:600">2026</span></label>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:14px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono);margin-bottom:6px">
+            <span style="color:var(--text3)">Layer:</span>
+            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-ohm" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> Tahanan ▐</label>
+            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-tla" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> TLA ▲</label>
+            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-elev" checked onchange="renderDensityLine()" style="accent-color:#8b6f4d"> Elevasi ⛰</label>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;padding:6px 10px;font-size:10px;color:var(--text2);font-family:var(--mono)">
+            <span>⚡ <span style="color:#e84040">SgtTinggi</span> <span style="color:#f5a623">Tinggi</span> <span style="color:#d4bf00">Sedang</span> <span style="color:#00d4aa">Rendah</span></span>
+            <span>▐ <span style="color:#00d4aa">≤5Ω</span> <span style="color:#f5a623">5-10Ω</span> <span style="color:#e84040">&gt;10Ω</span></span>
+            <span><span style="color:#00d4aa">▲</span> TLA · <span style="color:#8b6f4d">⛰</span> Elevasi</span>
+          </div>
         </div>
-        <!-- Toggle layer & tahun -->
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
-          <span style="color:var(--text3)">Tahun:</span>
-          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2021" checked onchange="renderDensityLine()" style="accent-color:#7f7f7f"> <span style="color:#7f7f7f">2021</span></label>
-          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2022" checked onchange="renderDensityLine()" style="accent-color:#9c6ade"> <span style="color:#9c6ade">2022</span></label>
-          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2023" checked onchange="renderDensityLine()" style="accent-color:#3b7aff"> <span style="color:#3b7aff">2023</span></label>
-          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2024" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> <span style="color:#00d4aa">2024</span></label>
-          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2025" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> <span style="color:#f5a623">2025</span></label>
-          <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2026" checked onchange="renderDensityLine()" style="accent-color:#e84040"> <span style="color:#e84040;font-weight:600">2026</span></label>
+
+        <!-- 6 Mini card tahun -->
+        <div id="density-summary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px"></div>
+
+        <!-- Empty state -->
+        <div id="density-empty" style="padding:3rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px;background:var(--bg2);border-radius:var(--radius-sm);margin-bottom:10px;display:none">
+          📊 Pilih penghantar di dropdown untuk melihat profil density
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:10px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
-          <span style="color:var(--text3)">Layer:</span>
-          <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="dl-show-ohm" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> Tahanan ▐
-          </label>
-          <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="dl-show-tla" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> TLA ▲
-          </label>
-          <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="dl-show-elev" checked onchange="renderDensityLine()" style="accent-color:#8b6f4d"> Elevasi ⛰
-          </label>
+
+        <!-- Grafik utama -->
+        <div class="cw" id="cw-density-line" style="height:340px;display:none"><canvas id="c-density-line"></canvas></div>
+
+        <!-- 3 Action card di bawah -->
+        <div id="density-action" style="display:none;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
+          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #e84040">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚡ TOWER KRITIS</div>
+            <div style="font-size:14px;font-weight:500" id="da-kritis">–</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">density &gt; 15</div>
+          </div>
+          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #00d4aa">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🛡 SUDAH ADA TLA</div>
+            <div style="font-size:14px;font-weight:500" id="da-tla">–</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-tla-pct">–</div>
+          </div>
+          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #f5a623;cursor:pointer" onclick="showCriticalTowers()">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚠ PRIORITAS TLA</div>
+            <div style="font-size:14px;font-weight:500" id="da-prio">–</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">kritis tanpa TLA · klik</div>
+          </div>
         </div>
-        <!-- Summary stats per penghantar -->
-        <div id="density-summary" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px"></div>
-        <div class="cw" style="height:360px"><canvas id="c-density-line"></canvas></div>
       </div>
 
       <div class="sl">Terpasang TLA per UPT</div>
@@ -2608,25 +2630,64 @@ let densityChart = null;
 
 function buildDensityDropdown() { /* tidak dipakai — pakai f-pht-petir */ }
 
+function toggleDensityOptions() {
+  const el = document.getElementById('density-options');
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function showCriticalTowers() {
+  const pht = document.getElementById('f-pht-density')?.value || '';
+  if (!pht || !F_AHI) return;
+  const rows = F_AHI.filter(r => r[A_PHT]===pht);
+  // Hanya tower kritis (density > 15) yang belum punya TLA
+  const critical = rows.filter(r => {
+    const d = r[A_DENSITY];
+    return d !== null && d > 15 && r[A_TLA] !== 1;
+  });
+  if (!critical.length) { alert('Tidak ada tower prioritas TLA'); return; }
+  // Buka modal BAY dengan chartType 'petir'
+  document.getElementById('modal-title').textContent = pht + ' — Tower Prioritas TLA';
+  MODAL_ROWS = critical;
+  MODAL_COLS = MODAL_COL_DEFS.petir;
+  MODAL_SORT = { col:'density', dir:-1 };
+  renderModalTable();
+  document.getElementById('modal-bay').style.display = 'flex';
+}
+
 function renderDensityLine() {
   if (!F_AHI) return;
-  const sel = document.getElementById('f-pht-petir');
-  let pht = sel?.value || '';
 
-  // Jika "Semua", pilih penghantar dengan data density terbanyak
-  if (!pht) {
-    const densCount = {};
-    F_AHI.forEach(r => {
-      if (!r[A_PHT] || r[A_DENSITY]===null || r[A_DENSITY]===undefined) return;
-      densCount[r[A_PHT]] = (densCount[r[A_PHT]]||0) + 1;
-    });
-    // Sort by jumlah data density terbanyak
-    const sorted = Object.entries(densCount).sort((a,b)=>b[1]-a[1]);
-    pht = sorted.length ? sorted[0][0] : '';
-    // Update dropdown ke penghantar terpilih
-    if (pht && sel) sel.value = pht;
+  // Build dropdown penghantar dari F_AHI (terfilter UPT)
+  const selD = document.getElementById('f-pht-density');
+  if (selD) {
+    const curVal = selD.value;
+    const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
+    selD.innerHTML = '<option value="">— Pilih penghantar —</option>';
+    phts.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; selD.appendChild(o); });
+    if (curVal && phts.includes(curVal)) selD.value = curVal;
   }
-  if (!pht) return;
+
+  const pht = selD?.value || '';
+
+  // Show/hide elements berdasarkan apakah penghantar dipilih
+  const emptyEl  = document.getElementById('density-empty');
+  const cwEl     = document.getElementById('cw-density-line');
+  const actionEl = document.getElementById('density-action');
+  const summaryEl2 = document.getElementById('density-summary');
+
+  if (!pht) {
+    if (emptyEl)  emptyEl.style.display = 'block';
+    if (cwEl)     cwEl.style.display = 'none';
+    if (actionEl) actionEl.style.display = 'none';
+    if (summaryEl2) summaryEl2.innerHTML = '';
+    const dStats = document.getElementById('density-stats');
+    if (dStats) dStats.textContent = '';
+    return;
+  }
+  if (emptyEl)  emptyEl.style.display = 'none';
+  if (cwEl)     cwEl.style.display = 'block';
+  if (actionEl) actionEl.style.display = 'grid';
 
   // Ambil semua tower, filter PHT valid, urutkan by nomor # dari BAY/TOWER
   const rows = F_AHI.filter(r=>r[A_PHT]===pht && r[A_PHT]!=='' && r[A_BAY]!=='')
@@ -2662,60 +2723,43 @@ function renderDensityLine() {
     return null;
   });
 
-  // Stats top bar
+  // Stats inline ringkas
   const dValid = density.filter(v=>v!==null&&v!==undefined);
-  if (dValid.length>0) {
-    const avg=(dValid.reduce((s,v)=>s+v,0)/dValid.length).toFixed(1);
-    const max=Math.max(...dValid).toFixed(1);
-    const thnBad=ohm.filter(v=>v!==null&&v>10).length;
-    const tlaCount=rows.filter((_,i)=>hasTLAval(tla1vals[i],tla2vals[i])).length;
-    document.getElementById('density-stats').textContent = pht + ' · ' +
-      rows.length+' tower · avg '+avg+' · max '+max+' · tahanan >10Ω: '+thnBad+' · TLA: '+tlaCount;
+  const dStatsEl = document.getElementById('density-stats');
+  if (dValid.length > 0 && dStatsEl) {
+    const avg = (dValid.reduce((s,v)=>s+v,0)/dValid.length).toFixed(1);
+    const max = Math.max(...dValid).toFixed(1);
+    dStatsEl.textContent = rows.length + ' tower · avg ' + avg + ' · max ' + max;
+  } else if (dStatsEl) {
+    dStatsEl.textContent = rows.length + ' tower';
   }
 
-  // Summary card per tahun
+  // Isi 3 action card
+  const tlaCount = rows.filter((_,i) => hasTLAval(tla1vals[i], tla2vals[i])).length;
+  const kritis   = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] > 15).length;
+  const prio     = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] > 15 && r[A_TLA] !== 1).length;
+  const elK  = document.getElementById('da-kritis');   if (elK) elK.textContent = fmtNum(kritis) + ' tower';
+  const elT  = document.getElementById('da-tla');      if (elT) elT.textContent = fmtNum(tlaCount) + ' tower';
+  const elTp = document.getElementById('da-tla-pct');  if (elTp) elTp.textContent = rows.length>0 ? pct(tlaCount, rows.length) + '% dari total' : '–';
+  const elP  = document.getElementById('da-prio');     if (elP) elP.textContent = fmtNum(prio) + ' tower';
+
+  // 6 Mini card tahun (compact horizontal)
   const summaryEl = document.getElementById('density-summary');
   if (summaryEl) {
-    const cards = DENS_YEARS.map(y => {
+    summaryEl.innerHTML = DENS_YEARS.map(y => {
       const vals = densByYear[y].filter(v=>v!==null);
-      if (!vals.length) return `<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;text-align:center;min-width:80px;opacity:.5">
-        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">${y}</div>
-        <div style="font-size:13px;color:var(--text3)">–</div>
+      const color = YEAR_COLORS[y];
+      const isLatest = y === '2026';
+      if (!vals.length) return `<div style="background:var(--bg2);border-radius:var(--radius-sm);padding:6px;text-align:center;opacity:.4;font-family:var(--mono)">
+        <div style="font-size:9px;color:${color}">${y}</div>
+        <div style="font-size:13px;color:var(--text3);font-weight:500">–</div>
       </div>`;
       const avgY = (vals.reduce((s,v)=>s+v,0)/vals.length).toFixed(1);
-      const maxY = Math.max(...vals).toFixed(1);
-      const cat  = getDensityCat(+avgY).toLowerCase();
-      const color = YEAR_COLORS[y];
-      return `<div style="background:var(--bg2);border:1px solid ${color}44;border-left:3px solid ${color};border-radius:var(--radius-sm);padding:6px 12px;min-width:90px">
-        <div style="font-size:10px;color:${color};font-family:var(--mono);font-weight:600">${y}</div>
-        <div style="font-size:14px;color:var(--text);font-weight:500">avg ${avgY}</div>
-        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">max ${maxY} · n=${vals.length}</div>
+      return `<div style="background:${isLatest?color+'15':'var(--bg2)'};border-radius:var(--radius-sm);padding:6px;text-align:center;font-family:var(--mono)${isLatest?';border-left:3px solid '+color:''}">
+        <div style="font-size:9px;color:${color};${isLatest?'font-weight:600':''}">${y}${isLatest?' ↑':''}</div>
+        <div style="font-size:13px;color:var(--text);font-weight:500">${avgY}</div>
       </div>`;
     }).join('');
-
-    // Hitung trend slope (linear regression: tahun vs avg density)
-    const yearPts = [];
-    DENS_YEARS.forEach((y,idx) => {
-      const vals = densByYear[y].filter(v=>v!==null);
-      if (vals.length) yearPts.push([idx, vals.reduce((s,v)=>s+v,0)/vals.length]);
-    });
-    let trendCard = '';
-    if (yearPts.length >= 2) {
-      const n = yearPts.length;
-      const sx = yearPts.reduce((s,p)=>s+p[0],0), sy = yearPts.reduce((s,p)=>s+p[1],0);
-      const sxy = yearPts.reduce((s,p)=>s+p[0]*p[1],0);
-      const sxx = yearPts.reduce((s,p)=>s+p[0]*p[0],0);
-      const slope = (n*sxy - sx*sy)/(n*sxx - sx*sx);
-      const arrow = slope > 0.5 ? '↑' : slope < -0.5 ? '↓' : '→';
-      const trendColor = slope > 0.5 ? '#e84040' : slope < -0.5 ? '#00d4aa' : '#f5a623';
-      const trendLabel = slope > 0.5 ? 'Naik' : slope < -0.5 ? 'Turun' : 'Stabil';
-      trendCard = `<div style="background:var(--bg2);border:1px solid ${trendColor}66;border-left:3px solid ${trendColor};border-radius:var(--radius-sm);padding:6px 12px;min-width:110px">
-        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">TREN 6-THN</div>
-        <div style="font-size:14px;color:${trendColor};font-weight:600">${arrow} ${trendLabel}</div>
-        <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">slope ${slope.toFixed(2)}/thn</div>
-      </div>`;
-    }
-    summaryEl.innerHTML = cards + trendCard;
   }
 
   // TLA data
