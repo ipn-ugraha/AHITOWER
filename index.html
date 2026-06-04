@@ -3415,22 +3415,24 @@ function makeDoughnut(id,labels,data,colors,legendId){
 
 // ─── REBUILD CACHE ────────────────────────────────────────
 async function doRebuildCache(){
-  if(!confirm('Rebuild cache? Proses ±60–180 detik.')) return;
+  if(!confirm('Rebuild cache di background?\n\nProses ±2-5 menit di server.\nHalaman tidak perlu ditunggu — refresh manual setelah selesai.')) return;
   const btn=document.getElementById('btn-rebuild');
-  btn.textContent='⏳ Building...'; btn.disabled=true;
+  btn.textContent='⏳ Triggering...'; btn.disabled=true;
 
-  // Gunakan fetch langsung dengan timeout lebih lama (180 detik)
+  const url = API_URL + '?' + new URLSearchParams({action:'rebuild_cache', token:TOKEN, _t:Date.now()}).toString();
+
+  // Fire-and-forget: timeout pendek (15 detik) — kalau dalam 15s belum response,
+  // berarti rebuild masih berjalan di server. User refresh manual nanti.
   try {
-    const url = API_URL + '?' + new URLSearchParams({action:'rebuild_cache', token:TOKEN, _t:Date.now()}).toString();
     const ctrl = new AbortController();
-    const t = setTimeout(()=>ctrl.abort(), 180000); // 180 detik
+    const t = setTimeout(()=>ctrl.abort(), 15000); // 15 detik saja
     const r = await fetch(url, {method:'GET', redirect:'follow', signal:ctrl.signal, cache:'no-store'});
     clearTimeout(t);
     const res = await r.json();
     btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
     if(res.ok){
+      // Rebuild selesai super cepat
       alert('✅ Cache berhasil diperbarui!\nTower: '+fmtNum(res.rows)+'\nAHI: '+fmtNum(res.ahiRows));
-      // Force hard reload — bypass semua cache browser
       window.location.reload(true);
     } else {
       alert('❌ Gagal: '+res.error);
@@ -3438,11 +3440,10 @@ async function doRebuildCache(){
   } catch(e) {
     btn.textContent='⚙ Rebuild Cache'; btn.disabled=false;
     if(e.name==='AbortError') {
-      // Timeout — tapi cache mungkin sudah selesai. Coba force reload sekalian
-      if (confirm('⏱ Timeout 180 detik tercapai — rebuild mungkin sudah selesai di server.\n\nReload halaman sekarang?')) {
-        window.location.reload(true);
-      }
-    } else alert('❌ Error: '+e.message);
+      alert('🔄 Rebuild sedang berjalan di server (proses 2-5 menit).\n\n• Tutup notifikasi ini\n• Tunggu 3-5 menit\n• Refresh halaman dengan Ctrl+Shift+R\n\nData akan tampil setelah rebuild selesai.');
+    } else {
+      alert('❌ Error: '+e.message);
+    }
   }
 }
 
