@@ -583,8 +583,22 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
 
       <div class="cc">
-        <div class="cc-title">Kerapatan petir per UPT</div>
-        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;padding:0 12px">stacked horizontal, basis density 2026 — klik bar untuk detail</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 12px 8px;flex-wrap:wrap">
+          <div>
+            <div class="cc-title" style="padding:0;margin-bottom:2px">Kerapatan petir per UPT</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">stacked horizontal — klik bar untuk detail</div>
+          </div>
+          <select id="f-petir-upt-year" onchange="renderPetirTab()"
+            style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:140px">
+            <option value="avg" selected>Rata-rata 2021-2026</option>
+            <option value="2026">Density 2026</option>
+            <option value="2025">Density 2025</option>
+            <option value="2024">Density 2024</option>
+            <option value="2023">Density 2023</option>
+            <option value="2022">Density 2022</option>
+            <option value="2021">Density 2021</option>
+          </select>
+        </div>
         <div class="cw" style="height:300px"><canvas id="c-petir-upt"></canvas></div>
       </div>
 
@@ -2334,19 +2348,29 @@ function renderPetirTab() {
   // ── 7 doughnut multi-tahun + source ──
   renderMultiYearDoughnuts(rows);
 
-  // Stacked per UPT — basis density 2026 saja (sinkron dengan doughnut 2026)
+  // Stacked per UPT — pilih tahun via dropdown atau rata-rata 6 tahun
+  const yearMode = document.getElementById('f-petir-upt-year')?.value || 'avg';
   const uptPetir = {};
   rows.forEach(r => {
     const u = r[A_UPT]||'N/A';
     if (!u.toUpperCase().includes('UPT')) return;
     if (!uptPetir[u]) { uptPetir[u]={}; PETIR_ORDER.forEach(k=>uptPetir[u][k]=0); }
-    // Ambil density 2026 saja
-    const d2026 = r[A_DENS_ALL]?.['2026'];
+    // Tentukan nilai density yang dipakai
+    let d = null;
+    if (yearMode === 'avg') {
+      // Rata-rata semua tahun yang ada data
+      const dAll = r[A_DENS_ALL] || {};
+      const vals = DENS_YEARS.map(y => dAll[y]).filter(v => v !== null && v !== undefined);
+      if (vals.length) d = vals.reduce((s,v)=>s+v,0) / vals.length;
+    } else {
+      d = r[A_DENS_ALL]?.[yearMode] ?? null;
+    }
+    // Kategorisasi CIGRE
     let k;
-    if (d2026 === null || d2026 === undefined) k = 'TIDAK ADA DATA';
-    else if (d2026 > 15) k = 'SANGAT TINGGI';
-    else if (d2026 >= 6) k = 'TINGGI';
-    else if (d2026 >= 2) k = 'SEDANG';
+    if (d === null || d === undefined) k = 'TIDAK ADA DATA';
+    else if (d > 15) k = 'SANGAT TINGGI';
+    else if (d >= 6) k = 'TINGGI';
+    else if (d >= 2) k = 'SEDANG';
     else k = 'RENDAH';
     uptPetir[u][k]++;
   });
