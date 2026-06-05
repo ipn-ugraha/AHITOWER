@@ -685,10 +685,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">basis: IEEE 1243 + CIGRE TB 549 + NEMA</div>
           </div>
           <select id="f-tla-mode" onchange="onTLAModeChange()"
-            style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:180px">
+            style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:200px">
             <option value="multi" selected>Multi-faktor IEEE 1243</option>
             <option value="simple">Simple (density &gt;15)</option>
             <option value="custom">Custom (atur bobot)</option>
+            <option value="threshold">Multi-faktor + threshold</option>
           </select>
         </div>
 
@@ -716,6 +717,101 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <div style="display:flex;align-items:baseline;gap:2px"><span id="w-trend-val" style="font-size:18px;font-weight:500">10</span><span style="font-size:11px;color:var(--text3)">%</span></div>
             <input type="range" min="0" max="100" value="10" id="w-trend" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#00d4aa">
             <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">Historis 6 thn</div>
+          </div>
+        </div>
+
+        <!-- Panel Threshold (hanya muncul saat mode = threshold) -->
+        <div id="tla-threshold-panel" style="display:none;padding:10px 12px;border-top:1px solid var(--border)">
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:8px">
+            Atur threshold minimum per faktor. Tower harus memenuhi <b>semua faktor aktif</b> (AND).
+            Uncheck untuk menonaktifkan filter faktor tersebut.
+          </div>
+
+          <!-- Density -->
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #e84040" id="th-row-density">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="th-density-on" checked onchange="onThresholdChange()" style="accent-color:#e84040;width:14px;height:14px;cursor:pointer">
+                <span style="font-size:12px;font-weight:500">⚡ Density Petir</span>
+                <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">flash/km²/thn</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
+                <span style="color:var(--text3)">min ≥</span>
+                <input type="number" id="th-density-val" value="6" min="0" max="50" step="0.5" oninput="onThresholdChange()"
+                  style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
+              <span><span style="color:#00d4aa">●</span> Rendah &lt;2</span>
+              <span><span style="color:#d4bf00">●</span> Sedang 2–6</span>
+              <span><span style="color:#f5a623">●</span> Tinggi 6–15</span>
+              <span><span style="color:#e84040">●</span> Sangat Tinggi &gt;15</span>
+            </div>
+          </div>
+
+          <!-- Tahanan -->
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #f5a623" id="th-row-ohm">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="th-ohm-on" checked onchange="onThresholdChange()" style="accent-color:#f5a623;width:14px;height:14px;cursor:pointer">
+                <span style="font-size:12px;font-weight:500">▐ Tahanan Pentanahan</span>
+                <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">Ω</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
+                <span style="color:var(--text3)">min ≥</span>
+                <input type="number" id="th-ohm-val" value="5" min="0" max="100" step="0.5" oninput="onThresholdChange()"
+                  style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
+              <span><span style="color:#00d4aa">●</span> Baik ≤5Ω</span>
+              <span><span style="color:#f5a623">●</span> Sedang 5–10Ω</span>
+              <span><span style="color:#e84040">●</span> Buruk &gt;10Ω</span>
+            </div>
+          </div>
+
+          <!-- Elevasi -->
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #9c6ade" id="th-row-elev">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="th-elev-on" checked onchange="onThresholdChange()" style="accent-color:#9c6ade;width:14px;height:14px;cursor:pointer">
+                <span style="font-size:12px;font-weight:500">⛰ Elevasi</span>
+                <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">mdpl</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
+                <span style="color:var(--text3)">min ≥</span>
+                <input type="number" id="th-elev-val" value="300" min="0" max="3000" step="50" oninput="onThresholdChange()"
+                  style="width:65px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#9c6ade;font-family:var(--mono);font-weight:500;text-align:right">
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
+              <span>Datar &lt;200m</span> · <span>Bukit 200–500m</span> · <span>Gunung &gt;500m</span>
+            </div>
+          </div>
+
+          <!-- Tren -->
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #00d4aa" id="th-row-trend">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <input type="checkbox" id="th-trend-on" onchange="onThresholdChange()" style="accent-color:#00d4aa;width:14px;height:14px;cursor:pointer">
+                <span style="font-size:12px;font-weight:500">📈 Tren Naik</span>
+                <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">slope linear 6 thn</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
+                <span style="color:var(--text3)">min ≥</span>
+                <input type="number" id="th-trend-val" value="0" min="-5" max="10" step="0.5" oninput="onThresholdChange()"
+                  style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#00d4aa;font-family:var(--mono);font-weight:500;text-align:right">
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:rgba(232,64,64,0.08);border-radius:var(--radius-sm);font-size:11px;font-family:var(--mono)">
+            <span style="color:#e84040">⚠ Lolos semua threshold aktif:</span>
+            <span id="th-result-count" style="color:#e84040;font-weight:500">–</span>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button onclick="resetThresholds()" style="flex:1;padding:5px 10px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;color:var(--text2)">↻ Reset ke default IEEE 1243</button>
           </div>
         </div>
 
@@ -2853,19 +2949,53 @@ function onTLAModeChange() {
   const mode = document.getElementById('f-tla-mode')?.value || 'multi';
   const weights = ['w-density','w-ohm','w-elev','w-trend'];
   const isCustom = mode === 'custom';
+  const isThreshold = mode === 'threshold';
   // Enable/disable sliders
   weights.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.disabled = !isCustom;
   });
-  // Reset bobot kalau pindah ke multi default
-  if (mode === 'multi') {
+  // Show/hide threshold panel
+  const thPanel = document.getElementById('tla-threshold-panel');
+  if (thPanel) thPanel.style.display = isThreshold ? 'block' : 'none';
+  // Reset bobot kalau pindah ke multi/threshold default
+  if (mode === 'multi' || mode === 'threshold') {
     setSlider('w-density', 45);
     setSlider('w-ohm',     30);
     setSlider('w-elev',    15);
     setSlider('w-trend',   10);
   }
   renderTLAPriority();
+}
+
+function onThresholdChange() {
+  // Visualize disabled state per row
+  ['density','ohm','elev','trend'].forEach(k => {
+    const cb = document.getElementById('th-'+k+'-on');
+    const row = document.getElementById('th-row-'+k);
+    const inp = document.getElementById('th-'+k+'-val');
+    if (cb && row) {
+      row.style.opacity = cb.checked ? '1' : '.45';
+      if (inp) inp.disabled = !cb.checked;
+    }
+  });
+  renderTLAPriority();
+}
+
+function resetThresholds() {
+  document.getElementById('th-density-on').checked = true;
+  document.getElementById('th-density-val').value = 6;
+  document.getElementById('th-ohm-on').checked = true;
+  document.getElementById('th-ohm-val').value = 5;
+  document.getElementById('th-elev-on').checked = true;
+  document.getElementById('th-elev-val').value = 300;
+  document.getElementById('th-trend-on').checked = false;
+  document.getElementById('th-trend-val').value = 0;
+  setSlider('w-density', 45);
+  setSlider('w-ohm',     30);
+  setSlider('w-elev',    15);
+  setSlider('w-trend',   10);
+  onThresholdChange();
 }
 
 function setSlider(id, val) {
@@ -2948,7 +3078,7 @@ function renderTLAPriority() {
     return;
   }
 
-  // Mode Multi / Custom: composite score
+  // Mode Multi / Custom / Threshold: composite score
   const wD = (+document.getElementById('w-density')?.value || 45) / 100;
   const wO = (+document.getElementById('w-ohm')?.value     || 30) / 100;
   const wE = (+document.getElementById('w-elev')?.value    || 15) / 100;
@@ -2958,6 +3088,15 @@ function renderTLAPriority() {
     wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">⚙ Atur bobot terlebih dahulu (total > 0)</div>';
     if (cntEl) cntEl.textContent = '';
     return;
+  }
+
+  // Threshold filter (hanya aktif di mode 'threshold')
+  let thDensity = null, thOhm = null, thElev = null, thTrend = null;
+  if (mode === 'threshold') {
+    if (document.getElementById('th-density-on')?.checked) thDensity = +document.getElementById('th-density-val').value;
+    if (document.getElementById('th-ohm-on')?.checked)     thOhm     = +document.getElementById('th-ohm-val').value;
+    if (document.getElementById('th-elev-on')?.checked)    thElev    = +document.getElementById('th-elev-val').value;
+    if (document.getElementById('th-trend-on')?.checked)   thTrend   = +document.getElementById('th-trend-val').value;
   }
 
   // Hitung min-max untuk normalisasi
@@ -2994,8 +3133,32 @@ function renderTLAPriority() {
     const score = ((dN * wD) + (oN * wO) + (eN * wE) + (tN * wT)) / wSum * 100;
     return { row:r, score, density:d, ohm:o, elev:e, trend };
   })
-  .filter(s => s.score > 0)
+  .filter(s => {
+    if (s.score <= 0) return false;
+    // Threshold mode: AND filter per faktor aktif
+    if (mode === 'threshold') {
+      if (thDensity !== null) {
+        if (s.density === null || s.density === undefined || s.density < thDensity) return false;
+      }
+      if (thOhm !== null) {
+        if (s.ohm === null || s.ohm === undefined || s.ohm < thOhm) return false;
+      }
+      if (thElev !== null) {
+        if (s.elev === null || s.elev === undefined || s.elev < thElev) return false;
+      }
+      if (thTrend !== null) {
+        if (s.trend === undefined || s.trend < thTrend) return false;
+      }
+    }
+    return true;
+  })
   .sort((a,b) => b.score - a.score);
+
+  // Update th-result-count untuk mode threshold
+  if (mode === 'threshold') {
+    const el = document.getElementById('th-result-count');
+    if (el) el.textContent = fmtNum(scored.length) + ' tower';
+  }
 
   // Tambah status TLA + warna status
   scored.forEach(s => {
