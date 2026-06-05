@@ -687,13 +687,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <select id="f-tla-mode" onchange="onTLAModeChange()"
             style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:200px">
             <option value="multi" selected>Multi-faktor IEEE 1243</option>
-            <option value="simple">Simple (density &gt;15)</option>
-            <option value="custom">Custom (atur bobot)</option>
             <option value="threshold">Multi-faktor + threshold</option>
           </select>
         </div>
 
-        <div id="tla-weights-panel" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px">
+        <div id="tla-weights-panel" style="display:none;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px">
           <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #e84040">
             <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Density petir</div>
             <div style="display:flex;align-items:baseline;gap:2px"><span id="w-density-val" style="font-size:18px;font-weight:500">45</span><span style="font-size:11px;color:var(--text3)">%</span></div>
@@ -896,25 +894,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <!-- Filter Bar -->
         <div style="display:flex;flex-wrap:wrap;gap:8px;padding:.6rem 1rem;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border)">
           <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Filter:</span>
-          <select id="f-tla-prio-upt" onchange="renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:100px">
+          <select id="f-tla-prio-upt" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:100px">
             <option value="">Semua UPT</option>
           </select>
-          <select id="f-tla-prio-ultg" onchange="renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:120px">
+          <select id="f-tla-prio-ultg" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:120px">
             <option value="">Semua ULTG</option>
           </select>
-          <select id="f-tla-prio-pht" onchange="renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:160px">
+          <select id="f-tla-prio-pht" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:160px">
             <option value="">Semua Penghantar</option>
           </select>
-          <select id="f-tla-prio-severity" onchange="renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
+          <select id="f-tla-prio-severity" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
             <option value="">Semua Severity</option>
             <option value="kritis">Kritis (80–100)</option>
             <option value="prioritas">Prioritas (60–79)</option>
             <option value="pertimbang">Pertimbangkan (&lt;60)</option>
           </select>
-          <input id="f-tla-prio-search" type="text" placeholder="🔍 cari BAY..." oninput="renderTLAPriority()"
+          <input id="f-tla-prio-search" type="text" placeholder="🔍 cari BAY..." oninput="TLA_PRIO_PAGE=1;renderTLAPriority()"
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 8px;font-size:10px;font-family:var(--mono);outline:none;flex:1;min-width:140px"/>
           <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);font-family:var(--mono);cursor:pointer">
-            <input type="checkbox" id="f-tla-prio-include-installed" onchange="renderTLAPriority()" style="accent-color:#9c6ade">
+            <input type="checkbox" id="f-tla-prio-include-installed" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#9c6ade" checked>
             Termasuk sudah TLA
           </label>
           <button onclick="resetTLAPrioFilters()" title="Reset filter"
@@ -2993,28 +2991,16 @@ function toggleDensityOptions() {
 // ─── PRIORITAS TLA — MULTI-FAKTOR ──────────────────
 function onTLAModeChange() {
   const mode = document.getElementById('f-tla-mode')?.value || 'multi';
-  const weights = ['w-density','w-ohm','w-elev','w-trend'];
-  const isCustom = mode === 'custom';
   const isThreshold = mode === 'threshold';
-  // Enable/disable sliders panel atas (bukan threshold panel)
-  weights.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.disabled = !isCustom;
-  });
   // Show/hide threshold panel
   const thPanel = document.getElementById('tla-threshold-panel');
   if (thPanel) thPanel.style.display = isThreshold ? 'block' : 'none';
-  // Show/hide panel bobot atas (sembunyi di mode threshold karena bobot ada di per-faktor)
-  const wPanel = document.getElementById('tla-weights-panel');
-  if (wPanel) wPanel.style.display = isThreshold ? 'none' : 'block';
-  // Reset bobot kalau pindah ke multi default
-  if (mode === 'multi') {
-    setSlider('w-density', 45);
-    setSlider('w-ohm',     30);
-    setSlider('w-elev',    15);
-    setSlider('w-trend',   10);
-  }
-  // Kalau mode threshold, panggil onThresholdChange untuk sync sum
+  // Reset bobot panel atas tetap (untuk fallback kalau dipanggil)
+  setSlider('w-density', 45);
+  setSlider('w-ohm',     30);
+  setSlider('w-elev',    15);
+  setSlider('w-trend',   10);
+  TLA_PRIO_PAGE = 1; // reset pagination saat ganti mode
   if (isThreshold) onThresholdChange();
   else renderTLAPriority();
 }
@@ -3099,16 +3085,24 @@ function updateTLAWeight(input) {
   renderTLAPriority();
 }
 
-// State sort tabel prioritas TLA
+// State sort & pagination tabel prioritas TLA
 let TLA_PRIO_SORT = { col: 'score', dir: -1 }; // default: score desc
+let TLA_PRIO_PAGE = 1;
+const TLA_PRIO_PER_PAGE = 25;
+
+function setTLAPrioPage(p) {
+  TLA_PRIO_PAGE = Math.max(1, p);
+  renderTLAPriority();
+}
 
 function resetTLAPrioFilters() {
   ['f-tla-prio-upt','f-tla-prio-ultg','f-tla-prio-pht','f-tla-prio-severity'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const s = document.getElementById('f-tla-prio-search'); if (s) s.value = '';
-  const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = false;
+  const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = true; // default ON
   TLA_PRIO_SORT = { col: 'score', dir: -1 };
+  TLA_PRIO_PAGE = 1;
   renderTLAPriority();
 }
 
@@ -3118,6 +3112,7 @@ function sortTLAPrio(col) {
   } else {
     TLA_PRIO_SORT = { col, dir: -1 };
   }
+  TLA_PRIO_PAGE = 1;
   renderTLAPriority();
 }
 
@@ -3141,35 +3136,7 @@ function renderTLAPriority() {
   // Populate filter dropdowns
   populateTLAPrioFilters(candidates);
 
-  // Mode Simple: hanya density >15
-  if (mode === 'simple') {
-    const simple = candidates.filter(r => {
-      const d = r[A_DENSITY];
-      return d !== null && d !== undefined && d > 15;
-    }).map(r => {
-      const score = Math.min(100, (r[A_DENSITY]||0) * 4);
-      const hasTLA = r[A_TLA] === 1;
-      let status;
-      const sBut2 = 60, sRel2 = 40;
-      if (!hasTLA && score >= sBut2)     status = { key:'butuh', label:'⚠ Butuh', color:'#e84040' };
-      else if (hasTLA && score >= sBut2) status = { key:'sesuai', label:'✅ Sesuai', color:'#00d4aa' };
-      else if (hasTLA && score < sRel2)  status = { key:'relokasi', label:'🔄 Relokasi', color:'#f5a623' };
-      else if (hasTLA)                   status = { key:'normal', label:'– Normal', color:'var(--text2)' };
-      else                               status = { key:'rendah', label:'– Belum (low)', color:'var(--text3)' };
-      return { row:r, score, density:r[A_DENSITY], ohm:r[A_OHM], elev:r[A_ELEV], trend:0, status };
-    }).sort((a,b) => b.score - a.score);
-    // Metric cards
-    const sButuh    = simple.filter(s => s.status.key === 'butuh').length;
-    const sSesuai   = simple.filter(s => s.status.key === 'sesuai').length;
-    const sRelokasi = simple.filter(s => s.status.key === 'relokasi').length;
-    const e1 = document.getElementById('card-butuh-tla');    if (e1) e1.textContent = fmtNum(sButuh);
-    const e2 = document.getElementById('card-sesuai-tla');   if (e2) e2.textContent = fmtNum(sSesuai);
-    const e3 = document.getElementById('card-relokasi-tla'); if (e3) e3.textContent = fmtNum(sRelokasi);
-    drawTLAPriorityTable(simple, wrap, cntEl, infoEl, 'Simple — density > 15 kA');
-    return;
-  }
-
-  // Mode Multi / Custom / Threshold: composite score
+  // Mode Multi / Threshold: composite score
   // Bobot: mode threshold pakai slider per row + checkbox; mode lain pakai slider panel atas
   let wD, wO, wE, wT;
   if (mode === 'threshold') {
@@ -3330,6 +3297,7 @@ function populateTLAPrioFilters(candidates) {
 }
 
 function applyTLAPrioFilters(scored) {
+  // Reset ke page 1 jika filter berubah (deteksi dengan signature)
   const fUpt   = document.getElementById('f-tla-prio-upt')?.value || '';
   const fUltg  = document.getElementById('f-tla-prio-ultg')?.value || '';
   const fPht   = document.getElementById('f-tla-prio-pht')?.value || '';
@@ -3398,6 +3366,13 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   };
   const th = (col, label, align) => '<th style="cursor:pointer;user-select:none;text-align:'+(align||'left')+'" onclick="sortTLAPrio(\'' + col + '\')">' + label + ' ' + sIcon(col) + '</th>';
 
+  // Pagination
+  const totalPage = Math.max(1, Math.ceil(sorted.length / TLA_PRIO_PER_PAGE));
+  if (TLA_PRIO_PAGE > totalPage) TLA_PRIO_PAGE = totalPage;
+  const startIdx = (TLA_PRIO_PAGE - 1) * TLA_PRIO_PER_PAGE;
+  const endIdx = startIdx + TLA_PRIO_PER_PAGE;
+  const pageRows = sorted.slice(startIdx, endIdx);
+
   let html = '<table class="bay-table"><thead><tr>';
   html += '<th>#</th>';
   html += th('upt','UPT');
@@ -3411,11 +3386,12 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('score','Score','right');
   html += th('status','Status');
   html += '</tr></thead><tbody>';
-  sorted.slice(0, 100).forEach((s,i) => {
+  pageRows.forEach((s,i) => {
+    const globalIdx = startIdx + i;
     const r = s.row;
     const sc = cScore(s.score);
     html += '<tr style="' + (i%2 ? '' : 'background:rgba(255,255,255,.01)') + '">'
-      + '<td style="color:var(--text3);font-family:var(--mono);font-size:11px">' + (i+1) + '</td>'
+      + '<td style="color:var(--text3);font-family:var(--mono);font-size:11px">' + (globalIdx+1) + '</td>'
       + '<td style="font-size:11px;color:var(--text2)">' + (r[A_UPT]||'–') + '</td>'
       + '<td style="font-size:11px;color:var(--text2)">' + (r[A_ULTG]||'–') + '</td>'
       + '<td style="font-size:11px;color:var(--text2)">' + (r[A_PHT]||'–') + '</td>'
@@ -3429,8 +3405,29 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '</tr>';
   });
   html += '</tbody></table>';
-  if (sorted.length > 100) {
-    html += '<div style="padding:6px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:10px;border-top:1px solid var(--border)">top 100 ditampilkan · total ' + fmtNum(sorted.length) + ' tower hasil filter</div>';
+
+  // Pagination bar
+  if (totalPage > 1) {
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;flex-wrap:wrap;gap:8px">';
+    html += '<div style="color:var(--text3)">Menampilkan ' + fmtNum(startIdx+1) + '–' + fmtNum(Math.min(endIdx, sorted.length)) + ' dari ' + fmtNum(sorted.length) + ' tower</div>';
+    html += '<div style="display:flex;align-items:center;gap:4px">';
+    // First & prev
+    html += '<button onclick="setTLAPrioPage(1)" ' + (TLA_PRIO_PAGE === 1 ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === 1 ? 'opacity:.4;cursor:not-allowed' : '') + '">«</button>';
+    html += '<button onclick="setTLAPrioPage(TLA_PRIO_PAGE - 1)" ' + (TLA_PRIO_PAGE === 1 ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === 1 ? 'opacity:.4;cursor:not-allowed' : '') + '">‹</button>';
+    // Page numbers (max 5 ditampilkan, sliding window)
+    let pStart = Math.max(1, TLA_PRIO_PAGE - 2);
+    let pEnd   = Math.min(totalPage, pStart + 4);
+    if (pEnd - pStart < 4) pStart = Math.max(1, pEnd - 4);
+    for (let p = pStart; p <= pEnd; p++) {
+      const active = p === TLA_PRIO_PAGE;
+      html += '<button onclick="setTLAPrioPage(' + p + ')" style="padding:3px 8px;background:' + (active?'#e84040':'var(--bg2)') + ';border:1px solid ' + (active?'#e84040':'var(--border2)') + ';border-radius:4px;cursor:pointer;color:' + (active?'#fff':'var(--text2)') + ';font-family:var(--mono);font-size:10px;font-weight:' + (active?'600':'400') + '">' + p + '</button>';
+    }
+    html += '<button onclick="setTLAPrioPage(TLA_PRIO_PAGE + 1)" ' + (TLA_PRIO_PAGE === totalPage ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === totalPage ? 'opacity:.4;cursor:not-allowed' : '') + '">›</button>';
+    html += '<button onclick="setTLAPrioPage(' + totalPage + ')" ' + (TLA_PRIO_PAGE === totalPage ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === totalPage ? 'opacity:.4;cursor:not-allowed' : '') + '">»</button>';
+    html += '</div>';
+    html += '</div>';
+  } else if (sorted.length > 0) {
+    html += '<div style="padding:6px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:10px;border-top:1px solid var(--border)">' + fmtNum(sorted.length) + ' tower total</div>';
   }
   wrap.innerHTML = html;
 }
