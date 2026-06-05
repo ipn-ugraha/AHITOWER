@@ -676,6 +676,74 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
       </div>
 
+      <div class="sl">Prioritas pemasangan TLA</div>
+      <div class="cc" style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:8px;padding:.7rem 1rem;border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <span style="font-size:16px;color:#e84040">⚡</span>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:13px;font-weight:500;color:var(--text)">Kriteria Prioritas TLA</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">basis: IEEE 1243 + CIGRE TB 549 + NEMA</div>
+          </div>
+          <select id="f-tla-mode" onchange="onTLAModeChange()"
+            style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:180px">
+            <option value="multi" selected>Multi-faktor IEEE 1243</option>
+            <option value="simple">Simple (density &gt;15)</option>
+            <option value="custom">Custom (atur bobot)</option>
+          </select>
+        </div>
+
+        <div id="tla-weights" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px">
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #e84040">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Density petir</div>
+            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-density-val" style="font-size:18px;font-weight:500">45</span><span style="font-size:11px;color:var(--text3)">%</span></div>
+            <input type="range" min="0" max="100" value="45" id="w-density" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#e84040">
+            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">CIGRE TB 549</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #f5a623">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Tahanan</div>
+            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-ohm-val" style="font-size:18px;font-weight:500">30</span><span style="font-size:11px;color:var(--text3)">%</span></div>
+            <input type="range" min="0" max="100" value="30" id="w-ohm" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#f5a623">
+            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">IEEE 1243</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #9c6ade">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Elevasi</div>
+            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-elev-val" style="font-size:18px;font-weight:500">15</span><span style="font-size:11px;color:var(--text3)">%</span></div>
+            <input type="range" min="0" max="100" value="15" id="w-elev" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#9c6ade">
+            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">NEMA mountain</div>
+          </div>
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #00d4aa">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Tren naik</div>
+            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-trend-val" style="font-size:18px;font-weight:500">10</span><span style="font-size:11px;color:var(--text3)">%</span></div>
+            <input type="range" min="0" max="100" value="10" id="w-trend" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#00d4aa">
+            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">Historis 6 thn</div>
+          </div>
+        </div>
+
+        <div style="padding:6px 12px;background:var(--bg2);font-size:10px;color:var(--text2);font-family:var(--mono);text-align:center;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+          Filter aktif: <b>belum terpasang TLA</b> · Score = Σ(faktor × bobot) · semakin tinggi semakin prioritas
+        </div>
+
+        <div style="padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+          <div>
+            <div style="font-size:12px;font-weight:500">Daftar tower prioritas TLA</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="tla-prio-info">diurutkan berdasarkan score</div>
+          </div>
+          <div style="font-size:11px;color:#e84040;font-family:var(--mono);font-weight:500" id="tla-prio-count">–</div>
+        </div>
+        <div id="tla-prio-wrap" style="max-height:500px;overflow:auto"></div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:10px;padding:.6rem 1rem;border-top:1px solid var(--border);font-size:11px;font-family:var(--mono)">
+          <span style="color:var(--text3)">Severity:</span>
+          <span><span style="background:rgba(232,64,64,0.15);color:#e84040;padding:1px 8px;border-radius:3px">80–100</span> Kritis tinggi</span>
+          <span><span style="background:rgba(245,166,35,0.15);color:#f5a623;padding:1px 8px;border-radius:3px">60–79</span> Prioritas tinggi</span>
+          <span><span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:1px 8px;border-radius:3px">&lt;60</span> Pertimbangkan</span>
+        </div>
+
+        <div style="padding:.6rem 1rem;background:rgba(156,106,222,0.08);border-top:1px solid var(--border);font-size:10px;color:var(--text2);font-family:var(--mono);line-height:1.6">
+          <b style="color:#9c6ade">Formula:</b> <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">score = (density × wD) + (ohm × wO) + (elev × wE) + (trend × wT)</code> × 100 · normalisasi min-max per faktor.
+        </div>
+      </div>
+
       <div class="sl">Terpasang TLA per UPT</div>
       <div class="cc" style="margin-bottom:1rem">
         <div class="cc-title">TLA terpasang per UPT — jumlah tower</div>
@@ -1117,7 +1185,7 @@ function switchTab(name) {
   const tabs=['overview','tower','ahi','petir','fisik'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===name));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
-  if (name==='petir' && F_AHI) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); }
+  if (name==='petir' && F_AHI) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); renderTLAPriority(); }
   if (name==='fisik' && F_AHI) renderFisikTab();
 }
 
@@ -1323,7 +1391,7 @@ function renderAll() {
   renderAHITab();
   // Render petir hanya jika tab aktif, atau update data internalnya
   const petirActive = document.getElementById('tab-petir')?.classList.contains('active');
-  if (petirActive) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); }
+  if (petirActive) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); renderTLAPriority(); }
   const fisikActive = document.getElementById('tab-fisik')?.classList.contains('active');
   if (fisikActive) renderFisikTab();
   else {
@@ -2729,6 +2797,152 @@ function toggleDensityOptions() {
   const el = document.getElementById('density-options');
   if (!el) return;
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// ─── PRIORITAS TLA — MULTI-FAKTOR ──────────────────
+function onTLAModeChange() {
+  const mode = document.getElementById('f-tla-mode')?.value || 'multi';
+  const weights = ['w-density','w-ohm','w-elev','w-trend'];
+  const isCustom = mode === 'custom';
+  // Enable/disable sliders
+  weights.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !isCustom;
+  });
+  // Reset bobot kalau pindah ke multi default
+  if (mode === 'multi') {
+    setSlider('w-density', 45);
+    setSlider('w-ohm',     30);
+    setSlider('w-elev',    15);
+    setSlider('w-trend',   10);
+  }
+  renderTLAPriority();
+}
+
+function setSlider(id, val) {
+  const el = document.getElementById(id); if (el) el.value = val;
+  const lbl = document.getElementById(id+'-val'); if (lbl) lbl.textContent = val;
+}
+
+function updateTLAWeight(input) {
+  const lbl = document.getElementById(input.id+'-val');
+  if (lbl) lbl.textContent = input.value;
+  renderTLAPriority();
+}
+
+function renderTLAPriority() {
+  if (!F_AHI) return;
+  const wrap = document.getElementById('tla-prio-wrap');
+  const cntEl = document.getElementById('tla-prio-count');
+  const infoEl = document.getElementById('tla-prio-info');
+  if (!wrap) return;
+
+  const mode = document.getElementById('f-tla-mode')?.value || 'multi';
+
+  // Filter: tower belum punya TLA
+  const candidates = F_AHI.filter(r => r[A_TLA] !== 1);
+
+  // Mode Simple: hanya density >15
+  if (mode === 'simple') {
+    const simple = candidates.filter(r => {
+      const d = r[A_DENSITY];
+      return d !== null && d !== undefined && d > 15;
+    }).map(r => ({ row:r, score:Math.min(100, (r[A_DENSITY]||0) * 4) }))
+      .sort((a,b) => b.score - a.score);
+    drawTLAPriorityTable(simple, wrap, cntEl, infoEl, 'Simple — density > 15 kA');
+    return;
+  }
+
+  // Mode Multi / Custom: composite score
+  const wD = (+document.getElementById('w-density')?.value || 45) / 100;
+  const wO = (+document.getElementById('w-ohm')?.value     || 30) / 100;
+  const wE = (+document.getElementById('w-elev')?.value    || 15) / 100;
+  const wT = (+document.getElementById('w-trend')?.value   || 10) / 100;
+  const wSum = wD + wO + wE + wT;
+  if (wSum === 0) {
+    wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">⚙ Atur bobot terlebih dahulu (total > 0)</div>';
+    if (cntEl) cntEl.textContent = '';
+    return;
+  }
+
+  // Hitung min-max untuk normalisasi
+  const densVals = candidates.map(r => r[A_DENSITY]).filter(v => v !== null && v !== undefined);
+  const ohmVals  = candidates.map(r => r[A_OHM]).filter(v => v !== null && v !== undefined && v > 0);
+  const elevVals = candidates.map(r => r[A_ELEV]).filter(v => v !== null && v !== undefined && v > 0);
+  const dMin = Math.min(...densVals,0), dMax = Math.max(...densVals, 20);
+  const oMin = Math.min(...ohmVals,0),  oMax = Math.max(...ohmVals, 15);
+  const eMin = Math.min(...elevVals,0), eMax = Math.max(...elevVals, 1500);
+
+  // Tren: slope linear regression density tahunan per tower (dari A_DENS_ALL)
+  const calcTrend = (r) => {
+    const dAll = r[A_DENS_ALL] || {};
+    const pts = DENS_YEARS.map((y,i) => [i, dAll[y]]).filter(p => p[1] !== null && p[1] !== undefined);
+    if (pts.length < 2) return 0;
+    const n = pts.length;
+    const sx = pts.reduce((s,p)=>s+p[0],0), sy = pts.reduce((s,p)=>s+p[1],0);
+    const sxy = pts.reduce((s,p)=>s+p[0]*p[1],0);
+    const sxx = pts.reduce((s,p)=>s+p[0]*p[0],0);
+    return (n*sxy - sx*sy) / (n*sxx - sx*sx);
+  };
+
+  const norm = (v, min, max) => max > min ? Math.max(0, Math.min(1, (v - min) / (max - min))) : 0;
+
+  // Hitung score per tower
+  const scored = candidates.map(r => {
+    const d = r[A_DENSITY], o = r[A_OHM], e = r[A_ELEV];
+    const trend = calcTrend(r);
+    const dN = (d !== null && d !== undefined) ? norm(d, dMin, dMax) : 0;
+    const oN = (o !== null && o > 0) ? norm(o, oMin, oMax) : 0;
+    const eN = (e !== null && e > 0) ? norm(e, eMin, eMax) : 0;
+    // Trend bonus: positif = naik, normalisasi -3..+3
+    const tN = Math.max(0, Math.min(1, (trend + 3) / 6));
+    const score = ((dN * wD) + (oN * wO) + (eN * wE) + (tN * wT)) / wSum * 100;
+    return { row:r, score, density:d, ohm:o, elev:e, trend };
+  })
+  .filter(s => s.score > 0)
+  .sort((a,b) => b.score - a.score);
+
+  drawTLAPriorityTable(scored, wrap, cntEl, infoEl, 'Multi-faktor: density × ' + (wD*100).toFixed(0) + '% + tahanan × ' + (wO*100).toFixed(0) + '% + elevasi × ' + (wE*100).toFixed(0) + '% + tren × ' + (wT*100).toFixed(0) + '%');
+}
+
+function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
+  if (cntEl) cntEl.textContent = '⚠ ' + fmtNum(scored.length) + ' tower butuh TLA';
+  if (infoEl) infoEl.textContent = infoText;
+  if (scored.length === 0) {
+    wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">✅ Tidak ada tower yang perlu prioritas TLA</div>';
+    return;
+  }
+  const fmt = (v, digits) => (v === null || v === undefined) ? '–' : Number(v).toFixed(digits);
+  const cDens = v => v === null ? 'var(--text3)' : v > 15 ? '#e84040' : v >= 6 ? '#f5a623' : 'var(--text)';
+  const cOhm  = v => v === null ? 'var(--text3)' : v > 10 ? '#e84040' : v > 5 ? '#f5a623' : 'var(--text)';
+  const cTrend = v => v > 0.5 ? '#e84040' : v < -0.5 ? '#00d4aa' : '#f5a623';
+  const cScore = s => s >= 80 ? { bg:'rgba(232,64,64,0.15)', fg:'#e84040' } : s >= 60 ? { bg:'rgba(245,166,35,0.15)', fg:'#f5a623' } : { bg:'rgba(0,212,170,0.15)', fg:'#00d4aa' };
+
+  let html = '<table class="bay-table"><thead><tr>';
+  html += '<th>#</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>';
+  html += '<th style="text-align:right">Density</th><th style="text-align:right">Ohm</th><th style="text-align:right">Elv (m)</th><th style="text-align:right">Tren</th><th style="text-align:right">Score</th>';
+  html += '</tr></thead><tbody>';
+  scored.slice(0, 50).forEach((s,i) => {
+    const r = s.row;
+    const sc = cScore(s.score);
+    html += '<tr style="' + (i%2 ? '' : 'background:rgba(255,255,255,.01)') + '">'
+      + '<td style="color:var(--text3);font-family:var(--mono);font-size:11px">' + (i+1) + '</td>'
+      + '<td style="font-size:11px;color:var(--text2)">' + (r[A_UPT]||'–') + '</td>'
+      + '<td style="font-size:11px;color:var(--text2)">' + (r[A_ULTG]||'–') + '</td>'
+      + '<td style="font-size:11px;color:var(--text2)">' + (r[A_PHT]||'–') + '</td>'
+      + '<td style="font-size:11px;font-family:var(--mono);color:var(--text)">' + (r[A_BAY]||'–') + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cDens(s.density) + '">' + fmt(s.density, 1) + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cOhm(s.ohm) + '">' + fmt(s.ohm, 2) + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + (s.trend > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  if (scored.length > 50) {
+    html += '<div style="padding:6px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:10px;border-top:1px solid var(--border)">top 50 ditampilkan · total ' + fmtNum(scored.length) + ' tower</div>';
+  }
+  wrap.innerHTML = html;
 }
 
 function showCriticalTowers() {
