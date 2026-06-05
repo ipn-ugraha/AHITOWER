@@ -723,12 +723,32 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           Filter aktif: <b>belum terpasang TLA</b> · Score = Σ(faktor × bobot) · semakin tinggi semakin prioritas
         </div>
 
-        <div style="padding:.7rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--border)">
-          <div>
-            <div style="font-size:12px;font-weight:500">Daftar tower prioritas TLA</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="tla-prio-info">diurutkan berdasarkan score</div>
+        <div style="padding:.7rem 1rem;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+            <div>
+              <div style="font-size:12px;font-weight:500">Daftar tower prioritas TLA</div>
+              <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="tla-prio-info">diurutkan berdasarkan score</div>
+            </div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="tla-prio-count">–</div>
           </div>
-          <div style="font-size:11px;color:#e84040;font-family:var(--mono);font-weight:500" id="tla-prio-count">–</div>
+          <!-- 3 Metric card -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+            <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #e84040">
+              <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚠ BUTUH TLA</div>
+              <div style="font-size:14px;font-weight:500;color:#e84040" id="card-butuh-tla">–</div>
+              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">belum ada TLA + score ≥60</div>
+            </div>
+            <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #00d4aa">
+              <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">✅ SUDAH SESUAI</div>
+              <div style="font-size:14px;font-weight:500;color:#00d4aa" id="card-sesuai-tla">–</div>
+              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">ada TLA + score ≥60</div>
+            </div>
+            <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #f5a623">
+              <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🔄 BISA RELOKASI</div>
+              <div style="font-size:14px;font-weight:500;color:#f5a623" id="card-relokasi-tla">–</div>
+              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">ada TLA + score &lt;40</div>
+            </div>
+          </div>
         </div>
 
         <!-- Filter Bar -->
@@ -751,6 +771,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </select>
           <input id="f-tla-prio-search" type="text" placeholder="🔍 cari BAY..." oninput="renderTLAPriority()"
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 8px;font-size:10px;font-family:var(--mono);outline:none;flex:1;min-width:140px"/>
+          <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);font-family:var(--mono);cursor:pointer">
+            <input type="checkbox" id="f-tla-prio-include-installed" onchange="renderTLAPriority()" style="accent-color:#9c6ade">
+            Termasuk sudah TLA
+          </label>
           <button onclick="resetTLAPrioFilters()" title="Reset filter"
             style="background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer">↻</button>
         </div>
@@ -2863,6 +2887,7 @@ function resetTLAPrioFilters() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const s = document.getElementById('f-tla-prio-search'); if (s) s.value = '';
+  const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = false;
   TLA_PRIO_SORT = { col: 'score', dir: -1 };
   renderTLAPriority();
 }
@@ -2884,11 +2909,16 @@ function renderTLAPriority() {
   if (!wrap) return;
 
   const mode = document.getElementById('f-tla-mode')?.value || 'multi';
+  const includeInstalled = document.getElementById('f-tla-prio-include-installed')?.checked || false;
 
-  // Filter: tower belum punya TLA
-  const candidates = F_AHI.filter(r => r[A_TLA] !== 1);
+  // Filter: tower yang akan dihitung scorenya
+  // - Default: hanya belum punya TLA
+  // - Jika checkbox aktif: semua tower (untuk analisis sudah sesuai / relokasi)
+  const candidates = includeInstalled
+    ? F_AHI
+    : F_AHI.filter(r => r[A_TLA] !== 1);
 
-  // Populate filter dropdowns (sekali, kalau belum)
+  // Populate filter dropdowns
   populateTLAPrioFilters(candidates);
 
   // Mode Simple: hanya density >15
@@ -2896,8 +2926,24 @@ function renderTLAPriority() {
     const simple = candidates.filter(r => {
       const d = r[A_DENSITY];
       return d !== null && d !== undefined && d > 15;
-    }).map(r => ({ row:r, score:Math.min(100, (r[A_DENSITY]||0) * 4) }))
-      .sort((a,b) => b.score - a.score);
+    }).map(r => {
+      const score = Math.min(100, (r[A_DENSITY]||0) * 4);
+      const hasTLA = r[A_TLA] === 1;
+      let status;
+      if (!hasTLA && score >= 60)      status = { key:'butuh', label:'⚠ Butuh', color:'#e84040' };
+      else if (hasTLA && score >= 60)  status = { key:'sesuai', label:'✅ Sesuai', color:'#00d4aa' };
+      else if (hasTLA && score < 40)   status = { key:'relokasi', label:'🔄 Relokasi', color:'#f5a623' };
+      else if (hasTLA)                 status = { key:'normal', label:'– Normal', color:'var(--text2)' };
+      else                             status = { key:'rendah', label:'– Belum (low)', color:'var(--text3)' };
+      return { row:r, score, density:r[A_DENSITY], ohm:r[A_OHM], elev:r[A_ELEV], trend:0, status };
+    }).sort((a,b) => b.score - a.score);
+    // Metric cards
+    const sButuh    = simple.filter(s => s.status.key === 'butuh').length;
+    const sSesuai   = simple.filter(s => s.status.key === 'sesuai').length;
+    const sRelokasi = simple.filter(s => s.status.key === 'relokasi').length;
+    const e1 = document.getElementById('card-butuh-tla');    if (e1) e1.textContent = fmtNum(sButuh);
+    const e2 = document.getElementById('card-sesuai-tla');   if (e2) e2.textContent = fmtNum(sSesuai);
+    const e3 = document.getElementById('card-relokasi-tla'); if (e3) e3.textContent = fmtNum(sRelokasi);
     drawTLAPriorityTable(simple, wrap, cntEl, infoEl, 'Simple — density > 15 kA');
     return;
   }
@@ -2950,6 +2996,24 @@ function renderTLAPriority() {
   })
   .filter(s => s.score > 0)
   .sort((a,b) => b.score - a.score);
+
+  // Tambah status TLA + warna status
+  scored.forEach(s => {
+    const hasTLA = s.row[A_TLA] === 1;
+    if (!hasTLA && s.score >= 60)      s.status = { key:'butuh', label:'⚠ Butuh', color:'#e84040' };
+    else if (hasTLA && s.score >= 60)  s.status = { key:'sesuai', label:'✅ Sesuai', color:'#00d4aa' };
+    else if (hasTLA && s.score < 40)   s.status = { key:'relokasi', label:'🔄 Relokasi', color:'#f5a623' };
+    else if (hasTLA)                   s.status = { key:'normal', label:'– Normal', color:'var(--text2)' };
+    else                               s.status = { key:'rendah', label:'– Belum (low)', color:'var(--text3)' };
+  });
+
+  // Hitung jumlah per status untuk metric cards
+  const butuh    = scored.filter(s => s.status.key === 'butuh').length;
+  const sesuai   = scored.filter(s => s.status.key === 'sesuai').length;
+  const relokasi = scored.filter(s => s.status.key === 'relokasi').length;
+  const el1 = document.getElementById('card-butuh-tla');    if (el1) el1.textContent = fmtNum(butuh);
+  const el2 = document.getElementById('card-sesuai-tla');   if (el2) el2.textContent = fmtNum(sesuai);
+  const el3 = document.getElementById('card-relokasi-tla'); if (el3) el3.textContent = fmtNum(relokasi);
 
   drawTLAPriorityTable(scored, wrap, cntEl, infoEl, 'Multi-faktor: density × ' + (wD*100).toFixed(0) + '% + tahanan × ' + (wO*100).toFixed(0) + '% + elevasi × ' + (wE*100).toFixed(0) + '% + tren × ' + (wT*100).toFixed(0) + '%');
 }
@@ -3011,6 +3075,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       case 'ohm':     va = a.ohm ?? -1; vb = b.ohm ?? -1; break;
       case 'elev':    va = a.elev ?? -1; vb = b.elev ?? -1; break;
       case 'trend':   va = a.trend ?? -99; vb = b.trend ?? -99; break;
+      case 'status':  va = a.status?.key || ''; vb = b.status?.key || ''; break;
       case 'score':
       default:        va = a.score; vb = b.score; break;
     }
@@ -3048,6 +3113,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('elev','Elv (m)','right');
   html += th('trend','Tren','right');
   html += th('score','Score','right');
+  html += th('status','Status');
   html += '</tr></thead><tbody>';
   sorted.slice(0, 100).forEach((s,i) => {
     const r = s.row;
@@ -3063,6 +3129,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
+      + '<td style="font-size:10px;font-family:var(--mono);color:' + (s.status?.color || 'var(--text3)') + ';white-space:nowrap">' + (s.status?.label || '–') + '</td>'
       + '</tr>';
   });
   html += '</tbody></table>';
