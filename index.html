@@ -829,6 +829,33 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </span>
           </div>
 
+          <!-- Severity threshold (custom score boundary) -->
+          <div style="margin-top:6px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+              <div>
+                <div style="font-size:11px;font-weight:500;color:var(--text)">⚙ Batas kategori status</div>
+                <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">Tower lolos threshold yang score-nya di atas batas Butuh = Butuh TLA</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
+                <span style="display:flex;align-items:center;gap:4px">
+                  <span style="display:inline-block;width:8px;height:8px;background:#e84040;border-radius:2px"></span>
+                  <span style="color:var(--text3)">Butuh ≥</span>
+                  <input type="number" id="th-sev-butuh" value="60" min="0" max="100" step="5" oninput="onSeverityChange()"
+                    style="width:48px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
+                </span>
+                <span style="display:flex;align-items:center;gap:4px">
+                  <span style="display:inline-block;width:8px;height:8px;background:#f5a623;border-radius:2px"></span>
+                  <span style="color:var(--text3)">Relokasi &lt;</span>
+                  <input type="number" id="th-sev-relokasi" value="40" min="0" max="100" step="5" oninput="onSeverityChange()"
+                    style="width:48px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
+                </span>
+              </div>
+            </div>
+            <div id="th-sev-preview" style="margin-top:4px;font-size:9px;color:var(--text3);font-family:var(--mono);text-align:right">
+              <span style="color:#e84040">⚠ Butuh: ≥60</span> · <span style="color:var(--text2)">Normal: 40-59</span> · <span style="color:#f5a623">🔄 Relokasi: &lt;40</span>
+            </div>
+          </div>
+
           <div style="display:flex;gap:8px;margin-top:6px">
             <button onclick="resetThresholds()" style="flex:1;padding:5px 10px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);cursor:pointer;color:var(--text2)">↻ Reset ke default IEEE 1243</button>
           </div>
@@ -851,17 +878,17 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #e84040">
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚠ BUTUH TLA</div>
               <div style="font-size:14px;font-weight:500;color:#e84040" id="card-butuh-tla">–</div>
-              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">belum ada TLA + score ≥60</div>
+              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)" id="card-butuh-sub">belum ada TLA + score ≥60</div>
             </div>
             <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #00d4aa">
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">✅ SUDAH SESUAI</div>
               <div style="font-size:14px;font-weight:500;color:#00d4aa" id="card-sesuai-tla">–</div>
-              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">ada TLA + score ≥60</div>
+              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)" id="card-sesuai-sub">ada TLA + score ≥60</div>
             </div>
             <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #f5a623">
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🔄 BISA RELOKASI</div>
               <div style="font-size:14px;font-weight:500;color:#f5a623" id="card-relokasi-tla">–</div>
-              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">ada TLA + score &lt;40</div>
+              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)" id="card-relokasi-sub">ada TLA + score &lt;40</div>
             </div>
           </div>
         </div>
@@ -3022,6 +3049,15 @@ function updateThWeightLabel(k) {
   if (inp && lbl) lbl.textContent = inp.value + '%';
 }
 
+function onSeverityChange() {
+  const sB = +document.getElementById('th-sev-butuh')?.value || 60;
+  const sR = +document.getElementById('th-sev-relokasi')?.value || 40;
+  // Update preview text
+  const prev = document.getElementById('th-sev-preview');
+  if (prev) prev.innerHTML = '<span style="color:#e84040">⚠ Butuh: ≥' + sB + '</span> · <span style="color:var(--text2)">Normal: ' + sR + '-' + (sB-1) + '</span> · <span style="color:#f5a623">🔄 Relokasi: &lt;' + sR + '</span>';
+  renderTLAPriority();
+}
+
 function resetThresholds() {
   // Reset checkbox + threshold value
   document.getElementById('th-density-on').checked = true;
@@ -3040,11 +3076,15 @@ function resetThresholds() {
     if (inp) inp.value = def;
     if (lbl) lbl.textContent = def + '%';
   });
+  // Reset severity threshold
+  const sB = document.getElementById('th-sev-butuh');    if (sB) sB.value = 60;
+  const sR = document.getElementById('th-sev-relokasi'); if (sR) sR.value = 40;
   // Reset bobot mode lain
   setSlider('w-density', 45);
   setSlider('w-ohm',     30);
   setSlider('w-elev',    15);
   setSlider('w-trend',   10);
+  onSeverityChange();
   onThresholdChange();
 }
 
@@ -3110,11 +3150,12 @@ function renderTLAPriority() {
       const score = Math.min(100, (r[A_DENSITY]||0) * 4);
       const hasTLA = r[A_TLA] === 1;
       let status;
-      if (!hasTLA && score >= 60)      status = { key:'butuh', label:'⚠ Butuh', color:'#e84040' };
-      else if (hasTLA && score >= 60)  status = { key:'sesuai', label:'✅ Sesuai', color:'#00d4aa' };
-      else if (hasTLA && score < 40)   status = { key:'relokasi', label:'🔄 Relokasi', color:'#f5a623' };
-      else if (hasTLA)                 status = { key:'normal', label:'– Normal', color:'var(--text2)' };
-      else                             status = { key:'rendah', label:'– Belum (low)', color:'var(--text3)' };
+      const sBut2 = 60, sRel2 = 40;
+      if (!hasTLA && score >= sBut2)     status = { key:'butuh', label:'⚠ Butuh', color:'#e84040' };
+      else if (hasTLA && score >= sBut2) status = { key:'sesuai', label:'✅ Sesuai', color:'#00d4aa' };
+      else if (hasTLA && score < sRel2)  status = { key:'relokasi', label:'🔄 Relokasi', color:'#f5a623' };
+      else if (hasTLA)                   status = { key:'normal', label:'– Normal', color:'var(--text2)' };
+      else                               status = { key:'rendah', label:'– Belum (low)', color:'var(--text3)' };
       return { row:r, score, density:r[A_DENSITY], ohm:r[A_OHM], elev:r[A_ELEV], trend:0, status };
     }).sort((a,b) => b.score - a.score);
     // Metric cards
@@ -3234,14 +3275,16 @@ function renderTLAPriority() {
     if (el) el.textContent = fmtNum(scored.length) + ' tower';
   }
 
-  // Tambah status TLA + warna status
+  // Tambah status TLA + warna status (severity threshold custom di mode threshold)
+  const sBut = mode === 'threshold' ? (+document.getElementById('th-sev-butuh')?.value || 60) : 60;
+  const sRel = mode === 'threshold' ? (+document.getElementById('th-sev-relokasi')?.value || 40) : 40;
   scored.forEach(s => {
     const hasTLA = s.row[A_TLA] === 1;
-    if (!hasTLA && s.score >= 60)      s.status = { key:'butuh', label:'⚠ Butuh', color:'#e84040' };
-    else if (hasTLA && s.score >= 60)  s.status = { key:'sesuai', label:'✅ Sesuai', color:'#00d4aa' };
-    else if (hasTLA && s.score < 40)   s.status = { key:'relokasi', label:'🔄 Relokasi', color:'#f5a623' };
-    else if (hasTLA)                   s.status = { key:'normal', label:'– Normal', color:'var(--text2)' };
-    else                               s.status = { key:'rendah', label:'– Belum (low)', color:'var(--text3)' };
+    if (!hasTLA && s.score >= sBut)     s.status = { key:'butuh', label:'⚠ Butuh', color:'#e84040' };
+    else if (hasTLA && s.score >= sBut) s.status = { key:'sesuai', label:'✅ Sesuai', color:'#00d4aa' };
+    else if (hasTLA && s.score < sRel)  s.status = { key:'relokasi', label:'🔄 Relokasi', color:'#f5a623' };
+    else if (hasTLA)                    s.status = { key:'normal', label:'– Normal', color:'var(--text2)' };
+    else                                s.status = { key:'rendah', label:'– Belum (low)', color:'var(--text3)' };
   });
 
   // Hitung jumlah per status untuk metric cards
@@ -3251,6 +3294,10 @@ function renderTLAPriority() {
   const el1 = document.getElementById('card-butuh-tla');    if (el1) el1.textContent = fmtNum(butuh);
   const el2 = document.getElementById('card-sesuai-tla');   if (el2) el2.textContent = fmtNum(sesuai);
   const el3 = document.getElementById('card-relokasi-tla'); if (el3) el3.textContent = fmtNum(relokasi);
+  // Update subtitle card sesuai threshold severity aktual
+  const sub1 = document.getElementById('card-butuh-sub');    if (sub1) sub1.innerHTML = 'belum ada TLA + score ≥' + sBut;
+  const sub2 = document.getElementById('card-sesuai-sub');   if (sub2) sub2.innerHTML = 'ada TLA + score ≥' + sBut;
+  const sub3 = document.getElementById('card-relokasi-sub'); if (sub3) sub3.innerHTML = 'ada TLA + score &lt;' + sRel;
 
   // Info text disesuaikan dengan mode
   let infoText;
