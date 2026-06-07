@@ -661,7 +661,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #e84040">
             <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚡ TOWER KRITIS</div>
             <div style="font-size:14px;font-weight:500" id="da-kritis">–</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">density &gt; 15</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-kritis-sub">density ≥ 6</div>
           </div>
           <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #00d4aa">
             <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🛡 SUDAH ADA TLA</div>
@@ -671,7 +671,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #f5a623;cursor:pointer" onclick="showCriticalTowers()">
             <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚠ PRIORITAS TLA</div>
             <div style="font-size:14px;font-weight:500" id="da-prio">–</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">kritis tanpa TLA · klik</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-prio-sub">lolos threshold · belum TLA · klik</div>
           </div>
         </div>
       </div>
@@ -3005,6 +3005,8 @@ function onThresholdChange() {
   }
   TLA_PRIO_PAGE = 1; // reset ke page 1 saat threshold/bobot berubah
   renderTLAPriority();
+  // Trigger renderDensityLine juga agar action card di Profil Density Petir ikut update
+  if (typeof renderDensityLine === 'function') renderDensityLine();
 }
 
 function updateThWeightLabel(k) {
@@ -3404,14 +3406,21 @@ function showCriticalTowers() {
   const pht = document.getElementById('f-pht-density')?.value || '';
   if (!pht || !F_AHI) return;
   const rows = F_AHI.filter(r => r[A_PHT]===pht);
-  // Hanya tower kritis (density > 15) yang belum punya TLA
+  // Ambil threshold dari panel Prioritas TLA agar sinkron
+  const thDens = document.getElementById('th-density-on')?.checked
+    ? (+document.getElementById('th-density-val')?.value || 6) : null;
+  const thOhmV = document.getElementById('th-ohm-on')?.checked
+    ? (+document.getElementById('th-ohm-val')?.value || 5) : null;
+  // Filter: lolos SEMUA threshold aktif + belum TLA
   const critical = rows.filter(r => {
-    const d = r[A_DENSITY];
-    return d !== null && d > 15 && r[A_TLA] !== 1;
+    if (r[A_TLA] === 1) return false;
+    if (thDens !== null && (r[A_DENSITY] === null || r[A_DENSITY] < thDens)) return false;
+    if (thOhmV !== null && (r[A_OHM] === null || r[A_OHM] < thOhmV)) return false;
+    return true;
   });
-  if (!critical.length) { alert('Tidak ada tower prioritas TLA'); return; }
+  if (!critical.length) { alert('Tidak ada tower prioritas TLA sesuai threshold saat ini'); return; }
   // Buka modal BAY dengan chartType 'petir'
-  document.getElementById('modal-title').textContent = pht + ' — Tower Prioritas TLA';
+  document.getElementById('modal-title').textContent = pht + ' — Tower Prioritas TLA (' + fmtNum(critical.length) + ')';
   MODAL_ROWS = critical;
   MODAL_COLS = MODAL_COL_DEFS.petir;
   MODAL_SORT = { col:'density', dir:-1 };
@@ -3498,14 +3507,37 @@ function renderDensityLine() {
     dStatsEl.textContent = rows.length + ' tower';
   }
 
-  // Isi 3 action card
+  // Isi 3 action card — selaras dengan threshold panel di bawah
   const tlaCount = rows.filter((_,i) => hasTLAval(tla1vals[i], tla2vals[i])).length;
-  const kritis   = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] > 15).length;
-  const prio     = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] > 15 && r[A_TLA] !== 1).length;
+  // Ambil threshold dari panel Prioritas TLA agar sinkron
+  const thDens = document.getElementById('th-density-on')?.checked
+    ? (+document.getElementById('th-density-val')?.value || 6) : null;
+  const thOhmV = document.getElementById('th-ohm-on')?.checked
+    ? (+document.getElementById('th-ohm-val')?.value || 5) : null;
+  // Tower kritis: lolos threshold density (jika aktif) — jika tidak aktif, pakai >6
+  const kritisThreshold = thDens !== null ? thDens : 6;
+  const kritis = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] >= kritisThreshold).length;
+  // Prioritas: lolos SEMUA threshold aktif + belum TLA
+  const prio = rows.filter(r => {
+    if (r[A_TLA] === 1) return false; // sudah ada TLA → skip
+    if (thDens !== null && (r[A_DENSITY] === null || r[A_DENSITY] < thDens)) return false;
+    if (thOhmV !== null && (r[A_OHM] === null || r[A_OHM] < thOhmV)) return false;
+    return true;
+  }).length;
   const elK  = document.getElementById('da-kritis');   if (elK) elK.textContent = fmtNum(kritis) + ' tower';
   const elT  = document.getElementById('da-tla');      if (elT) elT.textContent = fmtNum(tlaCount) + ' tower';
   const elTp = document.getElementById('da-tla-pct');  if (elTp) elTp.textContent = rows.length>0 ? pct(tlaCount, rows.length) + '% dari total' : '–';
   const elP  = document.getElementById('da-prio');     if (elP) elP.textContent = fmtNum(prio) + ' tower';
+  // Update sub-label sesuai threshold aktual
+  const elKSub = document.getElementById('da-kritis-sub');
+  if (elKSub) elKSub.textContent = 'density ≥ ' + kritisThreshold;
+  const elPSub = document.getElementById('da-prio-sub');
+  if (elPSub) {
+    const parts = [];
+    if (thDens !== null) parts.push('density ≥ ' + thDens);
+    if (thOhmV !== null) parts.push('ohm ≥ ' + thOhmV);
+    elPSub.textContent = (parts.length ? parts.join(' · ') + ' · ' : '') + 'belum TLA · klik';
+  }
 
   // 6 Mini card tahun (compact horizontal)
   const summaryEl = document.getElementById('density-summary');
