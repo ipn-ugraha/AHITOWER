@@ -723,7 +723,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               </div>
               <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
                 <span style="color:var(--text3)">min ≥</span>
-                <input type="number" id="th-density-val" value="15" min="0" max="50" step="0.5" oninput="onThresholdChange()"
+                <input type="number" id="th-density-val" value="6" min="0" max="50" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
                 <input type="range" id="th-density-weight" min="0" max="100" value="45" oninput="onThresholdChange();updateThWeightLabel('density')"
@@ -3003,6 +3003,7 @@ function onThresholdChange() {
     sumEl.textContent = weightSum + '%';
     sumEl.style.color = weightSum === 0 ? '#e84040' : (weightSum === 100 ? '#00d4aa' : '#f5a623');
   }
+  TLA_PRIO_PAGE = 1; // reset ke page 1 saat threshold/bobot berubah
   renderTLAPriority();
 }
 
@@ -3015,7 +3016,7 @@ function updateThWeightLabel(k) {
 function resetThresholds() {
   // Default: density ≥15, tahanan ≥5 (ON); elev ≥100, trend ≥0 (OFF)
   document.getElementById('th-density-on').checked = true;
-  document.getElementById('th-density-val').value = 15;
+  document.getElementById('th-density-val').value = 6;
   document.getElementById('th-ohm-on').checked = true;
   document.getElementById('th-ohm-val').value = 5;
   document.getElementById('th-elev-on').checked = false;
