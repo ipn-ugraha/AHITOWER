@@ -682,44 +682,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <span style="font-size:16px;color:#e84040">⚡</span>
           <div style="flex:1;min-width:200px">
             <div style="font-size:13px;font-weight:500;color:var(--text)">Kriteria Prioritas TLA</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">basis: IEEE 1243 + CIGRE TB 549 + NEMA</div>
-          </div>
-          <select id="f-tla-mode" onchange="onTLAModeChange()"
-            style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:200px">
-            <option value="multi" selected>Multi-faktor IEEE 1243</option>
-            <option value="threshold">Multi-faktor + threshold</option>
-          </select>
-        </div>
-
-        <div id="tla-weights-panel" style="display:none;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px">
-          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #e84040">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Density petir</div>
-            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-density-val" style="font-size:18px;font-weight:500">45</span><span style="font-size:11px;color:var(--text3)">%</span></div>
-            <input type="range" min="0" max="100" value="45" id="w-density" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#e84040">
-            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">CIGRE TB 549</div>
-          </div>
-          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #f5a623">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Tahanan</div>
-            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-ohm-val" style="font-size:18px;font-weight:500">30</span><span style="font-size:11px;color:var(--text3)">%</span></div>
-            <input type="range" min="0" max="100" value="30" id="w-ohm" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#f5a623">
-            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">IEEE 1243</div>
-          </div>
-          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #9c6ade">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Elevasi</div>
-            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-elev-val" style="font-size:18px;font-weight:500">15</span><span style="font-size:11px;color:var(--text3)">%</span></div>
-            <input type="range" min="0" max="100" value="15" id="w-elev" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#9c6ade">
-            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">NEMA mountain</div>
-          </div>
-          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;border-left:3px solid #00d4aa">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">Tren naik</div>
-            <div style="display:flex;align-items:baseline;gap:2px"><span id="w-trend-val" style="font-size:18px;font-weight:500">10</span><span style="font-size:11px;color:var(--text3)">%</span></div>
-            <input type="range" min="0" max="100" value="10" id="w-trend" oninput="updateTLAWeight(this)" disabled style="width:100%;margin-top:4px;accent-color:#00d4aa">
-            <div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:2px">Historis 6 thn</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">Multi-faktor + threshold · basis: IEEE 1243 + CIGRE TB 549 + NEMA</div>
           </div>
         </div>
 
-        <!-- Panel Threshold (hanya muncul saat mode = threshold) -->
-        <div id="tla-threshold-panel" style="display:none;padding:10px 12px;border-top:1px solid var(--border)">
+        <!-- Panel Threshold (selalu tampil) -->
+        <div id="tla-threshold-panel" style="display:block;padding:10px 12px;border-top:1px solid var(--border)">
 
           <!-- Disclaimer / Info card -->
           <div style="padding:10px 12px;background:rgba(83,74,183,0.08);border-left:3px solid #9c6ade;border-radius:var(--radius-sm);margin-bottom:10px;font-size:11px;line-height:1.6;color:var(--text)">
@@ -3001,29 +2969,8 @@ function toggleDensityOptions() {
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-// ─── INIT MODE TLA — set mode default jadi 'threshold' ──
-function initTLAMode() {
-  const sel = document.getElementById('f-tla-mode');
-  if (sel) sel.value = 'threshold';
-  onTLAModeChange();
-}
-
 // ─── PRIORITAS TLA — MULTI-FAKTOR ──────────────────
-function onTLAModeChange() {
-  const mode = document.getElementById('f-tla-mode')?.value || 'multi';
-  const isThreshold = mode === 'threshold';
-  // Show/hide threshold panel
-  const thPanel = document.getElementById('tla-threshold-panel');
-  if (thPanel) thPanel.style.display = isThreshold ? 'block' : 'none';
-  // Reset bobot panel atas tetap (untuk fallback kalau dipanggil)
-  setSlider('w-density', 45);
-  setSlider('w-ohm',     30);
-  setSlider('w-elev',    15);
-  setSlider('w-trend',   10);
-  TLA_PRIO_PAGE = 1; // reset pagination saat ganti mode
-  if (isThreshold) onThresholdChange();
-  else renderTLAPriority();
-}
+
 
 function onThresholdChange() {
   let weightSum = 0;
@@ -3083,10 +3030,6 @@ function resetThresholds() {
     if (inp) inp.value = def;
     if (lbl) lbl.textContent = def + '%';
   });
-  setSlider('w-density', 45);
-  setSlider('w-ohm',     55);
-  setSlider('w-elev',    10);
-  setSlider('w-trend',   10);
   TLA_PRIO_PAGE = 1;
   onThresholdChange();
 }
@@ -3140,7 +3083,6 @@ function renderTLAPriority() {
   const infoEl = document.getElementById('tla-prio-info');
   if (!wrap) return;
 
-  const mode = document.getElementById('f-tla-mode')?.value || 'multi';
   const includeInstalled = document.getElementById('f-tla-prio-include-installed')?.checked || false;
 
   // Filter: tower yang akan dihitung scorenya
@@ -3153,39 +3095,24 @@ function renderTLAPriority() {
   // Populate filter dropdowns
   populateTLAPrioFilters(candidates);
 
-  // Mode Multi / Threshold: composite score
-  // Bobot: mode threshold pakai slider per row + checkbox; mode lain pakai slider panel atas
-  let wD, wO, wE, wT;
-  if (mode === 'threshold') {
-    const dOn = document.getElementById('th-density-on')?.checked;
-    const oOn = document.getElementById('th-ohm-on')?.checked;
-    const eOn = document.getElementById('th-elev-on')?.checked;
-    const tOn = document.getElementById('th-trend-on')?.checked;
-    wD = dOn ? (+document.getElementById('th-density-weight')?.value || 0) / 100 : 0;
-    wO = oOn ? (+document.getElementById('th-ohm-weight')?.value     || 0) / 100 : 0;
-    wE = eOn ? (+document.getElementById('th-elev-weight')?.value    || 0) / 100 : 0;
-    wT = tOn ? (+document.getElementById('th-trend-weight')?.value   || 0) / 100 : 0;
-  } else {
-    wD = (+document.getElementById('w-density')?.value || 45) / 100;
-    wO = (+document.getElementById('w-ohm')?.value     || 30) / 100;
-    wE = (+document.getElementById('w-elev')?.value    || 15) / 100;
-    wT = (+document.getElementById('w-trend')?.value   || 10) / 100;
-  }
+  // Bobot dari slider per row threshold (faktor non-aktif → bobot 0)
+  const dOn = document.getElementById('th-density-on')?.checked;
+  const oOn = document.getElementById('th-ohm-on')?.checked;
+  const eOn = document.getElementById('th-elev-on')?.checked;
+  const tOn = document.getElementById('th-trend-on')?.checked;
+  const wD = dOn ? (+document.getElementById('th-density-weight')?.value || 0) / 100 : 0;
+  const wO = oOn ? (+document.getElementById('th-ohm-weight')?.value     || 0) / 100 : 0;
+  const wE = eOn ? (+document.getElementById('th-elev-weight')?.value    || 0) / 100 : 0;
+  const wT = tOn ? (+document.getElementById('th-trend-weight')?.value   || 0) / 100 : 0;
   const wSum = wD + wO + wE + wT;
   if (wSum === 0) {
-    const msg = mode === 'threshold'
-      ? '⚙ Aktifkan minimal 1 faktor dengan bobot &gt; 0 untuk menampilkan hasil'
-      : '⚙ Atur bobot terlebih dahulu (total &gt; 0)';
-    wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">' + msg + '</div>';
+    wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">⚙ Aktifkan minimal 1 faktor dengan bobot &gt; 0 untuk menampilkan hasil</div>';
     if (cntEl) cntEl.textContent = '';
-    // Reset 3 card metric
     ['card-sev-kritis','card-sev-tinggi','card-sev-sedang','card-sev-rendah','card-tla-terpasang'].forEach(id => {
       const e = document.getElementById(id); if (e) e.textContent = '0';
     });
-    if (mode === 'threshold') {
-      const tc = document.getElementById('th-result-count');
-      if (tc) tc.textContent = '0 tower';
-    }
+    const tc = document.getElementById('th-result-count');
+    if (tc) tc.textContent = '0 tower';
     return;
   }
 
@@ -3287,18 +3214,13 @@ function renderTLAPriority() {
   setCard('card-sev-rendah', fmtNum(rendah));
   setCard('card-tla-terpasang', fmtNum(tlaTerpasang) + ' / ' + fmtNum(tlaTotal) + ' (' + tlaPct + '%)');
 
-  // Info text disesuaikan dengan mode
-  let infoText;
-  if (mode === 'threshold') {
-    const parts = [];
-    if (wD > 0) parts.push('density×' + (wD*100).toFixed(0) + '%');
-    if (wO > 0) parts.push('tahanan×' + (wO*100).toFixed(0) + '%');
-    if (wE > 0) parts.push('elevasi×' + (wE*100).toFixed(0) + '%');
-    if (wT > 0) parts.push('tren×' + (wT*100).toFixed(0) + '%');
-    infoText = 'Multi-faktor + threshold: ' + parts.join(' + ');
-  } else {
-    infoText = 'Multi-faktor: density×' + (wD*100).toFixed(0) + '% + tahanan×' + (wO*100).toFixed(0) + '% + elevasi×' + (wE*100).toFixed(0) + '% + tren×' + (wT*100).toFixed(0) + '%';
-  }
+  // Info text — komposisi bobot aktif
+  const parts = [];
+  if (wD > 0) parts.push('density×' + (wD*100).toFixed(0) + '%');
+  if (wO > 0) parts.push('tahanan×' + (wO*100).toFixed(0) + '%');
+  if (wE > 0) parts.push('elevasi×' + (wE*100).toFixed(0) + '%');
+  if (wT > 0) parts.push('tren×' + (wT*100).toFixed(0) + '%');
+  const infoText = parts.join(' + ');
   drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText);
 }
 
