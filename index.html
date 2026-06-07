@@ -733,9 +733,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-density-val" value="6" min="0" max="50" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-density-weight" min="0" max="100" value="50" oninput="onThresholdChange();updateThWeightLabel('density')"
+                <input type="range" id="th-density-weight" min="0" max="100" value="80" oninput="onThresholdChange();updateThWeightLabel('density')"
                   style="width:80px;accent-color:#e84040">
-                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">50%</span>
+                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">80%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -747,10 +747,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </div>
 
           <!-- Tahanan -->
-          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #f5a623" id="th-row-ohm">
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #f5a623;opacity:.45" id="th-row-ohm">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
               <div style="display:flex;align-items:center;gap:8px">
-                <input type="checkbox" id="th-ohm-on" checked onchange="onThresholdChange()" style="accent-color:#f5a623;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-ohm-on" onchange="onThresholdChange()" style="accent-color:#f5a623;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500">▐ Tahanan Pentanahan</span>
                 <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">Ω</span>
               </div>
@@ -759,9 +759,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-ohm-val" value="5" min="0" max="100" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-ohm-weight" min="0" max="100" value="35" oninput="onThresholdChange();updateThWeightLabel('ohm')"
+                <input type="range" id="th-ohm-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('ohm')"
                   style="width:80px;accent-color:#f5a623">
-                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">35%</span>
+                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">10%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -781,7 +781,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               </div>
               <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
                 <span style="color:var(--text3)">min ≥</span>
-                <input type="number" id="th-elev-val" value="100" min="0" max="3000" step="50" oninput="onThresholdChange()"
+                <input type="number" id="th-elev-val" value="50" min="0" max="3000" step="50" oninput="onThresholdChange()"
                   style="width:65px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#9c6ade;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
                 <input type="range" id="th-elev-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('elev')"
@@ -806,9 +806,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
                 <span style="color:var(--text3)">auto per kV</span>
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-tinggi-weight" min="0" max="100" value="15" oninput="onThresholdChange();updateThWeightLabel('tinggi')"
+                <input type="range" id="th-tinggi-weight" min="0" max="100" value="20" oninput="onThresholdChange();updateThWeightLabel('tinggi')"
                   style="width:80px;accent-color:#3b7aff">
-                <span id="th-tinggi-weight-val" style="color:#3b7aff;font-weight:500;min-width:30px;text-align:right">15%</span>
+                <span id="th-tinggi-weight-val" style="color:#3b7aff;font-weight:500;min-width:30px;text-align:right">20%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px;flex-wrap:wrap">
@@ -3047,16 +3047,16 @@ function resetThresholds() {
   // Default: density ≥15, tahanan ≥5 (ON); elev ≥100, trend ≥0 (OFF)
   document.getElementById('th-density-on').checked = true;
   document.getElementById('th-density-val').value = 6;
-  document.getElementById('th-ohm-on').checked = true;
+  document.getElementById('th-ohm-on').checked = false;  // OFF
   document.getElementById('th-ohm-val').value = 5;
   document.getElementById('th-tinggi-on').checked = true;  // ON (threshold relatif)
   document.getElementById('th-elev-on').checked = false;
-  document.getElementById('th-elev-val').value = 100;
+  document.getElementById('th-elev-val').value = 50;
   document.getElementById('th-trend-on').checked = false;
   document.getElementById('th-trend-val').value = 0;
-  // Bobot default opsi C: density 50, ohm 35, tinggi 15, elev 10, trend 10
+  // Bobot default: density 80, ohm 10, tinggi 20, elev 10, trend 10
   ['density','ohm','tinggi','elev','trend'].forEach((k,i) => {
-    const def = [50,35,15,10,10][i];
+    const def = [80,10,20,10,10][i];
     const inp = document.getElementById('th-'+k+'-weight');
     const lbl = document.getElementById('th-'+k+'-weight-val');
     if (inp) inp.value = def;
@@ -3464,20 +3464,28 @@ function showCriticalTowers() {
   const pht = document.getElementById('f-pht-density')?.value || '';
   if (!pht || !F_AHI) return;
   const rows = F_AHI.filter(r => r[A_PHT]===pht);
-  // Ambil threshold dari panel Prioritas TLA agar sinkron
+  // Ambil threshold dari panel Prioritas TLA agar sinkron penuh
   const thDens = document.getElementById('th-density-on')?.checked
     ? (+document.getElementById('th-density-val')?.value || 6) : null;
   const thOhmV = document.getElementById('th-ohm-on')?.checked
     ? (+document.getElementById('th-ohm-val')?.value || 5) : null;
-  // Filter: lolos SEMUA threshold aktif + belum TLA
+  const thTinggiOn = document.getElementById('th-tinggi-on')?.checked;
+  const thElevV = document.getElementById('th-elev-on')?.checked
+    ? (+document.getElementById('th-elev-val')?.value || 50) : null;
+  // Filter: lolos semua threshold aktif + belum TLA
   const critical = rows.filter(r => {
     if (r[A_TLA] === 1) return false;
     if (thDens !== null && (r[A_DENSITY] === null || r[A_DENSITY] < thDens)) return false;
     if (thOhmV !== null && (r[A_OHM] === null || r[A_OHM] < thOhmV)) return false;
+    if (thTinggiOn) {
+      const teg = r[A_TOWER_INFO]?.teg || 150;
+      const h = r[A_TOWER_INFO]?.tinggi;
+      if (h === null || h === undefined || h < tinggiThresholdByVoltage(teg)) return false;
+    }
+    if (thElevV !== null && (r[A_ELEV] === null || r[A_ELEV] < thElevV)) return false;
     return true;
   });
   if (!critical.length) { alert('Tidak ada tower prioritas TLA sesuai threshold saat ini'); return; }
-  // Buka modal BAY dengan chartType 'petir'
   document.getElementById('modal-title').textContent = pht + ' — Tower Prioritas TLA (' + fmtNum(critical.length) + ')';
   MODAL_ROWS = critical;
   MODAL_COLS = MODAL_COL_DEFS.petir;
@@ -3565,37 +3573,46 @@ function renderDensityLine() {
     dStatsEl.textContent = rows.length + ' tower';
   }
 
-  // Isi 3 action card — selaras dengan threshold panel di bawah
+  // Isi 3 action card — selaras penuh dengan threshold panel
   const tlaCount = rows.filter((_,i) => hasTLAval(tla1vals[i], tla2vals[i])).length;
   // Ambil threshold dari panel Prioritas TLA agar sinkron
   const thDens = document.getElementById('th-density-on')?.checked
     ? (+document.getElementById('th-density-val')?.value || 6) : null;
   const thOhmV = document.getElementById('th-ohm-on')?.checked
     ? (+document.getElementById('th-ohm-val')?.value || 5) : null;
-  // Tower kritis: lolos threshold density (jika aktif) — jika tidak aktif, pakai >6
-  const kritisThreshold = thDens !== null ? thDens : 6;
-  const kritis = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] >= kritisThreshold).length;
-  // Prioritas: lolos SEMUA threshold aktif + belum TLA
-  const prio = rows.filter(r => {
-    if (r[A_TLA] === 1) return false; // sudah ada TLA → skip
+  const thTinggiOn = document.getElementById('th-tinggi-on')?.checked;
+  const thElevV = document.getElementById('th-elev-on')?.checked
+    ? (+document.getElementById('th-elev-val')?.value || 50) : null;
+  // Helper cek tower lolos semua threshold aktif
+  const lolosThreshold = (r) => {
     if (thDens !== null && (r[A_DENSITY] === null || r[A_DENSITY] < thDens)) return false;
     if (thOhmV !== null && (r[A_OHM] === null || r[A_OHM] < thOhmV)) return false;
+    if (thTinggiOn) {
+      const teg = r[A_TOWER_INFO]?.teg || 150;
+      const h = r[A_TOWER_INFO]?.tinggi;
+      if (h === null || h === undefined || h < tinggiThresholdByVoltage(teg)) return false;
+    }
+    if (thElevV !== null && (r[A_ELEV] === null || r[A_ELEV] < thElevV)) return false;
     return true;
-  }).length;
+  };
+  // Tower kritis: lolos semua threshold aktif
+  const kritis = rows.filter(r => lolosThreshold(r)).length;
+  // Prioritas: lolos threshold + belum TLA
+  const prio = rows.filter(r => r[A_TLA] !== 1 && lolosThreshold(r)).length;
   const elK  = document.getElementById('da-kritis');   if (elK) elK.textContent = fmtNum(kritis) + ' tower';
   const elT  = document.getElementById('da-tla');      if (elT) elT.textContent = fmtNum(tlaCount) + ' tower';
   const elTp = document.getElementById('da-tla-pct');  if (elTp) elTp.textContent = rows.length>0 ? pct(tlaCount, rows.length) + '% dari total' : '–';
   const elP  = document.getElementById('da-prio');     if (elP) elP.textContent = fmtNum(prio) + ' tower';
   // Update sub-label sesuai threshold aktual
+  const thParts = [];
+  if (thDens !== null)  thParts.push('density ≥ ' + thDens);
+  if (thOhmV !== null)  thParts.push('ohm ≥ ' + thOhmV);
+  if (thTinggiOn)       thParts.push('tinggi (relatif kV)');
+  if (thElevV !== null) thParts.push('elev ≥ ' + thElevV);
   const elKSub = document.getElementById('da-kritis-sub');
-  if (elKSub) elKSub.textContent = 'density ≥ ' + kritisThreshold;
+  if (elKSub) elKSub.textContent = thParts.length ? thParts.join(' · ') : 'semua tower';
   const elPSub = document.getElementById('da-prio-sub');
-  if (elPSub) {
-    const parts = [];
-    if (thDens !== null) parts.push('density ≥ ' + thDens);
-    if (thOhmV !== null) parts.push('ohm ≥ ' + thOhmV);
-    elPSub.textContent = (parts.length ? parts.join(' · ') + ' · ' : '') + 'belum TLA · klik';
-  }
+  if (elPSub) elPSub.textContent = (thParts.length ? thParts.join(' · ') + ' · ' : '') + 'belum TLA · klik';
 
   // 6 Mini card tahun (compact horizontal)
   const summaryEl = document.getElementById('density-summary');
