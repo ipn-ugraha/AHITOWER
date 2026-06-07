@@ -3116,14 +3116,12 @@ function renderTLAPriority() {
     return;
   }
 
-  // Threshold filter (hanya aktif di mode 'threshold')
+  // Threshold filter (selalu aktif)
   let thDensity = null, thOhm = null, thElev = null, thTrend = null;
-  if (mode === 'threshold') {
-    if (document.getElementById('th-density-on')?.checked) thDensity = +document.getElementById('th-density-val').value;
-    if (document.getElementById('th-ohm-on')?.checked)     thOhm     = +document.getElementById('th-ohm-val').value;
-    if (document.getElementById('th-elev-on')?.checked)    thElev    = +document.getElementById('th-elev-val').value;
-    if (document.getElementById('th-trend-on')?.checked)   thTrend   = +document.getElementById('th-trend-val').value;
-  }
+  if (document.getElementById('th-density-on')?.checked) thDensity = +document.getElementById('th-density-val').value;
+  if (document.getElementById('th-ohm-on')?.checked)     thOhm     = +document.getElementById('th-ohm-val').value;
+  if (document.getElementById('th-elev-on')?.checked)    thElev    = +document.getElementById('th-elev-val').value;
+  if (document.getElementById('th-trend-on')?.checked)   thTrend   = +document.getElementById('th-trend-val').value;
 
   // Hitung min-max untuk normalisasi
   const densVals = candidates.map(r => r[A_DENSITY]).filter(v => v !== null && v !== undefined);
@@ -3161,30 +3159,26 @@ function renderTLAPriority() {
   })
   .filter(s => {
     if (s.score <= 0) return false;
-    // Threshold mode: AND filter per faktor aktif
-    if (mode === 'threshold') {
-      if (thDensity !== null) {
-        if (s.density === null || s.density === undefined || s.density < thDensity) return false;
-      }
-      if (thOhm !== null) {
-        if (s.ohm === null || s.ohm === undefined || s.ohm < thOhm) return false;
-      }
-      if (thElev !== null) {
-        if (s.elev === null || s.elev === undefined || s.elev < thElev) return false;
-      }
-      if (thTrend !== null) {
-        if (s.trend === undefined || s.trend < thTrend) return false;
-      }
+    // Threshold filter: AND filter per faktor aktif
+    if (thDensity !== null) {
+      if (s.density === null || s.density === undefined || s.density < thDensity) return false;
+    }
+    if (thOhm !== null) {
+      if (s.ohm === null || s.ohm === undefined || s.ohm < thOhm) return false;
+    }
+    if (thElev !== null) {
+      if (s.elev === null || s.elev === undefined || s.elev < thElev) return false;
+    }
+    if (thTrend !== null) {
+      if (s.trend === undefined || s.trend < thTrend) return false;
     }
     return true;
   })
   .sort((a,b) => b.score - a.score);
 
-  // Update th-result-count untuk mode threshold
-  if (mode === 'threshold') {
-    const el = document.getElementById('th-result-count');
-    if (el) el.textContent = fmtNum(scored.length) + ' tower';
-  }
+  // Update th-result-count (Lolos semua threshold aktif)
+  const elResult = document.getElementById('th-result-count');
+  if (elResult) elResult.textContent = fmtNum(scored.length) + ' tower';
 
   // Tambah status berbasis level severity score (4 level)
   scored.forEach(s => {
