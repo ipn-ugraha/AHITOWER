@@ -789,6 +789,29 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </div>
 
           <!-- Tren -->
+          <!-- Tinggi Tower -->
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #3b7aff;opacity:.45" id="th-row-tinggi">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="checkbox" id="th-tinggi-on" onchange="onThresholdChange()" style="accent-color:#3b7aff;width:14px;height:14px;cursor:pointer">
+                <span style="font-size:12px;font-weight:500;color:var(--text)">📏 Tinggi Tower</span>
+                <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">meter — estimasi dari TIPE_TOWER + kV</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
+                <span style="color:var(--text3)">min ≥</span>
+                <input type="number" id="th-tinggi-val" value="30" min="0" max="100" step="1" oninput="onThresholdChange()"
+                  style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#3b7aff;font-family:var(--mono);font-weight:500;text-align:right">
+                <span style="color:var(--text3);margin-left:8px">bobot</span>
+                <input type="range" id="th-tinggi-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('tinggi')"
+                  style="width:80px;accent-color:#3b7aff">
+                <span id="th-tinggi-weight-val" style="color:#3b7aff;font-weight:500;min-width:30px;text-align:right">10%</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
+              <span>Pendek &lt;25m</span> · <span>Standar 25–35m</span> · <span>Tinggi &gt;35m</span> · <span style="color:#1D9E75">✓ IEEE 1243 § Tower geometry</span>
+            </div>
+          </div>
+
           <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #00d4aa" id="th-row-trend">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
               <div style="display:flex;align-items:center;gap:8px">
