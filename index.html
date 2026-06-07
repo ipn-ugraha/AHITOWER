@@ -708,6 +708,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <li><b style="color:#9c6ade">Elevasi</b> <em>(opsional)</em> — pendekatan empirik NEMA "mountain top", <b style="color:#e84040">bukan dari IEEE/CIGRE</b></li>
               <li><b style="color:#00d4aa">Tren Naik</b> <em>(opsional)</em> — pendekatan analitik historis 6 tahun, <b style="color:#e84040">bukan dari IEEE/CIGRE</b></li>
             </ul>
+            <div style="margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);font-size:9px;color:var(--text3);font-family:var(--mono);line-height:1.7">
+              <b style="color:var(--text2)">Referensi threshold yang dipakai:</b><br>
+              • <b style="color:#e84040">Density ≥6</b> flash/km²/thn — CIGRE TB 549: batas bawah kategori "Tinggi" (6–15 flash/km²/thn). Threshold kolom >15 kA merujuk arus puncak petir (median distribusi CIGRE/Berger)<br>
+              • <b style="color:#f5a623">Tahanan ≥5Ω</b> — IEEE Std 1243 §5 + NEMA: di bawah 5Ω dianggap aman (tidak perlu TLA), 5–10Ω perlu perhatian, &gt;10Ω prioritas. Backflashover rate naik seiring tahanan kaki tower<br>
+              • <b style="color:#3b7aff">Tinggi relatif per kV</b> — IEEE Std 1243 §4 (Tower geometry): frekuensi sambaran N_L ∝ tinggi tower. Threshold: 70kV≥20m · 150kV≥30m · 275kV≥38m · 500kV≥55m (di atas median tinggi per kelas tegangan)
+            </div>
           </div>
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:8px">
             Atur threshold minimum per faktor. Tower harus memenuhi <b>semua faktor aktif</b> (AND).
@@ -727,9 +733,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-density-val" value="6" min="0" max="50" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-density-weight" min="0" max="100" value="45" oninput="onThresholdChange();updateThWeightLabel('density')"
+                <input type="range" id="th-density-weight" min="0" max="100" value="50" oninput="onThresholdChange();updateThWeightLabel('density')"
                   style="width:80px;accent-color:#e84040">
-                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">45%</span>
+                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">50%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -753,9 +759,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-ohm-val" value="5" min="0" max="100" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-ohm-weight" min="0" max="100" value="55" oninput="onThresholdChange();updateThWeightLabel('ohm')"
+                <input type="range" id="th-ohm-weight" min="0" max="100" value="35" oninput="onThresholdChange();updateThWeightLabel('ohm')"
                   style="width:80px;accent-color:#f5a623">
-                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">55%</span>
+                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">35%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -789,26 +795,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </div>
 
           <!-- Tren -->
-          <!-- Tinggi Tower -->
-          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #3b7aff;opacity:.45" id="th-row-tinggi">
+          <!-- Tinggi Tower (threshold relatif per tegangan) -->
+          <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #3b7aff" id="th-row-tinggi">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
               <div style="display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="th-tinggi-on" onchange="onThresholdChange()" style="accent-color:#3b7aff;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-tinggi-on" checked onchange="onThresholdChange()" style="accent-color:#3b7aff;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500;color:var(--text)">📏 Tinggi Tower</span>
-                <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">meter — estimasi dari TIPE_TOWER + kV</span>
+                <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">threshold relatif per tegangan</span>
               </div>
               <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
-                <span style="color:var(--text3)">min ≥</span>
-                <input type="number" id="th-tinggi-val" value="30" min="0" max="100" step="1" oninput="onThresholdChange()"
-                  style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#3b7aff;font-family:var(--mono);font-weight:500;text-align:right">
+                <span style="color:var(--text3)">auto per kV</span>
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-tinggi-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('tinggi')"
+                <input type="range" id="th-tinggi-weight" min="0" max="100" value="15" oninput="onThresholdChange();updateThWeightLabel('tinggi')"
                   style="width:80px;accent-color:#3b7aff">
-                <span id="th-tinggi-weight-val" style="color:#3b7aff;font-weight:500;min-width:30px;text-align:right">10%</span>
+                <span id="th-tinggi-weight-val" style="color:#3b7aff;font-weight:500;min-width:30px;text-align:right">15%</span>
               </div>
             </div>
-            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
-              <span>Pendek &lt;25m</span> · <span>Standar 25–35m</span> · <span>Tinggi &gt;35m</span> · <span style="color:#1D9E75">✓ IEEE 1243 § Tower geometry</span>
+            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px;flex-wrap:wrap">
+              <span>70kV ≥20m</span> · <span>150kV ≥30m</span> · <span>275kV ≥38m</span> · <span>500kV ≥55m</span> · <span style="color:#1D9E75">✓ IEEE 1243 § Tower geometry</span>
             </div>
           </div>
 
@@ -3045,15 +3049,14 @@ function resetThresholds() {
   document.getElementById('th-density-val').value = 6;
   document.getElementById('th-ohm-on').checked = true;
   document.getElementById('th-ohm-val').value = 5;
-  document.getElementById('th-tinggi-on').checked = false;
-  document.getElementById('th-tinggi-val').value = 30;
+  document.getElementById('th-tinggi-on').checked = true;  // ON (threshold relatif)
   document.getElementById('th-elev-on').checked = false;
   document.getElementById('th-elev-val').value = 100;
   document.getElementById('th-trend-on').checked = false;
   document.getElementById('th-trend-val').value = 0;
-  // Bobot default: density 45, ohm 55, tinggi 10, elev 10, trend 10
+  // Bobot default opsi C: density 50, ohm 35, tinggi 15, elev 10, trend 10
   ['density','ohm','tinggi','elev','trend'].forEach((k,i) => {
-    const def = [45,55,10,10,10][i];
+    const def = [50,35,15,10,10][i];
     const inp = document.getElementById('th-'+k+'-weight');
     const lbl = document.getElementById('th-'+k+'-weight-val');
     if (inp) inp.value = def;
@@ -3105,6 +3108,15 @@ function sortTLAPrio(col) {
   renderTLAPriority();
 }
 
+function tinggiThresholdByVoltage(kV) {
+  const teg = parseInt(kV) || 150;
+  if (teg >= 500) return 55;
+  if (teg >= 275) return 38;
+  if (teg >= 150) return 30;
+  if (teg >= 70)  return 20;
+  return 18;
+}
+
 function renderTLAPriority() {
   if (!F_AHI) return;
   const wrap = document.getElementById('tla-prio-wrap');
@@ -3148,10 +3160,11 @@ function renderTLAPriority() {
   }
 
   // Threshold filter (selalu aktif)
-  let thDensity = null, thOhm = null, thTinggi = null, thElev = null, thTrend = null;
+  let thDensity = null, thOhm = null, thElev = null, thTrend = null;
   if (document.getElementById('th-density-on')?.checked) thDensity = +document.getElementById('th-density-val').value;
   if (document.getElementById('th-ohm-on')?.checked)     thOhm     = +document.getElementById('th-ohm-val').value;
-  if (document.getElementById('th-tinggi-on')?.checked)  thTinggi  = +document.getElementById('th-tinggi-val').value;
+  const thTinggiOn = document.getElementById('th-tinggi-on')?.checked;
+  // thTinggi pakai relatif per tegangan (di-handle saat filter), flag saja di sini
   if (document.getElementById('th-elev-on')?.checked)    thElev    = +document.getElementById('th-elev-val').value;
   if (document.getElementById('th-trend-on')?.checked)   thTrend   = +document.getElementById('th-trend-val').value;
 
@@ -3205,8 +3218,10 @@ function renderTLAPriority() {
     if (thOhm !== null) {
       if (s.ohm === null || s.ohm === undefined || s.ohm < thOhm) return false;
     }
-    if (thTinggi !== null) {
-      if (s.tinggi === null || s.tinggi === undefined || s.tinggi < thTinggi) return false;
+    if (thTinggiOn) {
+      const teg = s.row[A_TOWER_INFO]?.teg || 150;
+      const thT = tinggiThresholdByVoltage(teg);
+      if (s.tinggi === null || s.tinggi === undefined || s.tinggi < thT) return false;
     }
     if (thElev !== null) {
       if (s.elev === null || s.elev === undefined || s.elev < thElev) return false;
@@ -3380,7 +3395,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="font-size:11px;font-family:var(--mono);color:var(--text)">' + (r[A_BAY]||'–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cDens(s.density) + '">' + fmt(s.density, 1) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cOhm(s.ohm) + '">' + fmt(s.ohm, 2) + '</td>'
-      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.tinggi > 35 ? '#3b7aff' : 'var(--text)') + '" title="' + (s.tipe||'') + (s.tinggiParsed===false ? ' (default — kode tidak terbaca)' : '') + '">' + (s.tinggi ? fmt(s.tinggi, 0) + (s.tinggiParsed === false ? '*' : '') : '–') + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.tinggi && s.tinggi >= tinggiThresholdByVoltage(s.row[A_TOWER_INFO]?.teg||150) ? '#3b7aff' : 'var(--text)') + '" title="' + (s.tipe||'') + ' · ' + (s.row[A_TOWER_INFO]?.teg||150) + 'kV (threshold ≥' + tinggiThresholdByVoltage(s.row[A_TOWER_INFO]?.teg||150) + 'm)' + (s.tinggiParsed===false ? ' · default — kode tidak terbaca' : '') + '">' + (s.tinggi ? fmt(s.tinggi, 0) + (s.tinggiParsed === false ? '*' : '') : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
