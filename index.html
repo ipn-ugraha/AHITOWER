@@ -911,6 +911,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <select id="f-tla-prio-pht" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:160px">
             <option value="">Semua Penghantar</option>
           </select>
+          <select id="f-tla-prio-teg" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
+            <option value="">Semua Tegangan</option>
+          </select>
           <select id="f-tla-prio-severity" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
             <option value="">Semua Severity</option>
             <option value="kritis">🔴 Kritis (≥80)</option>
@@ -3088,7 +3091,7 @@ function setTLAPrioPage(p) {
 }
 
 function resetTLAPrioFilters() {
-  ['f-tla-prio-upt','f-tla-prio-ultg','f-tla-prio-pht','f-tla-prio-severity'].forEach(id => {
+  ['f-tla-prio-upt','f-tla-prio-ultg','f-tla-prio-pht','f-tla-prio-teg','f-tla-prio-severity'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const s = document.getElementById('f-tla-prio-search'); if (s) s.value = '';
@@ -3289,6 +3292,14 @@ function populateTLAPrioFilters(candidates) {
   fill('f-tla-prio-upt',  upts,  'Semua UPT');
   fill('f-tla-prio-ultg', ultgs, 'Semua ULTG');
   fill('f-tla-prio-pht',  phts,  'Semua Penghantar');
+  // Tegangan unik dari tower info
+  const tegs = [...new Set(candidates.map(r=>r[A_TOWER_INFO]?.teg).filter(Boolean))].sort((a,b)=>a-b);
+  const selTeg = document.getElementById('f-tla-prio-teg');
+  if (selTeg) {
+    const cur = selTeg.value;
+    selTeg.innerHTML = '<option value="">Semua Tegangan</option>' + tegs.map(t=>'<option value="'+t+'">'+t+' kV</option>').join('');
+    if (cur && tegs.includes(+cur)) selTeg.value = cur;
+  }
 }
 
 function applyTLAPrioFilters(scored) {
@@ -3296,6 +3307,7 @@ function applyTLAPrioFilters(scored) {
   const fUpt   = document.getElementById('f-tla-prio-upt')?.value || '';
   const fUltg  = document.getElementById('f-tla-prio-ultg')?.value || '';
   const fPht   = document.getElementById('f-tla-prio-pht')?.value || '';
+  const fTeg   = document.getElementById('f-tla-prio-teg')?.value || '';
   const fSev   = document.getElementById('f-tla-prio-severity')?.value || '';
   const fSearch = (document.getElementById('f-tla-prio-search')?.value || '').toLowerCase();
   return scored.filter(s => {
@@ -3303,6 +3315,7 @@ function applyTLAPrioFilters(scored) {
     if (fUpt && r[A_UPT] !== fUpt) return false;
     if (fUltg && r[A_ULTG] !== fUltg) return false;
     if (fPht && r[A_PHT] !== fPht) return false;
+    if (fTeg && String(r[A_TOWER_INFO]?.teg || '') !== fTeg) return false;
     if (fSev) {
       if (fSev !== s.status?.key) return false;
     }
