@@ -3274,6 +3274,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       case 'ohm':     va = a.ohm ?? -1; vb = b.ohm ?? -1; break;
       case 'elev':    va = a.elev ?? -1; vb = b.elev ?? -1; break;
       case 'trend':   va = a.trend ?? -99; vb = b.trend ?? -99; break;
+      case 'tla':     va = a.hasTLA ? 1 : 0; vb = b.hasTLA ? 1 : 0; break;
       case 'status':  va = a.status?.key || ''; vb = b.status?.key || ''; break;
       case 'score':
       default:        va = a.score; vb = b.score; break;
@@ -3319,6 +3320,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('elev','Elv (m)','right');
   html += th('trend','Tren','right');
   html += th('score','Score','right');
+  html += th('tla','TLA');
   html += th('status','Status');
   html += '</tr></thead><tbody>';
   pageRows.forEach((s,i) => {
@@ -3336,6 +3338,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
+      + '<td style="font-size:10px;font-family:var(--mono);text-align:center;white-space:nowrap">' + (s.hasTLA ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:3px;font-weight:500">✅ Terpasang</span>' : '<span style="color:var(--text3)">— Belum</span>') + '</td>'
       + '<td style="font-size:10px;font-family:var(--mono);color:' + (s.status?.color || 'var(--text3)') + ';white-space:nowrap">' + (s.status?.label || '–') + '</td>'
       + '</tr>';
   });
@@ -3343,26 +3346,55 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
 
   // Pagination bar
   if (totalPage > 1) {
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--border);font-family:var(--mono);font-size:11px;flex-wrap:wrap;gap:8px">';
-    html += '<div style="color:var(--text3)">Menampilkan ' + fmtNum(startIdx+1) + '–' + fmtNum(Math.min(endIdx, sorted.length)) + ' dari ' + fmtNum(sorted.length) + ' tower</div>';
+    const isFirst = TLA_PRIO_PAGE === 1;
+    const isLast  = TLA_PRIO_PAGE === totalPage;
+    const btnStyle = (active, disabled) => 'min-width:30px;padding:5px 10px;background:' + (active?'#e84040':'var(--bg2)') + ';border:1px solid ' + (active?'#e84040':'var(--border2)') + ';border-radius:5px;cursor:' + (disabled?'not-allowed':'pointer') + ';color:' + (active?'#fff':'var(--text)') + ';font-family:var(--mono);font-size:11px;font-weight:' + (active?'600':'500') + ';transition:all .15s' + (disabled?';opacity:.35':'');
+    const btnHover = ' onmouseover="if(!this.disabled)this.style.borderColor=\'#e84040\'" onmouseout="if(!this.disabled&&!this.classList.contains(\'active-page\'))this.style.borderColor=\'var(--border2)\'"';
+
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg2);font-family:var(--mono);font-size:11px;flex-wrap:wrap;gap:10px">';
+
+    // Info kiri: total & range
+    html += '<div style="color:var(--text2);display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+    html += '<span style="background:rgba(232,64,64,0.1);color:#e84040;padding:3px 8px;border-radius:4px;font-weight:500">' + fmtNum(sorted.length) + ' tower</span>';
+    html += '<span style="color:var(--text3)">·</span>';
+    html += '<span>Baris <b style="color:var(--text)">' + fmtNum(startIdx+1) + '–' + fmtNum(Math.min(endIdx, sorted.length)) + '</b></span>';
+    html += '<span style="color:var(--text3)">·</span>';
+    html += '<span>Halaman <b style="color:var(--text)">' + TLA_PRIO_PAGE + '</b> dari ' + totalPage + '</span>';
+    html += '</div>';
+
+    // Tombol kanan
     html += '<div style="display:flex;align-items:center;gap:4px">';
-    // First & prev
-    html += '<button onclick="setTLAPrioPage(1)" ' + (TLA_PRIO_PAGE === 1 ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === 1 ? 'opacity:.4;cursor:not-allowed' : '') + '">«</button>';
-    html += '<button onclick="setTLAPrioPage(TLA_PRIO_PAGE - 1)" ' + (TLA_PRIO_PAGE === 1 ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === 1 ? 'opacity:.4;cursor:not-allowed' : '') + '">‹</button>';
-    // Page numbers (max 5 ditampilkan, sliding window)
+    html += '<button onclick="setTLAPrioPage(1)" ' + (isFirst ? 'disabled' : '') + ' title="Halaman pertama" style="' + btnStyle(false, isFirst) + '"' + btnHover + '>« First</button>';
+    html += '<button onclick="setTLAPrioPage(TLA_PRIO_PAGE - 1)" ' + (isFirst ? 'disabled' : '') + ' title="Sebelumnya" style="' + btnStyle(false, isFirst) + '"' + btnHover + '>‹ Prev</button>';
+
+    // Page numbers — sliding window 5 pages
     let pStart = Math.max(1, TLA_PRIO_PAGE - 2);
     let pEnd   = Math.min(totalPage, pStart + 4);
     if (pEnd - pStart < 4) pStart = Math.max(1, pEnd - 4);
+
+    // Ellipsis di awal jika perlu
+    if (pStart > 1) {
+      html += '<button onclick="setTLAPrioPage(1)" style="' + btnStyle(false, false) + '"' + btnHover + '>1</button>';
+      if (pStart > 2) html += '<span style="color:var(--text3);padding:0 4px">…</span>';
+    }
+
     for (let p = pStart; p <= pEnd; p++) {
       const active = p === TLA_PRIO_PAGE;
-      html += '<button onclick="setTLAPrioPage(' + p + ')" style="padding:3px 8px;background:' + (active?'#e84040':'var(--bg2)') + ';border:1px solid ' + (active?'#e84040':'var(--border2)') + ';border-radius:4px;cursor:pointer;color:' + (active?'#fff':'var(--text2)') + ';font-family:var(--mono);font-size:10px;font-weight:' + (active?'600':'400') + '">' + p + '</button>';
+      html += '<button onclick="setTLAPrioPage(' + p + ')" class="' + (active?'active-page':'') + '" style="' + btnStyle(active, false) + '"' + btnHover + '>' + p + '</button>';
     }
-    html += '<button onclick="setTLAPrioPage(TLA_PRIO_PAGE + 1)" ' + (TLA_PRIO_PAGE === totalPage ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === totalPage ? 'opacity:.4;cursor:not-allowed' : '') + '">›</button>';
-    html += '<button onclick="setTLAPrioPage(' + totalPage + ')" ' + (TLA_PRIO_PAGE === totalPage ? 'disabled' : '') + ' style="padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;cursor:pointer;color:var(--text2);font-family:var(--mono);font-size:10px;' + (TLA_PRIO_PAGE === totalPage ? 'opacity:.4;cursor:not-allowed' : '') + '">»</button>';
+
+    // Ellipsis di akhir jika perlu
+    if (pEnd < totalPage) {
+      if (pEnd < totalPage - 1) html += '<span style="color:var(--text3);padding:0 4px">…</span>';
+      html += '<button onclick="setTLAPrioPage(' + totalPage + ')" style="' + btnStyle(false, false) + '"' + btnHover + '>' + totalPage + '</button>';
+    }
+
+    html += '<button onclick="setTLAPrioPage(TLA_PRIO_PAGE + 1)" ' + (isLast ? 'disabled' : '') + ' title="Selanjutnya" style="' + btnStyle(false, isLast) + '"' + btnHover + '>Next ›</button>';
+    html += '<button onclick="setTLAPrioPage(' + totalPage + ')" ' + (isLast ? 'disabled' : '') + ' title="Halaman terakhir" style="' + btnStyle(false, isLast) + '"' + btnHover + '>Last »</button>';
     html += '</div>';
     html += '</div>';
   } else if (sorted.length > 0) {
-    html += '<div style="padding:6px;text-align:center;color:var(--text3);font-family:var(--mono);font-size:10px;border-top:1px solid var(--border)">' + fmtNum(sorted.length) + ' tower total</div>';
+    html += '<div style="padding:10px 14px;text-align:center;color:var(--text2);font-family:var(--mono);font-size:11px;border-top:1px solid var(--border);background:var(--bg2)"><span style="background:rgba(232,64,64,0.1);color:#e84040;padding:3px 8px;border-radius:4px;font-weight:500">' + fmtNum(sorted.length) + ' tower</span></div>';
   }
   wrap.innerHTML = html;
 }
