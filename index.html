@@ -809,9 +809,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-elev-val" value="300" min="0" max="3000" step="50" oninput="onThresholdChange()"
                   style="width:65px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#9c6ade;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-elev-weight" min="0" max="100" value="15" oninput="onThresholdChange();updateThWeightLabel('elev')"
+                <input type="range" id="th-elev-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('elev')"
                   style="width:80px;accent-color:#9c6ade">
-                <span id="th-elev-weight-val" style="color:#9c6ade;font-weight:500;min-width:30px;text-align:right">15%</span>
+                <span id="th-elev-weight-val" style="color:#9c6ade;font-weight:500;min-width:30px;text-align:right">10%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -847,31 +847,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </span>
           </div>
 
-          <!-- Severity threshold (custom score boundary) -->
-          <div style="margin-top:6px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm)">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
-              <div>
-                <div style="font-size:11px;font-weight:500;color:var(--text)">⚙ Batas kategori status</div>
-                <div style="font-size:9px;color:var(--text3);font-family:var(--mono)">Tower lolos threshold yang score-nya di atas batas Butuh = Butuh TLA</div>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
-                <span style="display:flex;align-items:center;gap:4px">
-                  <span style="display:inline-block;width:8px;height:8px;background:#e84040;border-radius:2px"></span>
-                  <span style="color:var(--text3)">Butuh ≥</span>
-                  <input type="number" id="th-sev-butuh" value="60" min="0" max="100" step="5" oninput="onSeverityChange()"
-                    style="width:48px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
-                </span>
-                <span style="display:flex;align-items:center;gap:4px">
-                  <span style="display:inline-block;width:8px;height:8px;background:#f5a623;border-radius:2px"></span>
-                  <span style="color:var(--text3)">Relokasi &lt;</span>
-                  <input type="number" id="th-sev-relokasi" value="5" min="0" max="100" step="1" oninput="onSeverityChange()"
-                    style="width:48px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#9c6ade;font-family:var(--mono);font-weight:500;text-align:right">
-                </span>
-              </div>
-            </div>
-            <div id="th-sev-preview" style="margin-top:4px;font-size:9px;color:var(--text3);font-family:var(--mono);text-align:right">
-              <span style="color:#e84040">🔴 Kritis ≥80</span> · <span style="color:#f5a623">🟠 Tinggi 60–79</span> · <span style="color:#d4bf00">🟡 Sedang 40–59</span> · <span style="color:#00d4aa">🟢 Rendah 5–39</span> · <span style="color:#9c6ade">🔄 Relokasi &lt;5</span>
-            </div>
+          <!-- Info severity (read-only, tanpa input) -->
+          <div style="margin-top:6px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:10px;font-family:var(--mono);text-align:center;color:var(--text3)">
+            <b style="color:var(--text2)">Level Severity:</b>
+            <span style="color:#e84040;margin-left:8px">🔴 Kritis ≥80</span> ·
+            <span style="color:#f5a623">🟠 Tinggi 60–79</span> ·
+            <span style="color:#d4bf00">🟡 Sedang 40–59</span> ·
+            <span style="color:#00d4aa">🟢 Rendah &lt;40</span>
           </div>
 
           <div style="display:flex;gap:8px;margin-top:6px">
@@ -891,8 +873,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </div>
             <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="tla-prio-count">–</div>
           </div>
-          <!-- 6 Metric card sejajar -->
-          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+          <!-- 5 Metric card sejajar -->
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
             <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #e84040">
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🔴 KRITIS</div>
               <div style="font-size:14px;font-weight:500;color:#e84040" id="card-sev-kritis">–</div>
@@ -918,11 +900,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <div style="font-size:14px;font-weight:500;color:#00d4aa" id="card-tla-terpasang">–</div>
               <div style="font-size:9px;color:var(--text3);font-family:var(--mono)" id="card-tla-terpasang-sub">dari tabel lolos</div>
             </div>
-            <div style="padding:6px 10px;background:var(--bg2);border-radius:var(--radius-sm);border-left:3px solid #9c6ade">
-              <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🔄 BISA RELOKASI</div>
-              <div style="font-size:14px;font-weight:500;color:#9c6ade" id="card-relokasi-tla">–</div>
-              <div style="font-size:9px;color:var(--text3);font-family:var(--mono)" id="card-relokasi-sub">ada TLA + score &lt;5</div>
-            </div>
           </div>
         </div>
 
@@ -943,8 +920,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <option value="kritis">🔴 Kritis (≥80)</option>
             <option value="tinggi">🟠 Tinggi (60–79)</option>
             <option value="sedang">🟡 Sedang (40–59)</option>
-            <option value="rendah">🟢 Rendah</option>
-            <option value="relokasi">🔄 Relokasi (&lt;5)</option>
+            <option value="rendah">🟢 Rendah (&lt;40)</option>
           </select>
           <input id="f-tla-prio-search" type="text" placeholder="🔍 cari BAY..." oninput="TLA_PRIO_PAGE=1;renderTLAPriority()"
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 8px;font-size:10px;font-family:var(--mono);outline:none;flex:1;min-width:140px"/>
@@ -3082,42 +3058,29 @@ function updateThWeightLabel(k) {
   if (inp && lbl) lbl.textContent = inp.value + '%';
 }
 
-function onSeverityChange() {
-  const sR = +document.getElementById('th-sev-relokasi')?.value || 5;
-  // Update preview text dengan 5 level severity
-  const prev = document.getElementById('th-sev-preview');
-  if (prev) prev.innerHTML = '<span style="color:#e84040">🔴 Kritis ≥80</span> · <span style="color:#f5a623">🟠 Tinggi 60–79</span> · <span style="color:#d4bf00">🟡 Sedang 40–59</span> · <span style="color:#00d4aa">🟢 Rendah ' + sR + '–39</span> · <span style="color:#9c6ade">🔄 Relokasi &lt;' + sR + '</span>';
-  TLA_PRIO_PAGE = 1;
-  renderTLAPriority();
-}
-
 function resetThresholds() {
-  // Reset checkbox + threshold value
+  // Default: density ≥15, tahanan ≥5 (ON); elev ≥100, trend ≥0 (OFF)
   document.getElementById('th-density-on').checked = true;
-  document.getElementById('th-density-val').value = 6;
+  document.getElementById('th-density-val').value = 15;
   document.getElementById('th-ohm-on').checked = true;
   document.getElementById('th-ohm-val').value = 5;
-  document.getElementById('th-elev-on').checked = false;  // default OFF
-  document.getElementById('th-elev-val').value = 300;
-  document.getElementById('th-trend-on').checked = false;  // default OFF
+  document.getElementById('th-elev-on').checked = false;
+  document.getElementById('th-elev-val').value = 100;
+  document.getElementById('th-trend-on').checked = false;
   document.getElementById('th-trend-val').value = 0;
-  // Reset bobot threshold mode (slider per row) — density 45, ohm 55, elev 15, trend 10
+  // Bobot default: density 45, ohm 55, elev 10, trend 10
   ['density','ohm','elev','trend'].forEach((k,i) => {
-    const def = [45,55,15,10][i];
+    const def = [45,55,10,10][i];
     const inp = document.getElementById('th-'+k+'-weight');
     const lbl = document.getElementById('th-'+k+'-weight-val');
     if (inp) inp.value = def;
     if (lbl) lbl.textContent = def + '%';
   });
-  // Reset severity threshold (Butuh ≥60, Relokasi <5)
-  const sB = document.getElementById('th-sev-butuh');    if (sB) sB.value = 60;
-  const sR = document.getElementById('th-sev-relokasi'); if (sR) sR.value = 5;
-  // Reset bobot mode lain
   setSlider('w-density', 45);
-  setSlider('w-ohm',     30);
-  setSlider('w-elev',    15);
+  setSlider('w-ohm',     55);
+  setSlider('w-elev',    10);
   setSlider('w-trend',   10);
-  onSeverityChange();
+  TLA_PRIO_PAGE = 1;
   onThresholdChange();
 }
 
@@ -3209,7 +3172,7 @@ function renderTLAPriority() {
     wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">' + msg + '</div>';
     if (cntEl) cntEl.textContent = '';
     // Reset 3 card metric
-    ['card-sev-kritis','card-sev-tinggi','card-sev-sedang','card-sev-rendah','card-tla-terpasang','card-relokasi-tla'].forEach(id => {
+    ['card-sev-kritis','card-sev-tinggi','card-sev-sedang','card-sev-rendah','card-tla-terpasang'].forEach(id => {
       const e = document.getElementById(id); if (e) e.textContent = '0';
     });
     if (mode === 'threshold') {
@@ -3289,43 +3252,33 @@ function renderTLAPriority() {
     if (el) el.textContent = fmtNum(scored.length) + ' tower';
   }
 
-  // Tambah status berbasis level severity score (bukan kategori TLA lagi)
-  const sRel = mode === 'threshold' ? (+document.getElementById('th-sev-relokasi')?.value || 5) : 5;
+  // Tambah status berbasis level severity score (4 level)
   scored.forEach(s => {
     const hasTLA = s.row[A_TLA] === 1;
-    // Status berdasarkan level severity score (5 level)
-    if (s.score >= 80)        s.status = { key:'kritis', label:'🔴 Kritis', color:'#e84040' };
-    else if (s.score >= 60)   s.status = { key:'tinggi', label:'🟠 Tinggi', color:'#f5a623' };
-    else if (s.score >= 40)   s.status = { key:'sedang', label:'🟡 Sedang', color:'#d4bf00' };
-    else if (s.score >= sRel) s.status = { key:'rendah', label:'🟢 Rendah', color:'#00d4aa' };
-    else                       s.status = { key:'relokasi', label:'🔄 Relokasi', color:'#9c6ade' };
+    if (s.score >= 80)      s.status = { key:'kritis', label:'🔴 Kritis', color:'#e84040' };
+    else if (s.score >= 60) s.status = { key:'tinggi', label:'🟠 Tinggi', color:'#f5a623' };
+    else if (s.score >= 40) s.status = { key:'sedang', label:'🟡 Sedang', color:'#d4bf00' };
+    else                    s.status = { key:'rendah', label:'🟢 Rendah', color:'#00d4aa' };
     s.hasTLA = hasTLA;
   });
 
-  // Hitung jumlah per level severity untuk 4 card
-  const kritis   = scored.filter(s => s.status.key === 'kritis').length;
-  const tinggi   = scored.filter(s => s.status.key === 'tinggi').length;
-  const sedang   = scored.filter(s => s.status.key === 'sedang').length;
-  const rendah   = scored.filter(s => s.status.key === 'rendah').length;
-  const relokasi = scored.filter(s => s.status.key === 'relokasi').length;
-  // TLA terpasang di subset tabel (yang lolos threshold + filter)
-  // Hitung dari scored saja sebelum apply UI filter (untuk card)
+  // SEMUA card dihitung dari filteredScored agar SINKRON dengan tabel
   const filteredScored = applyTLAPrioFilters(scored);
+  const kritis   = filteredScored.filter(s => s.status.key === 'kritis').length;
+  const tinggi   = filteredScored.filter(s => s.status.key === 'tinggi').length;
+  const sedang   = filteredScored.filter(s => s.status.key === 'sedang').length;
+  const rendah   = filteredScored.filter(s => s.status.key === 'rendah').length;
   const tlaTotal = filteredScored.length;
   const tlaTerpasang = filteredScored.filter(s => s.hasTLA).length;
   const tlaPct = tlaTotal > 0 ? Math.round(tlaTerpasang / tlaTotal * 100) : 0;
-  // Relokasi juga dari filteredScored agar konsisten dengan tabel
-  const relokasiFiltered = filteredScored.filter(s => s.status.key === 'relokasi' && s.hasTLA).length;
 
-  // Update 6 cards
+  // Update 5 cards (semua sinkron dengan filter tabel)
   const setCard = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
   setCard('card-sev-kritis', fmtNum(kritis));
   setCard('card-sev-tinggi', fmtNum(tinggi));
   setCard('card-sev-sedang', fmtNum(sedang));
   setCard('card-sev-rendah', fmtNum(rendah));
   setCard('card-tla-terpasang', fmtNum(tlaTerpasang) + ' / ' + fmtNum(tlaTotal) + ' (' + tlaPct + '%)');
-  setCard('card-relokasi-tla', fmtNum(relokasiFiltered));
-  const subRel = document.getElementById('card-relokasi-sub'); if (subRel) subRel.innerHTML = 'ada TLA + score &lt;' + sRel;
 
   // Info text disesuaikan dengan mode
   let infoText;
