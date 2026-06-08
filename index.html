@@ -795,24 +795,61 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </div>
 
           <!-- Tren -->
-          <!-- Tinggi Tower (threshold relatif per tegangan) -->
+          <!-- Tinggi Tower (threshold adjustable per tegangan) -->
           <div style="background:var(--bg2);border-radius:var(--radius-sm);padding:8px 10px;margin-bottom:6px;border-left:3px solid #3b7aff" id="th-row-tinggi">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
               <div style="display:flex;align-items:center;gap:6px">
                 <input type="checkbox" id="th-tinggi-on" checked onchange="onThresholdChange()" style="accent-color:#3b7aff;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500;color:var(--text)">📏 Tinggi Tower</span>
-                <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">threshold relatif per tegangan</span>
+                <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">threshold min per tegangan (m)</span>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
-                <span style="color:var(--text3)">auto per kV</span>
-                <span style="color:var(--text3);margin-left:8px">bobot</span>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px">
+                <span style="color:var(--text3)">bobot</span>
                 <input type="range" id="th-tinggi-weight" min="0" max="100" value="20" oninput="onThresholdChange();updateThWeightLabel('tinggi')"
                   style="width:80px;accent-color:#3b7aff">
                 <span id="th-tinggi-weight-val" style="color:#3b7aff;font-weight:500;min-width:30px;text-align:right">20%</span>
               </div>
             </div>
-            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px;flex-wrap:wrap">
-              <span>70kV ≥20m</span> · <span>150kV ≥30m</span> · <span>275kV ≥38m</span> · <span>500kV ≥55m</span> · <span style="color:#1D9E75">✓ IEEE 1243 § Tower geometry</span>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;background:var(--bg3);border-radius:var(--radius-sm)" id="th-tinggi-grid">
+              <div style="text-align:center">
+                <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">70 kV</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:11px">
+                  <span style="color:var(--text3)">≥</span>
+                  <input type="number" id="th-tinggi-70" value="20" min="0" max="200" step="1" oninput="onThresholdChange()"
+                    style="width:48px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;color:#3b7aff;font-weight:500;text-align:right;font-family:var(--mono)">
+                  <span style="color:var(--text3);font-size:9px">m</span>
+                </div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">150 kV</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:11px">
+                  <span style="color:var(--text3)">≥</span>
+                  <input type="number" id="th-tinggi-150" value="30" min="0" max="200" step="1" oninput="onThresholdChange()"
+                    style="width:48px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;color:#3b7aff;font-weight:500;text-align:right;font-family:var(--mono)">
+                  <span style="color:var(--text3);font-size:9px">m</span>
+                </div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">275 kV</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:11px">
+                  <span style="color:var(--text3)">≥</span>
+                  <input type="number" id="th-tinggi-275" value="38" min="0" max="200" step="1" oninput="onThresholdChange()"
+                    style="width:48px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;color:#3b7aff;font-weight:500;text-align:right;font-family:var(--mono)">
+                  <span style="color:var(--text3);font-size:9px">m</span>
+                </div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">500 kV</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:3px;font-family:var(--mono);font-size:11px">
+                  <span style="color:var(--text3)">≥</span>
+                  <input type="number" id="th-tinggi-500" value="55" min="0" max="200" step="1" oninput="onThresholdChange()"
+                    style="width:48px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:3px 5px;color:#3b7aff;font-weight:500;text-align:right;font-family:var(--mono)">
+                  <span style="color:var(--text3);font-size:9px">m</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
+              <span style="color:#1D9E75">✓ IEEE 1243 § Tower geometry</span> · <span>estimasi dari TIPE_TOWER · tiap tegangan punya threshold sendiri</span>
             </div>
           </div>
 
@@ -3016,6 +3053,13 @@ function onThresholdChange() {
       row.style.opacity = cb.checked ? '1' : '.45';
       if (inpVal) inpVal.disabled = !cb.checked;
       if (inpW)   inpW.disabled   = !cb.checked;
+      // Khusus tinggi: disable 4 input per tegangan
+      if (k === 'tinggi') {
+        ['70','150','275','500'].forEach(v => {
+          const e = document.getElementById('th-tinggi-'+v);
+          if (e) e.disabled = !cb.checked;
+        });
+      }
       if (cb.checked && inpW) weightSum += +inpW.value;
       // Warning visual untuk faktor non-IEEE saat aktif
       if (nonIEEE.includes(k)) {
@@ -3052,7 +3096,12 @@ function resetThresholds() {
   document.getElementById('th-density-val').value = 6;
   document.getElementById('th-ohm-on').checked = false;  // OFF
   document.getElementById('th-ohm-val').value = 5;
-  document.getElementById('th-tinggi-on').checked = true;  // ON (threshold relatif)
+  document.getElementById('th-tinggi-on').checked = true;  // ON
+  // Reset 4 threshold tinggi per tegangan
+  const tinggiDefaults = { '70':20, '150':30, '275':38, '500':55 };
+  Object.entries(tinggiDefaults).forEach(([v,def]) => {
+    const e = document.getElementById('th-tinggi-'+v); if (e) e.value = def;
+  });
   document.getElementById('th-elev-on').checked = false;
   document.getElementById('th-elev-val').value = 50;
   document.getElementById('th-trend-on').checked = false;
@@ -3113,11 +3162,13 @@ function sortTLAPrio(col) {
 
 function tinggiThresholdByVoltage(kV) {
   const teg = parseInt(kV) || 150;
-  if (teg >= 500) return 55;
-  if (teg >= 275) return 38;
-  if (teg >= 150) return 30;
-  if (teg >= 70)  return 20;
-  return 18;
+  // Baca dari input per tegangan (fallback default jika input tidak ada)
+  const get = (id, def) => { const el = document.getElementById(id); return el ? (+el.value || def) : def; };
+  if (teg >= 500) return get('th-tinggi-500', 55);
+  if (teg >= 275) return get('th-tinggi-275', 38);
+  if (teg >= 150) return get('th-tinggi-150', 30);
+  if (teg >= 70)  return get('th-tinggi-70', 20);
+  return get('th-tinggi-70', 18);
 }
 
 function renderTLAPriority() {
