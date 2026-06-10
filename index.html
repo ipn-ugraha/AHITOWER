@@ -1070,11 +1070,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <!-- Threshold density adjustable untuk warning -->
       <div style="display:flex;align-items:center;gap:8px;padding:.6rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;flex-wrap:wrap;font-family:var(--mono);font-size:11px">
         <span style="color:var(--text2)">⚠ Warning untuk tower density ≥</span>
-        <input type="number" id="clean-warn-density" value="6" min="0" max="50" step="0.5" oninput="renderCleaningCharts()"
+        <input type="number" id="clean-warn-density" value="15" min="0" max="50" step="0.5" oninput="renderCleaningCharts()"
           style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:3px 6px;color:#e84040;font-weight:500;text-align:right;font-family:var(--mono)">
         <span style="color:var(--text2)">flash/km²/thn + belum cleaning</span>
         <label style="display:flex;align-items:center;gap:5px;cursor:pointer;margin-left:auto;color:var(--text2)">
-          <input type="checkbox" id="clean-filter-density" onchange="renderCleaningCharts()" style="accent-color:#e84040;width:14px;height:14px">
+          <input type="checkbox" id="clean-filter-density" checked onchange="renderCleaningCharts()" style="accent-color:#e84040;width:14px;height:14px">
           Filter grafik &amp; tabel: hanya density ≥ threshold
         </label>
       </div>
