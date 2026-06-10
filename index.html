@@ -1067,6 +1067,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <!-- ── CLEANING INSULATOR ────────────────────────── -->
       <div class="sl">🧼 Cleaning Insulator</div>
 
+      <!-- Threshold density adjustable untuk warning -->
+      <div style="display:flex;align-items:center;gap:8px;padding:.6rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;flex-wrap:wrap;font-family:var(--mono);font-size:11px">
+        <span style="color:var(--text2)">⚠ Warning untuk tower density ≥</span>
+        <input type="number" id="clean-warn-density" value="6" min="0" max="50" step="0.5" oninput="renderCleaningCharts()"
+          style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:3px 6px;color:#e84040;font-weight:500;text-align:right;font-family:var(--mono)">
+        <span style="color:var(--text2)">flash/km²/thn + belum cleaning</span>
+        <span style="color:var(--text3);font-size:10px">· data tabel &amp; banner ikut menyesuaikan</span>
+      </div>
+
       <!-- Warning banner: density tinggi + belum cleaning -->
       <div id="cleaning-warning" style="display:none;padding:.7rem 1rem;background:rgba(232,64,64,0.1);border:1px solid rgba(232,64,64,0.3);border-radius:var(--radius);margin-bottom:1rem;font-size:12px;color:var(--text)"></div>
 
@@ -2763,19 +2772,22 @@ function renderCleaningCharts() {
   const pht = document.getElementById('f-pht-petir')?.value || '';
   const rows = pht ? F_AHI.filter(r => r[A_PHT] === pht) : F_AHI;
 
-  // Metrics + warning (density>6 + belum cleaning)
+  // Threshold density adjustable untuk warning
+  const warnDens = +document.getElementById('clean-warn-density')?.value || 6;
+
+  // Metrics + warning (density ≥ threshold + belum cleaning)
   let warnCount = 0;
   rows.forEach(r => {
     const k1 = cleaningKategori(r[A_CLEAN1]);
     const k2 = cleaningKategori(r[A_CLEAN2]);
     const dens = r[A_DENSITY];
-    if (dens !== null && dens >= 6 && (k1 === 'belum' || k2 === 'belum')) warnCount++;
+    if (dens !== null && dens >= warnDens && (k1 === 'belum' || k2 === 'belum')) warnCount++;
   });
   const warnEl = document.getElementById('cleaning-warning');
   if (warnEl) {
     if (warnCount > 0) {
       warnEl.style.display = 'block';
-      warnEl.innerHTML = '⚠ <b style="color:#e84040">' + fmtNum(warnCount) + ' tower</b> dengan density petir ≥6 (kategori tinggi) <b>belum cleaning insulator</b> — berisiko flashover. Filter "Density&gt;6 + belum" di tabel untuk detail.';
+      warnEl.innerHTML = '⚠ <b style="color:#e84040">' + fmtNum(warnCount) + ' tower</b> dengan density petir ≥' + warnDens + ' <b>belum cleaning insulator</b> — berisiko flashover. Filter "Density&gt;' + warnDens + ' + belum" di tabel untuk detail.';
     } else {
       warnEl.style.display = 'none';
     }
@@ -2796,7 +2808,7 @@ function renderCleaningCharts() {
       card('Line I &gt;2thn', c1.exp2, CLEAN_COLORS.exp2) +
       card('Line II belum', c2.belum, CLEAN_COLORS.belum) +
       card('Line II &gt;2thn', c2.exp2, CLEAN_COLORS.exp2) +
-      card('Density≥6 belum', warnCount, '#e84040');
+      card('Density≥' + warnDens + ' belum', warnCount, '#e84040');
   }
 
   // Bar per UPT — stacked per kategori, untuk line 1 & 2
@@ -2841,6 +2853,10 @@ function renderCleaningCharts() {
   const p1 = buildPHTData(A_CLEAN1), p2 = buildPHTData(A_CLEAN2);
   makeStackedBarH('c-cleaning-pht-1', p1.labels, p1.datasets);
   makeStackedBarH('c-cleaning-pht-2', p2.labels, p2.datasets);
+
+  // Update label option warning di dropdown filter
+  const optWarn = document.querySelector('#f-clean-kondisi option[value="warning"]');
+  if (optWarn) optWarn.textContent = '⚠ Density≥' + warnDens + ' + belum';
 
   // Populate filter dropdowns + render tabel
   populateCleaningFilters(rows);
@@ -2893,8 +2909,9 @@ function renderCleaningTable() {
       const k1 = cleaningKategori(r[A_CLEAN1]);
       const k2 = cleaningKategori(r[A_CLEAN2]);
       if (fKondisi === 'warning') {
+        const warnD = +document.getElementById('clean-warn-density')?.value || 6;
         const dens = r[A_DENSITY];
-        if (!(dens !== null && dens >= 6 && (k1 === 'belum' || k2 === 'belum'))) return false;
+        if (!(dens !== null && dens >= warnD && (k1 === 'belum' || k2 === 'belum'))) return false;
       } else {
         // cek kondisi sesuai line filter
         if (fLine === '1') { if (k1 !== fKondisi) return false; }
@@ -2928,10 +2945,11 @@ function renderCleaningTable() {
     const txt = c && c.tgl ? c.tgl + ' · ' + c.umurHari + ' hari' : '— belum';
     return '<span style="color:' + col + '">' + (k==='belum'?'🔴':k==='exp2'?'🔴':k==='exp1'?'🟠':k==='ok'?'🟢':'🔵') + ' ' + txt + '</span>';
   };
+  const warnD = +document.getElementById('clean-warn-density')?.value || 6;
   const dWarn = (r) => {
     const dens = r[A_DENSITY];
     const k1 = cleaningKategori(r[A_CLEAN1]), k2 = cleaningKategori(r[A_CLEAN2]);
-    return (dens !== null && dens >= 6 && (k1==='belum'||k2==='belum'));
+    return (dens !== null && dens >= warnD && (k1==='belum'||k2==='belum'));
   };
 
   let html = '<table class="bay-table"><thead><tr>';
