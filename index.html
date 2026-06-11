@@ -1112,7 +1112,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <div style="font-size:12px;font-weight:500">Daftar status cleaning insulator</div>
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="cleaning-tbl-info">semua tower</div>
             </div>
-            <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="cleaning-tbl-count">–</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onclick="exportCleaningCSV()" title="Unduh CSV sesuai filter aktif"
+                style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 10px;font-size:10px;font-family:var(--mono);cursor:pointer;display:flex;align-items:center;gap:4px">
+                ⬇ Unduh CSV
+              </button>
+              <span style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="cleaning-tbl-count">–</span>
+            </div>
           </div>
           <!-- Filter bar -->
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
@@ -2892,34 +2898,27 @@ function resetCleaningFilters() {
   renderCleaningTable();
 }
 
-function renderCleaningTable() {
-  if (!F_AHI) return;
-  const wrap = document.getElementById('cleaning-tbl-wrap');
-  if (!wrap) return;
+function getCleaningFilteredRows() {
   const pht = document.getElementById('f-pht-petir')?.value || '';
   let rows = pht ? F_AHI.filter(r => r[A_PHT] === pht) : F_AHI.slice();
-
   // Filter density global (sinkron dengan checkbox grafik)
   const filterDensTbl = document.getElementById('clean-filter-density')?.checked;
   const warnDensTbl = +document.getElementById('clean-warn-density')?.value || 6;
   if (filterDensTbl) {
     rows = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] !== undefined && r[A_DENSITY] >= warnDensTbl);
   }
-
   const fUpt = document.getElementById('f-clean-upt')?.value || '';
   const fPht = document.getElementById('f-clean-pht')?.value || '';
   const fLine = document.getElementById('f-clean-line')?.value || 'both';
   const fKondisi = document.getElementById('f-clean-kondisi')?.value || '';
   const fSearch = (document.getElementById('f-clean-search')?.value || '').toLowerCase();
-
-  rows = rows.filter(r => {
+  return rows.filter(r => {
     if (fUpt && r[A_UPT] !== fUpt) return false;
     if (fPht && r[A_PHT] !== fPht) return false;
     if (fSearch) {
       const hay = ((r[A_BAY]||'')+' '+(r[A_PHT]||'')).toLowerCase();
       if (!hay.includes(fSearch)) return false;
     }
-    // Filter kondisi
     if (fKondisi) {
       const k1 = cleaningKategori(r[A_CLEAN1]);
       const k2 = cleaningKategori(r[A_CLEAN2]);
@@ -2928,7 +2927,6 @@ function renderCleaningTable() {
         const dens = r[A_DENSITY];
         if (!(dens !== null && dens >= warnD && (k1 === 'belum' || k2 === 'belum'))) return false;
       } else {
-        // cek kondisi sesuai line filter
         if (fLine === '1') { if (k1 !== fKondisi) return false; }
         else if (fLine === '2') { if (k2 !== fKondisi) return false; }
         else { if (k1 !== fKondisi && k2 !== fKondisi) return false; }
@@ -2936,6 +2934,56 @@ function renderCleaningTable() {
     }
     return true;
   });
+}
+
+function exportCleaningCSV() {
+  if (!F_AHI) return;
+  const rows = getCleaningFilteredRows();
+  if (!rows.length) { alert('Tidak ada data untuk diekspor (sesuai filter aktif)'); return; }
+  const warnD = +document.getElementById('clean-warn-density')?.value || 6;
+  const katLabel = { belum:'Belum cleaning', exp2:'> 2 tahun', exp1:'1-2 tahun', ok:'6 bln-1 thn', baru:'<= 6 bulan' };
+  // Header
+  const headers = ['UPT','ULTG','Penghantar','BAY','Density','Cleaning Line I','Umur I (hari)','Kategori I','Cleaning Line II','Umur II (hari)','Kategori II','Warning'];
+  // Escape CSV cell
+  const esc = (v) => {
+    const s = String(v ?? '');
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const lines = [headers.map(esc).join(',')];
+  rows.forEach(r => {
+    const c1 = r[A_CLEAN1], c2 = r[A_CLEAN2];
+    const k1 = cleaningKategori(c1), k2 = cleaningKategori(c2);
+    const dens = r[A_DENSITY];
+    const warn = (dens !== null && dens !== undefined && dens >= warnD && (k1==='belum'||k2==='belum')) ? 'Ya' : 'Tidak';
+    lines.push([
+      r[A_UPT]||'', r[A_ULTG]||'', r[A_PHT]||'', r[A_BAY]||'',
+      (dens!==null&&dens!==undefined ? dens : ''),
+      (c1?.tgl||'-'), (c1?.umurHari ?? ''), katLabel[k1],
+      (c2?.tgl||'-'), (c2?.umurHari ?? ''), katLabel[k2],
+      warn
+    ].map(esc).join(','));
+  });
+  // BOM agar Excel baca UTF-8 dengan benar
+  const csv = '\ufeff' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const today = new Date().toISOString().slice(0,10);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cleaning_insulator_' + today + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function renderCleaningTable() {
+  if (!F_AHI) return;
+  const wrap = document.getElementById('cleaning-tbl-wrap');
+  if (!wrap) return;
+  const pht = document.getElementById('f-pht-petir')?.value || '';
+  const fKondisi = document.getElementById('f-clean-kondisi')?.value || '';
+  let rows = getCleaningFilteredRows();
 
   // Info + count
   const infoEl = document.getElementById('cleaning-tbl-info');
