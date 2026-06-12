@@ -1319,6 +1319,62 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
 
 
+      <div class="accordion" id="acc-ahi-gap1">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-gap1')">
+          <span><span class="accordion-title">Gap Arching 1 per Penghantar</span><span class="accordion-meta">sesuai · tidak sesuai · perhatian</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div id="pg-bar-gap1" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-gap1" style="height:520px"><canvas id="c-ahi-pht-gap1"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion" id="acc-ahi-gap2">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-gap2')">
+          <span><span class="accordion-title">Gap Arching 2 per Penghantar</span><span class="accordion-meta">sesuai · tidak sesuai · perhatian</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div id="pg-bar-gap2" class="pg-wrap"></div>
+            <div class="cw" id="cw-ahi-pht-gap2" style="height:520px"><canvas id="c-ahi-pht-gap2"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabel mandiri gap arching -->
+      <div class="accordion" id="acc-ahi-gap-tbl">
+        <div class="accordion-header" onclick="toggleAcc('acc-ahi-gap-tbl')">
+          <span><span class="accordion-title">Daftar status Gap Arching</span><span class="accordion-meta" id="gap-tbl-count">–</span></span>
+          <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">
+              <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Filter:</span>
+              <select id="f-gap-upt" onchange="GAP_PAGE=1;renderGapTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:100px">
+                <option value="">Semua UPT</option>
+              </select>
+              <select id="f-gap-pht" onchange="GAP_PAGE=1;renderGapTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:160px">
+                <option value="">Semua Penghantar</option>
+              </select>
+              <select id="f-gap-status" onchange="GAP_PAGE=1;renderGapTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
+                <option value="">Semua Status</option>
+                <option value="tidaksesuai">🔴 Tidak Sesuai</option>
+                <option value="sesuai">✅ Sesuai</option>
+                <option value="perhatian">🟡 Perhatian</option>
+              </select>
+              <button onclick="exportGapCSV()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:4px 10px;font-size:10px;font-family:var(--mono);cursor:pointer">⬇ CSV</button>
+              <button onclick="resetGapFilters()" title="Reset" style="background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer">↻</button>
+            </div>
+            <div id="gap-tbl-wrap" style="max-height:500px;overflow:auto"></div>
+          </div>
+        </div>
+      </div>
+
       <div class="accordion" id="acc-ahi-upt">
         <div class="accordion-header" onclick="toggleAcc('acc-ahi-upt')">
           <span><span class="accordion-title">Komposisi AHI per UPT</span><span class="accordion-meta">AHI 5→4→3→2 · stacked</span></span>
@@ -1469,7 +1525,7 @@ const REF_DATA = {"TRS 150KV BANGIL-BUMICOKRO": {"kritikal": "tidak", "tier": ""
 // Row index constants — tower: [upt,status,tipe,teg,gi,thn,mat]
 const T_UPT=0,T_ST=1,T_TIPE=2,T_TEG=3,T_GI=4,T_THN=5,T_MAT=6;
 // AHI row: [upt, ce, pentanahan, struktur, antiBinatang]
-const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22,A_DENS_ALL=23,A_ELEV=24,A_LAYANGAN=25,A_HOTSPOT=26,A_PETIR_SRC=27,A_TOWER_INFO=28,A_CLEAN1=29,A_CLEAN2=30,A_ISOLATOR=31;
+const A_UPT=0,A_PHT=1,A_CE=2,A_PENTNH=3,A_STRUKT=4,A_ANTIB=5,A_BAY=6,A_TWR=7,A_NO=8,A_OHM=9,A_TLA=10,A_ULTG=11,A_TLA1=12,A_TLA2=13,A_PETIR=21,A_DENSITY=22,A_DENS_ALL=23,A_ELEV=24,A_LAYANGAN=25,A_HOTSPOT=26,A_PETIR_SRC=27,A_TOWER_INFO=28,A_CLEAN1=29,A_CLEAN2=30,A_ISOLATOR=31,A_GAP=32;
 const DENS_YEARS = ['2021','2022','2023','2024','2025','2026'];
 const YEAR_COLORS = {'2021':'#7f7f7f','2022':'#9c6ade','2023':'#3b7aff','2024':'#00d4aa','2025':'#f5a623','2026':'#e84040'};
 
@@ -1964,15 +2020,15 @@ let AHI_PHT_DATA = [];  // agregat per Penghantar
 let F_AHI_PHT = null;   // ahiRows setelah filter Penghantar
 // Pagination per grafik AHI
 const PAGE_SIZE = 20;
-const AHI_PAGES  = { stacked:0, pentnh:0, strukt:0, antib:0, tahanan:0, tla:0 };
-let AHI_SORTED   = { stacked:[], pentnh:[], strukt:[], antib:[], tahanan:[], tla:[] };
+const AHI_PAGES  = { stacked:0, pentnh:0, strukt:0, antib:0, tahanan:0, tla:0, gap1:0, gap2:0 };
+let AHI_SORTED   = { stacked:[], pentnh:[], strukt:[], antib:[], tahanan:[], tla:[], gap1:[], gap2:[] };
 
 function renderAHITab() {
   // Build per-Penghantar aggregate dari F_AHI
   const phtMap={};
   F_AHI.forEach(r=>{
     const p=r[A_PHT]||'N/A';
-    if(!phtMap[p]) phtMap[p]={pht:p,total:0,ce2:0,ce3:0,ce4:0,ce5:0,pentnh:0,strukt:0,antib:0,tla:0,ohm0_5:0,ohm5_10:0,ohm10plus:0,ohmNull:0};
+    if(!phtMap[p]) phtMap[p]={pht:p,total:0,ce2:0,ce3:0,ce4:0,ce5:0,pentnh:0,strukt:0,antib:0,tla:0,ohm0_5:0,ohm5_10:0,ohm10plus:0,ohmNull:0,gap1s:0,gap1t:0,gap1p:0,gap2s:0,gap2t:0,gap2p:0};
     const g=phtMap[p];
     g.total++;
     const ce=r[A_CE];
@@ -1981,6 +2037,12 @@ function renderAHITab() {
     if(r[A_PENTNH]===1) g.pentnh++;
     if(r[A_STRUKT]===1) g.strukt++;
     if(r[A_ANTIB] ===1) g.antib++;
+    // Gap arching gap1 & gap2: sesuai/tidaksesuai/perhatian
+    const gap = r[A_GAP];
+    if (gap) {
+      if (gap.gap1==='sesuai') g.gap1s++; else if (gap.gap1==='tidaksesuai') g.gap1t++; else g.gap1p++;
+      if (gap.gap2==='sesuai') g.gap2s++; else if (gap.gap2==='tidaksesuai') g.gap2t++; else g.gap2p++;
+    } else { g.gap1p++; g.gap2p++; }
     // TLA gabungan: terpasang jika TLA1 atau TLA2 bukan '-' dan tidak kosong
     const tla1v = String(r[A_TLA1]||'').trim();
     const tla2v = String(r[A_TLA2]||'').trim();
@@ -2059,18 +2121,24 @@ function renderAHICharts(rows) {
   AHI_SORTED.antib    = [...phtRows].sort((a,b)=>b.antiB-a.antiB);              // terpasang terbanyak
   AHI_SORTED.tahanan  = [...phtRows].sort((a,b)=>b.ohm10plus-a.ohm10plus);
   AHI_SORTED.tla      = [...phtRows].sort((a,b)=>b.tla-a.tla);
+  AHI_SORTED.gap1     = [...phtRows].sort((a,b)=>b.gap1t-a.gap1t);  // tidak sesuai terbanyak
+  AHI_SORTED.gap2     = [...phtRows].sort((a,b)=>b.gap2t-a.gap2t);
   AHI_PAGES.stacked   = 0;
   AHI_PAGES.pentnh    = 0;
   AHI_PAGES.strukt    = 0;
   AHI_PAGES.antib     = 0;
   AHI_PAGES.tahanan   = 0;
   AHI_PAGES.tla       = 0;
+  AHI_PAGES.gap1      = 0;
+  AHI_PAGES.gap2      = 0;
 
   renderAHIPage('stacked');
   renderAHIPage('pentnh');
   renderAHIPage('strukt');
   renderAHIPage('antib');
   renderAHIPage('tahanan');
+  renderAHIPage('gap1');
+  renderAHIPage('gap2');
 
   // TLA — set _nodata/_tidak sebelum render
   const noTlaMsg = document.getElementById('no-tla-msg');
@@ -2090,6 +2158,10 @@ function renderAHICharts(rows) {
     else { g._nodata = 0; g._tidak = g.total - g.tla; }
   });
   renderAHIPage('tla');
+
+  // Gap arching tabel mandiri
+  populateGapFilters();
+  renderGapTable();
 
   // Komposisi AHI per UPT — stacked, sort by ce5 terbanyak
   const uptMapAHI = {};
@@ -4336,6 +4408,130 @@ function renderDensityLine() {
 }
 
 // ─── AHI PAGINATION ───────────────────────────────────────
+let GAP_PAGE = 1;
+const GAP_PER_PAGE = 25;
+function setGapPage(p) { GAP_PAGE = Math.max(1, p); renderGapTable(); }
+
+function gapBadge(status) {
+  if (status === 'sesuai') return '<span style="color:#00d4aa">✅ Sesuai</span>';
+  if (status === 'tidaksesuai') return '<span style="color:#e84040">🔴 Tidak Sesuai</span>';
+  return '<span style="color:#d4bf00">🟡 Perhatian</span>';
+}
+
+function getGapFilteredRows() {
+  const fPHTsel = document.getElementById('f-pht')?.value || '';
+  let rows = fPHTsel ? F_AHI.filter(r => r[A_PHT] === fPHTsel) : F_AHI.slice();
+  const fUpt = document.getElementById('f-gap-upt')?.value || '';
+  const fPht = document.getElementById('f-gap-pht')?.value || '';
+  const fStatus = document.getElementById('f-gap-status')?.value || '';
+  return rows.filter(r => {
+    if (fUpt && r[A_UPT] !== fUpt) return false;
+    if (fPht && r[A_PHT] !== fPht) return false;
+    if (fStatus) {
+      const g = r[A_GAP];
+      const g1 = g?.gap1 || 'perhatian', g2 = g?.gap2 || 'perhatian';
+      if (g1 !== fStatus && g2 !== fStatus) return false;
+    }
+    return true;
+  });
+}
+
+function populateGapFilters() {
+  const upts = [...new Set(F_AHI.map(r=>r[A_UPT]).filter(Boolean))].sort();
+  const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
+  const fill = (id, items, ph) => {
+    const el = document.getElementById(id); if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">'+ph+'</option>' + items.map(v=>'<option value="'+v+'">'+v+'</option>').join('');
+    if (cur && items.includes(cur)) el.value = cur;
+  };
+  fill('f-gap-upt', upts, 'Semua UPT');
+  fill('f-gap-pht', phts, 'Semua Penghantar');
+}
+
+function resetGapFilters() {
+  ['f-gap-upt','f-gap-pht','f-gap-status'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  GAP_PAGE = 1;
+  renderGapTable();
+}
+
+function renderGapTable() {
+  if (!F_AHI) return;
+  const wrap = document.getElementById('gap-tbl-wrap');
+  if (!wrap) return;
+  const rows = getGapFilteredRows();
+  const cntEl = document.getElementById('gap-tbl-count');
+  if (cntEl) cntEl.textContent = fmtNum(rows.length) + ' tower';
+
+  if (!rows.length) {
+    wrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Tidak ada tower sesuai filter</div>';
+    return;
+  }
+  const totalPage = Math.max(1, Math.ceil(rows.length / GAP_PER_PAGE));
+  if (GAP_PAGE > totalPage) GAP_PAGE = totalPage;
+  const start = (GAP_PAGE-1) * GAP_PER_PAGE;
+  const pageRows = rows.slice(start, start + GAP_PER_PAGE);
+
+  let html = '<table class="bay-table"><thead><tr>';
+  html += '<th>#</th><th>UPT</th><th>Penghantar</th><th>BAY</th><th>Gap Arching 1</th><th>Gap Arching 2</th></tr></thead><tbody>';
+  pageRows.forEach((r,i) => {
+    const g = r[A_GAP];
+    const g1 = g?.gap1 || 'perhatian', g2 = g?.gap2 || 'perhatian';
+    const hl = (g1==='tidaksesuai'||g2==='tidaksesuai') ? 'background:rgba(232,64,64,0.06)' : (i%2?'':'background:rgba(255,255,255,.01)');
+    html += '<tr style="' + hl + '">'
+      + '<td style="color:var(--text3);font-family:var(--mono);font-size:11px">' + (start+i+1) + '</td>'
+      + '<td style="font-size:11px;color:var(--text2)">' + (r[A_UPT]||'–') + '</td>'
+      + '<td style="font-size:11px;color:var(--text2)">' + (r[A_PHT]||'–') + '</td>'
+      + '<td style="font-size:11px;font-family:var(--mono);color:var(--text)">' + (r[A_BAY]||'–') + '</td>'
+      + '<td style="font-size:11px;font-family:var(--mono)">' + gapBadge(g1) + '</td>'
+      + '<td style="font-size:11px;font-family:var(--mono)">' + gapBadge(g2) + '</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  if (totalPage > 1) {
+    const isF = GAP_PAGE===1, isL = GAP_PAGE===totalPage;
+    const bs = (act,dis) => 'min-width:30px;padding:5px 10px;background:'+(act?'#9c6ade':'var(--bg2)')+';border:1px solid '+(act?'#9c6ade':'var(--border2)')+';border-radius:5px;cursor:'+(dis?'not-allowed':'pointer')+';color:'+(act?'#fff':'var(--text)')+';font-family:var(--mono);font-size:11px;font-weight:'+(act?'600':'500')+(dis?';opacity:.35':'');
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-top:1px solid var(--border);background:var(--bg2);font-family:var(--mono);font-size:11px;flex-wrap:wrap;gap:10px">';
+    html += '<div style="color:var(--text2)"><span style="background:rgba(156,106,222,0.1);color:#9c6ade;padding:3px 8px;border-radius:4px;font-weight:500">'+fmtNum(rows.length)+' tower</span> · Baris '+fmtNum(start+1)+'–'+fmtNum(Math.min(start+GAP_PER_PAGE,rows.length))+' · Hal '+GAP_PAGE+'/'+totalPage+'</div>';
+    html += '<div style="display:flex;gap:4px">';
+    html += '<button onclick="setGapPage(1)" '+(isF?'disabled':'')+' style="'+bs(false,isF)+'">« First</button>';
+    html += '<button onclick="setGapPage(GAP_PAGE-1)" '+(isF?'disabled':'')+' style="'+bs(false,isF)+'">‹ Prev</button>';
+    let ps = Math.max(1, GAP_PAGE-2), pe = Math.min(totalPage, ps+4);
+    if (pe-ps<4) ps = Math.max(1, pe-4);
+    for (let p=ps;p<=pe;p++) html += '<button onclick="setGapPage('+p+')" style="'+bs(p===GAP_PAGE,false)+'">'+p+'</button>';
+    html += '<button onclick="setGapPage(GAP_PAGE+1)" '+(isL?'disabled':'')+' style="'+bs(false,isL)+'">Next ›</button>';
+    html += '<button onclick="setGapPage('+totalPage+')" '+(isL?'disabled':'')+' style="'+bs(false,isL)+'">Last »</button>';
+    html += '</div></div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function exportGapCSV() {
+  if (!F_AHI) return;
+  const rows = getGapFilteredRows();
+  if (!rows.length) { alert('Tidak ada data untuk diekspor (sesuai filter aktif)'); return; }
+  const lbl = { sesuai:'Sesuai', tidaksesuai:'Tidak Sesuai', perhatian:'Perhatian' };
+  const headers = ['UPT','ULTG','Penghantar','BAY','Gap Arching 1','Gap Arching 2'];
+  const esc = (v) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines = [headers.map(esc).join(',')];
+  rows.forEach(r => {
+    const g = r[A_GAP];
+    lines.push([
+      r[A_UPT]||'', r[A_ULTG]||'', r[A_PHT]||'', r[A_BAY]||'',
+      lbl[g?.gap1||'perhatian'], lbl[g?.gap2||'perhatian']
+    ].map(esc).join(','));
+  });
+  const csv = '\ufeff' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const today = new Date().toISOString().slice(0,10);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'gap_arching_' + today + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function renderAHIPage(type) {
   const data    = AHI_SORTED[type];
   const page    = AHI_PAGES[type];
@@ -4387,6 +4583,18 @@ function renderAHIPage(type) {
       { label:'Tidak Ada TLA',  data:slice.map(g=>g._tidak||0), color:'#e84040' },
       { label:'Belum Ada Data', data:slice.map(g=>g._nodata||0),color:'#4a5060' },
     ]);
+  } else if (type === 'gap1') {
+    makeStackedBar(canvasId, slice.map(g=>g.pht), [
+      { label:'Tidak Sesuai', data:slice.map(g=>g.gap1t), color:'#e84040' },
+      { label:'Sesuai',       data:slice.map(g=>g.gap1s), color:'#00d4aa' },
+      { label:'Perhatian',    data:slice.map(g=>g.gap1p), color:'#d4bf00' },
+    ], null, 'gap1');
+  } else if (type === 'gap2') {
+    makeStackedBar(canvasId, slice.map(g=>g.pht), [
+      { label:'Tidak Sesuai', data:slice.map(g=>g.gap2t), color:'#e84040' },
+      { label:'Sesuai',       data:slice.map(g=>g.gap2s), color:'#00d4aa' },
+      { label:'Perhatian',    data:slice.map(g=>g.gap2p), color:'#d4bf00' },
+    ], null, 'gap2');
   }
 
   // Render pagination bar
@@ -4487,12 +4695,15 @@ const MODAL_COL_DEFS = {
   tla:     ['ultg','bay','tla1','tla2'],
   petir:   ['ultg','bay','density','katpetir','ohm'],
   layangan:['ultg','bay','layangan'],
+  gap1:    ['ultg','bay','gap1','gap2'],
+  gap2:    ['ultg','bay','gap1','gap2'],
 };
 const COL_HEADERS = {
   ultg:'ULTG', bay:'BAY', ce:'AHI', ohm:'Tahanan (Ω)',
   pentnh:'Pentanahan', strukt:'Struktur', antib:'Anti Binatang',
   tla1:'TLA Line I', tla2:'TLA Line II',
-  density:'Density', katpetir:'Kategori', layangan:'Rawan Layangan'
+  density:'Density', katpetir:'Kategori', layangan:'Rawan Layangan',
+  gap1:'Gap Arching 1', gap2:'Gap Arching 2'
 };
 
 let MODAL_COLS = MODAL_COL_DEFS.default;
@@ -4598,6 +4809,8 @@ function renderModalTable() {
       case 'density': return `<td>${densFmt(r[A_DENSITY])}</td>`;
       case 'katpetir':return `<td>${katFmt(r[A_PETIR])}</td>`;
       case 'layangan':return `<td>${layFmt(r[A_LAYANGAN])}</td>`;
+      case 'gap1':    return `<td style="font-size:11px">${gapBadge(r[A_GAP]?.gap1||'perhatian')}</td>`;
+      case 'gap2':    return `<td style="font-size:11px">${gapBadge(r[A_GAP]?.gap2||'perhatian')}</td>`;
       default: return '<td>–</td>';
     }
   };
