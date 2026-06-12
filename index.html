@@ -505,15 +505,32 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
     <!-- TAB PETIR -->
     <div class="tab-pane" id="tab-petir">
-      <div class="sl">Filter Penghantar</div>
-      <div class="filter-bar" style="margin-bottom:1rem">
-        <div class="fg"><span class="fl">Penghantar</span>
-          <select class="fs" id="f-pht-petir" onchange="renderPetirTab()"><option value="">Semua Penghantar</option></select>
+      <!-- FILTER GLOBAL — semua section ikut -->
+      <div class="filter-bar" id="petir-global-filter" style="margin-bottom:1rem;position:sticky;top:0;z-index:20;background:var(--bg);padding:10px 12px;border:1px solid var(--border2);border-radius:var(--radius)">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text2);font-family:var(--mono);font-weight:500">🔎 Filter Global</span>
+          <select id="f-petir-upt" onchange="onPetirGlobalFilter()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;font-family:var(--mono);min-width:90px">
+            <option value="">Semua UPT</option>
+          </select>
+          <select id="f-pht-petir" onchange="onPetirGlobalFilter()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;font-family:var(--mono);min-width:200px;flex:1">
+            <option value="">Semua Penghantar</option>
+          </select>
+          <select id="f-petir-teg" onchange="onPetirGlobalFilter()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;font-family:var(--mono)">
+            <option value="">Semua Tegangan</option>
+          </select>
+          <button onclick="resetPetirGlobalFilter()" title="Reset filter global" style="background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--text2);padding:4px 9px;font-size:11px;cursor:pointer;font-family:var(--mono)">↻</button>
         </div>
-        <span class="filter-info" id="petir-filter-info"></span>
+        <span class="filter-info" id="petir-filter-info" style="margin-top:6px;display:block;font-size:10px"></span>
       </div>
 
       <div class="sl">Kerapatan petir</div>
+      <div class="accordion" id="acc-petir-kerapatan">
+        <div class="accordion-header" onclick="toggleAcc('acc-petir-kerapatan')">
+          <span><span class="accordion-title">Kerapatan Petir</span><span class="accordion-meta">distribusi multi-tahun</span></span>
+          <svg class="accordion-icon open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="accordion-body" style="height:auto">
+          <div class="accordion-inner">
       <!-- Info kriteria CIGRE -->
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem 1.1rem;margin-bottom:1rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
         <span style="font-size:11px;color:var(--text3);font-family:var(--mono);font-weight:500">Klasifikasi CIGRE:</span>
@@ -608,6 +625,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </select>
         </div>
         <div class="cw" style="height:300px"><canvas id="c-petir-upt"></canvas></div>
+      </div>
+          </div>
+        </div>
       </div>
 
       <div class="accordion" id="acc-petir-prioritas">
@@ -938,20 +958,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </div>
         </div>
 
-        <!-- Filter Bar -->
+        <!-- Filter Bar (spesifik — UPT/PHT/Tegangan ikut filter global) -->
         <div style="display:flex;flex-wrap:wrap;gap:8px;padding:.6rem 1rem;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border)">
           <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Filter:</span>
-          <select id="f-tla-prio-upt" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:100px">
-            <option value="">Semua UPT</option>
-          </select>
           <select id="f-tla-prio-ultg" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:120px">
             <option value="">Semua ULTG</option>
-          </select>
-          <select id="f-tla-prio-pht" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:160px">
-            <option value="">Semua Penghantar</option>
-          </select>
-          <select id="f-tla-prio-teg" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
-            <option value="">Semua Tegangan</option>
           </select>
           <select id="f-tla-prio-severity" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
             <option value="">Semua Severity</option>
@@ -999,13 +1010,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div class="accordion-inner">
 
       <div class="cc" id="cc-density-line">
-        <!-- Dropdown Penghantar — user harus pilih -->
+        <!-- Penghantar dari filter global -->
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-          <select id="f-pht-density" onchange="renderDensityLine()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 10px;font-size:12px;font-family:var(--mono);min-width:280px;flex:1">
-            <option value="">— Pilih penghantar —</option>
-          </select>
+          <select id="f-pht-density" onchange="renderDensityLine()" style="display:none"><option value="">—</option></select>
+          <span id="density-pht-label" style="font-size:12px;color:var(--text);font-family:var(--mono);font-weight:500">Pilih 1 penghantar di filter global</span>
           <span id="density-stats" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
-          <button onclick="toggleDensityOptions()" id="btn-density-opts" style="padding:4px 10px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer">⚙ Opsi</button>
+          <button onclick="toggleDensityOptions()" id="btn-density-opts" style="padding:4px 10px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer;margin-left:auto">⚙ Opsi</button>
         </div>
 
         <!-- Panel opsi (collapsed by default) -->
@@ -1165,15 +1175,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <span style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="cleaning-tbl-count">–</span>
             </div>
           </div>
-          <!-- Filter bar -->
+          <!-- Filter bar (UPT/PHT ikut filter global) -->
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Filter:</span>
-            <select id="f-clean-upt" onchange="CLEAN_PAGE=1;renderCleaningTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:100px">
-              <option value="">Semua UPT</option>
-            </select>
-            <select id="f-clean-pht" onchange="CLEAN_PAGE=1;renderCleaningTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:160px">
-              <option value="">Semua Penghantar</option>
-            </select>
             <select id="f-clean-line" onchange="CLEAN_PAGE=1;renderCleaningTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
               <option value="both">Line I &amp; II</option>
               <option value="1">Line I saja</option>
@@ -1673,7 +1677,7 @@ function switchTab(name) {
   const tabs=['overview','tower','ahi','petir','fisik'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===name));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
-  if (name==='petir' && F_AHI) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); renderTLAPriority(); renderCleaningCharts(); }
+  if (name==='petir' && F_AHI) { populatePetirGlobalFilter(); onPetirGlobalFilter(); }
   if (name==='fisik' && F_AHI) renderFisikTab();
 }
 
@@ -1879,7 +1883,7 @@ function renderAll() {
   renderAHITab();
   // Render petir hanya jika tab aktif, atau update data internalnya
   const petirActive = document.getElementById('tab-petir')?.classList.contains('active');
-  if (petirActive) { renderPetirTab(); buildDensityDropdown(); renderDensityLine(); renderTLAPriority(); renderCleaningCharts(); }
+  if (petirActive) { populatePetirGlobalFilter(); onPetirGlobalFilter(); }
   const fisikActive = document.getElementById('tab-fisik')?.classList.contains('active');
   if (fisikActive) renderFisikTab();
   else {
@@ -2925,8 +2929,7 @@ function setCleanPage(p) { CLEAN_PAGE = Math.max(1, p); renderCleaningTable(); }
 
 function renderCleaningCharts() {
   if (!F_AHI) return;
-  const pht = document.getElementById('f-pht-petir')?.value || '';
-  let rows = pht ? F_AHI.filter(r => r[A_PHT] === pht) : F_AHI;
+  let rows = getPetirGlobalRows();
 
   // Threshold density adjustable untuk warning
   const warnDens = +document.getElementById('clean-warn-density')?.value || 6;
@@ -3039,20 +3042,11 @@ function renderCleaningCharts() {
 }
 
 function populateCleaningFilters(rows) {
-  const upts = [...new Set(rows.map(r=>r[A_UPT]).filter(Boolean))].sort();
-  const phts = [...new Set(rows.map(r=>r[A_PHT]).filter(Boolean))].sort();
-  const fill = (id, items, ph) => {
-    const el = document.getElementById(id); if (!el) return;
-    const cur = el.value;
-    el.innerHTML = '<option value="">'+ph+'</option>' + items.map(v=>'<option value="'+v+'">'+v+'</option>').join('');
-    if (cur && items.includes(cur)) el.value = cur;
-  };
-  fill('f-clean-upt', upts, 'Semua UPT');
-  fill('f-clean-pht', phts, 'Semua Penghantar');
+  // UPT/PHT ikut filter global — tidak ada dropdown lokal lagi
 }
 
 function resetCleaningFilters() {
-  ['f-clean-upt','f-clean-pht','f-clean-kondisi'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  const k = document.getElementById('f-clean-kondisi'); if (k) k.value = '';
   const ln = document.getElementById('f-clean-line'); if (ln) ln.value = 'both';
   const s = document.getElementById('f-clean-search'); if (s) s.value = '';
   CLEAN_PAGE = 1;
@@ -3071,22 +3065,17 @@ function jenisIsolator(r) {
 }
 
 function getCleaningFilteredRows() {
-  const pht = document.getElementById('f-pht-petir')?.value || '';
-  let rows = pht ? F_AHI.filter(r => r[A_PHT] === pht) : F_AHI.slice();
+  let rows = getPetirGlobalRows();
   // Filter density global (sinkron dengan checkbox grafik)
   const filterDensTbl = document.getElementById('clean-filter-density')?.checked;
   const warnDensTbl = +document.getElementById('clean-warn-density')?.value || 6;
   if (filterDensTbl) {
     rows = rows.filter(r => r[A_DENSITY] !== null && r[A_DENSITY] !== undefined && r[A_DENSITY] >= warnDensTbl);
   }
-  const fUpt = document.getElementById('f-clean-upt')?.value || '';
-  const fPht = document.getElementById('f-clean-pht')?.value || '';
   const fLine = document.getElementById('f-clean-line')?.value || 'both';
   const fKondisi = document.getElementById('f-clean-kondisi')?.value || '';
   const fSearch = (document.getElementById('f-clean-search')?.value || '').toLowerCase();
   return rows.filter(r => {
-    if (fUpt && r[A_UPT] !== fUpt) return false;
-    if (fPht && r[A_PHT] !== fPht) return false;
     if (fSearch) {
       const hay = ((r[A_BAY]||'')+' '+(r[A_PHT]||'')).toLowerCase();
       if (!hay.includes(fSearch)) return false;
@@ -3232,14 +3221,76 @@ function renderCleaningTable() {
   wrap.innerHTML = html;
 }
 
+// ─── FILTER GLOBAL TAB PETIR ───────────────────────────
+function getPetirGlobalRows() {
+  if (!F_AHI) return [];
+  const fUpt = document.getElementById('f-petir-upt')?.value || '';
+  const fPht = document.getElementById('f-pht-petir')?.value || '';
+  const fTeg = document.getElementById('f-petir-teg')?.value || '';
+  return F_AHI.filter(r => {
+    if (fUpt && r[A_UPT] !== fUpt) return false;
+    if (fPht && r[A_PHT] !== fPht) return false;
+    if (fTeg && String(r[A_TOWER_INFO]?.teg || '') !== fTeg) return false;
+    return true;
+  });
+}
+
+function populatePetirGlobalFilter() {
+  if (!F_AHI) return;
+  const upts = [...new Set(F_AHI.map(r=>r[A_UPT]).filter(Boolean))].sort();
+  const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
+  const tegs = [...new Set(F_AHI.map(r=>r[A_TOWER_INFO]?.teg).filter(Boolean))].sort((a,b)=>a-b);
+  const fill = (id, items, ph, suffix) => {
+    const el = document.getElementById(id); if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">'+ph+'</option>' + items.map(v=>'<option value="'+v+'">'+v+(suffix||'')+'</option>').join('');
+    if (cur) el.value = cur;
+  };
+  fill('f-petir-upt', upts, 'Semua UPT');
+  fill('f-pht-petir', phts, 'Semua Penghantar');
+  fill('f-petir-teg', tegs, 'Semua Tegangan', ' kV');
+}
+
+function onPetirGlobalFilter() {
+  // Sinkronkan dropdown density tersembunyi dengan penghantar global
+  const fPht = document.getElementById('f-pht-petir')?.value || '';
+  const densSel = document.getElementById('f-pht-density');
+  if (densSel) {
+    densSel.innerHTML = '<option value="' + fPht + '">' + (fPht||'—') + '</option>';
+    densSel.value = fPht;
+  }
+  const densLabel = document.getElementById('density-pht-label');
+  if (densLabel) densLabel.textContent = fPht ? fPht : 'Pilih 1 penghantar di filter global';
+  // Reset pagination
+  TLA_PRIO_PAGE = 1; CLEAN_PAGE = 1;
+  // Render semua section
+  renderPetirTab();
+  renderTLAPriority();
+  renderDensityLine();
+  renderCleaningCharts();
+}
+
+function resetPetirGlobalFilter() {
+  ['f-petir-upt','f-pht-petir','f-petir-teg'].forEach(id => { const e=document.getElementById(id); if(e) e.value=''; });
+  onPetirGlobalFilter();
+}
+
 function renderPetirTab() {
   if (!F_AHI) return;
 
-  const fPHT = document.getElementById('f-pht-petir')?.value || '';
-  const rows  = fPHT ? F_AHI.filter(r=>r[A_PHT]===fPHT) : F_AHI;
+  const rows = getPetirGlobalRows();
+  const fPht = document.getElementById('f-pht-petir')?.value || '';
+  const fUpt = document.getElementById('f-petir-upt')?.value || '';
+  const fTeg = document.getElementById('f-petir-teg')?.value || '';
 
   const info = document.getElementById('petir-filter-info');
-  if (info) info.textContent = fPHT ? fPHT + ' · ' + fmtNum(rows.length) + ' tower' : fmtNum(rows.length) + ' tower';
+  if (info) {
+    const parts = [];
+    if (fUpt) parts.push(fUpt);
+    if (fPht) parts.push(fPht);
+    if (fTeg) parts.push(fTeg + ' kV');
+    info.textContent = (parts.length ? parts.join(' · ') + ' · ' : '') + fmtNum(rows.length) + ' tower';
+  }
 
   // Build per-penghantar aggregate
   const phtMap = {};
@@ -3265,17 +3316,7 @@ function renderPetirTab() {
   });
   PETIR_PHT_DATA = Object.values(phtMap);
 
-  // Build dropdown penghantar — selalu rebuild dari F_AHI (sudah terfilter UPT dll)
-  const sel = document.getElementById('f-pht-petir');
-  if (sel) {
-    const curVal = sel.value; // simpan pilihan sebelumnya
-    const phts = [...new Set(F_AHI.map(r=>r[A_PHT]).filter(Boolean))].sort();
-    sel.innerHTML = '<option value="">Semua Penghantar</option>';
-    phts.forEach(p => { const o=document.createElement('option'); o.value=p; o.textContent=p; sel.appendChild(o); });
-    // Pertahankan pilihan sebelumnya jika masih ada di list baru
-    if (curVal && phts.includes(curVal)) sel.value = curVal;
-    else sel.value = '';
-  }
+  // Dropdown penghantar di-handle populatePetirGlobalFilter (sekali saat tab aktif)
 
   // Hitung distribusi total
   const petirCount = {};
@@ -3789,11 +3830,11 @@ function setTLAPrioPage(p) {
 }
 
 function resetTLAPrioFilters() {
-  ['f-tla-prio-upt','f-tla-prio-ultg','f-tla-prio-pht','f-tla-prio-teg','f-tla-prio-severity'].forEach(id => {
+  ['f-tla-prio-ultg','f-tla-prio-severity'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const s = document.getElementById('f-tla-prio-search'); if (s) s.value = '';
-  const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = true; // default ON
+  const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = true;
   TLA_PRIO_SORT = { col: 'score', dir: -1 };
   TLA_PRIO_PAGE = 1;
   renderTLAPriority();
@@ -3850,12 +3891,12 @@ function renderTLAPriority() {
 
   const includeInstalled = document.getElementById('f-tla-prio-include-installed')?.checked || false;
 
+  // Basis: rows sudah terfilter global (UPT/PHT/Tegangan)
+  const globalRows = getPetirGlobalRows();
   // Filter: tower yang akan dihitung scorenya
-  // - Default: hanya belum punya TLA
-  // - Jika checkbox aktif: semua tower (untuk analisis sudah sesuai / relokasi)
   const candidates = includeInstalled
-    ? F_AHI
-    : F_AHI.filter(r => r[A_TLA] !== 1);
+    ? globalRows
+    : globalRows.filter(r => r[A_TLA] !== 1);
 
   // Populate filter dropdowns
   populateTLAPrioFilters(candidates);
@@ -4019,42 +4060,23 @@ function renderTLAPriority() {
 }
 
 function populateTLAPrioFilters(candidates) {
-  const upts  = [...new Set(candidates.map(r=>r[A_UPT]).filter(Boolean))].sort();
   const ultgs = [...new Set(candidates.map(r=>r[A_ULTG]).filter(Boolean))].sort();
-  const phts  = [...new Set(candidates.map(r=>r[A_PHT]).filter(Boolean))].sort();
   const fill = (id, items, placeholder) => {
     const el = document.getElementById(id); if (!el) return;
     const cur = el.value;
     el.innerHTML = '<option value="">'+placeholder+'</option>' + items.map(v=>'<option value="'+v+'">'+v+'</option>').join('');
     if (cur && items.includes(cur)) el.value = cur;
   };
-  fill('f-tla-prio-upt',  upts,  'Semua UPT');
   fill('f-tla-prio-ultg', ultgs, 'Semua ULTG');
-  fill('f-tla-prio-pht',  phts,  'Semua Penghantar');
-  // Tegangan unik dari tower info
-  const tegs = [...new Set(candidates.map(r=>r[A_TOWER_INFO]?.teg).filter(Boolean))].sort((a,b)=>a-b);
-  const selTeg = document.getElementById('f-tla-prio-teg');
-  if (selTeg) {
-    const cur = selTeg.value;
-    selTeg.innerHTML = '<option value="">Semua Tegangan</option>' + tegs.map(t=>'<option value="'+t+'">'+t+' kV</option>').join('');
-    if (cur && tegs.includes(+cur)) selTeg.value = cur;
-  }
 }
 
 function applyTLAPrioFilters(scored) {
-  // Reset ke page 1 jika filter berubah (deteksi dengan signature)
-  const fUpt   = document.getElementById('f-tla-prio-upt')?.value || '';
   const fUltg  = document.getElementById('f-tla-prio-ultg')?.value || '';
-  const fPht   = document.getElementById('f-tla-prio-pht')?.value || '';
-  const fTeg   = document.getElementById('f-tla-prio-teg')?.value || '';
   const fSev   = document.getElementById('f-tla-prio-severity')?.value || '';
   const fSearch = (document.getElementById('f-tla-prio-search')?.value || '').toLowerCase();
   return scored.filter(s => {
     const r = s.row;
-    if (fUpt && r[A_UPT] !== fUpt) return false;
     if (fUltg && r[A_ULTG] !== fUltg) return false;
-    if (fPht && r[A_PHT] !== fPht) return false;
-    if (fTeg && String(r[A_TOWER_INFO]?.teg || '') !== fTeg) return false;
     if (fSev) {
       if (fSev !== s.status?.key) return false;
     }
