@@ -634,7 +634,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div class="accordion-header" onclick="toggleAcc('acc-petir-prioritas')">
           <span><span class="accordion-title">Prioritas Pemasangan TLA</span><span class="accordion-meta">threshold multi-faktor</span></span>
           <span style="display:flex;align-items:center;gap:10px">
-            <span id="acc-ind-prioritas" style="background:rgba(232,64,64,0.12);color:#e84040;font-size:11px;font-weight:500;padding:3px 9px;border-radius:6px;font-family:var(--mono)">–</span>
+            <span id="acc-ind-prioritas" style="background:rgba(232,64,64,0.12);color:#e84040;font-size:11px;font-weight:500;padding:3px 9px;border-radius:6px;font-family:var(--mono);white-space:nowrap">–</span>
             <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
           </span>
         </div>
@@ -3416,13 +3416,25 @@ function renderPetirTab() {
 
   // Update badge indikator header accordion distribusi
   const indD = document.getElementById('acc-ind-distribusi');
-  if (indD) indD.textContent = tlaEmpty ? '0 TLA' : fmtNum(tlaTotal) + ' TLA';
+  if (indD) indD.textContent = tlaEmpty ? '0 terpasang' : fmtNum(tlaTotal) + ' terpasang';
 
-  // Badge profil — rata-rata density global (tahun terbaru)
-  const densVals = F_AHI.map(r => r[A_DENSITY]).filter(v => v !== null && v !== undefined && v > 0);
-  const avgDens = densVals.length ? (densVals.reduce((a,b)=>a+b,0) / densVals.length) : 0;
+  // Badge profil — rata-rata density + tahun terbaru yang ada datanya
+  // Cari tahun terbaru yang punya data density
+  const YEARS = ['2026','2025','2024','2023','2022','2021'];
+  let densYear = null, densValsByYear = [];
+  for (const y of YEARS) {
+    const vals = rows.map(r => r[A_DENS_ALL]?.[y]).filter(v => v !== null && v !== undefined && v > 0);
+    if (vals.length) { densYear = y; densValsByYear = vals; break; }
+  }
   const indPr = document.getElementById('acc-ind-profil');
-  if (indPr) indPr.textContent = 'avg ' + avgDens.toFixed(1);
+  if (indPr) {
+    if (densValsByYear.length) {
+      const avg = densValsByYear.reduce((a,b)=>a+b,0) / densValsByYear.length;
+      indPr.textContent = 'avg ' + avg.toFixed(1) + ' (' + densYear + ')';
+    } else {
+      indPr.textContent = 'avg –';
+    }
+  }
 
   AHI_SORTED.tla  = [...PETIR_PHT_DATA].sort((a,b)=>(b.tla||0)-(a.tla||0));
   AHI_PAGES.tla   = 0;
@@ -4043,9 +4055,9 @@ function renderTLAPriority() {
   setCard('card-sev-rendah', fmtNum(rendah));
   setCard('card-tla-terpasang', fmtNum(tlaTerpasang) + ' / ' + fmtNum(tlaTotal) + ' (' + tlaPct + '%)');
 
-  // Update badge indikator header accordion prioritas
+  // Update badge indikator header accordion prioritas — semua severity + terpasang
   const indP = document.getElementById('acc-ind-prioritas');
-  if (indP) indP.textContent = fmtNum(kritis) + ' kritis';
+  if (indP) indP.innerHTML = '🔴' + fmtNum(kritis) + ' 🟠' + fmtNum(tinggi) + ' 🟡' + fmtNum(sedang) + ' 🟢' + fmtNum(rendah) + ' ✅' + fmtNum(tlaTerpasang);
 
   // Info text — komposisi bobot aktif
   const parts = [];
