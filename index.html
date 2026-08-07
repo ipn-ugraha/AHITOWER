@@ -991,7 +991,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
 
         <div style="padding:.6rem 1rem;background:rgba(156,106,222,0.08);border-top:1px solid var(--border);font-size:10px;color:var(--text2);font-family:var(--mono);line-height:1.6">
-          <b style="color:#9c6ade">Formula:</b> <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">score = (density × wD) + (ohm × wO) + (elev × wE) + (trend × wT)</code> × 100 · normalisasi min-max per faktor.
+          <b style="color:#9c6ade">Formula:</b> <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">score = Σ(faktorNorm × bobot) / Σbobot × 100</code> · faktor: density, tahanan, tinggi, span, elevasi, tren · normalisasi min-max per faktor, hanya faktor aktif dihitung.
         </div>
       </div>
 
@@ -2431,7 +2431,7 @@ function renderFisikTab() {
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear()+', '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+' WIB';
   };
-  const hsTimeStr = latestCheck ? fmtHsTime(latestCheck) : 'belum ada data';
+  const hsTimeStr = latestCheck ? fmtHsTime(latestCheck) : '';
 
   // Cek apakah data lama (>6 jam dari sekarang)
   let isStale = false;
@@ -2440,9 +2440,40 @@ function renderFisikTab() {
     isStale = ageMs > 6*60*60*1000; // > 6 jam
   }
 
+  // Hitung status hotspot dulu (untuk tentukan label)
+  const hsDetectedEarly = hsRows.filter(r => {
+    const v = String(r[A_HOTSPOT]?.hotspot || '').trim().toUpperCase();
+    return v && v !== 'TIDAK' && v !== '-';
+  }).length;
+  const hsCheckedEarly = hsRows.filter(r => {
+    const v = String(r[A_HOTSPOT]?.hotspot || '').trim().toUpperCase();
+    return v === 'ADA' || v === 'TIDAK';
+  }).length;
+
+  // Label "Update terakhir":
+  // - Ada hotspot ADA → timestamp akuisisi
+  // - Tidak ada ADA tapi tower sudah dicek (TIDAK) → pakai waktu cache + status aman
+  // - Belum dicek sama sekali → "belum ada data"
+  let lastUpdText;
+  if (latestCheck) {
+    lastUpdText = hsTimeStr;
+  } else if (hsCheckedEarly > 0) {
+    // Tower sudah dicek, tidak ada hotspot — pakai waktu rebuild cache
+    const cacheTime = (typeof RAW !== 'undefined' && RAW && RAW.generatedAt) ? new Date(RAW.generatedAt) : null;
+    if (cacheTime) {
+      const pad = n => String(n).padStart(2,'0');
+      const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      lastUpdText = '✅ Tidak ada hotspot (dicek ' + pad(cacheTime.getDate()) + ' ' + months[cacheTime.getMonth()] + ' ' + cacheTime.getFullYear() + ')';
+    } else {
+      lastUpdText = '✅ Tidak ada hotspot terdeteksi';
+    }
+  } else {
+    lastUpdText = 'belum ada data';
+  }
+
   const lastUpdEl = document.getElementById('hotspot-last-update');
   if (lastUpdEl) {
-    lastUpdEl.textContent = hsTimeStr;
+    lastUpdEl.textContent = lastUpdText;
     lastUpdEl.style.color = isStale ? '#f5a623' : 'var(--text)';
   }
   const staleEl = document.getElementById('hotspot-stale-badge');
