@@ -2607,9 +2607,11 @@ function renderFisikTab() {
   }
 
   // ── HISTORIS 6 BULAN ─────────────────────────────────
+  // Syarat: histDays > 0 (benar-benar pernah ada hotspot). histLast saja tidak cukup
+  // karena bisa jadi data sampah (histLast terisi tapi histDays null)
   const histRows = rows.filter(r => {
     const h = r[A_HOTSPOT];
-    return h && (h.histDays > 0 || h.histLast || h.histJarak !== null || h.histFRP !== null);
+    return h && h.histDays > 0;
   });
   const histTotal     = histRows.length;
   const histMaxDays   = histRows.length ? Math.max(...histRows.map(r=>r[A_HOTSPOT].histDays||0)) : 0;
@@ -2836,10 +2838,10 @@ function renderHotspotMap() {
     return t && typeof t.lat === 'number' && typeof t.lng === 'number' && !isNaN(t.lat) && !isNaN(t.lng);
   });
 
-  // Tower dengan riwayat hotspot
+  // Tower dengan riwayat hotspot — syarat histDays > 0 (bukan sekadar histLast)
   let histTowers = withCoord.filter(r => {
     const h = r[A_HOTSPOT];
-    return h && (h.histDays > 0 || h.histLast);
+    return h && h.histDays > 0;
   });
 
   // Filter rentang waktu berdasarkan histLast (tanggal terakhir terdeteksi)
@@ -2917,7 +2919,7 @@ function renderHotspotMap() {
   if (showAll) {
     const others = withCoord.filter(r => {
       const h = r[A_HOTSPOT];
-      return !(h && (h.histDays > 0 || h.histLast));
+      return !(h && h.histDays > 0);
     });
     others.forEach(r => {
       const t = r[A_TOWER_INFO];
