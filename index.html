@@ -2703,7 +2703,24 @@ function renderHistTable() {
   const hfoot = document.getElementById('hist-footer');
   if (!hwrap) return;
 
-  const sortedHist = [...filtered].sort((a,b) => (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0));
+  // Sort by tanggal terakhir terdeteksi (histLast) — paling baru dulu
+  // Format histLast = "DD/MM/YYYY" (dari script FIRMS)
+  const parseHistDate = (s) => {
+    if (!s) return 0;
+    const str = String(s).trim();
+    // Format DD/MM/YYYY
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+    // Fallback: coba parse langsung (ISO, dll)
+    const d = new Date(str).getTime();
+    return isNaN(d) ? 0 : d;
+  };
+  const sortedHist = [...filtered].sort((a,b) => {
+    const da = parseHistDate(a[A_HOTSPOT].histLast);
+    const db = parseHistDate(b[A_HOTSPOT].histLast);
+    if (db !== da) return db - da;                                    // tanggal terbaru dulu
+    return (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0);   // tie-break: hari terbanyak
+  });
 
   if (sortedHist.length === 0) {
     hwrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Tidak ada data sesuai filter</div>';
@@ -2713,9 +2730,15 @@ function renderHistTable() {
 
   const fmtTime = ts => {
     if (!ts) return '–';
-    const d = new Date(ts);
-    const pad = n => String(n).padStart(2,'0');
+    const str = String(ts).trim();
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const pad = n => String(n).padStart(2,'0');
+    // Format DD/MM/YYYY dari script FIRMS
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return pad(+m[1])+' '+months[+m[2]-1]+' '+m[3];
+    // Fallback ISO/lainnya
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return str;
     return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear();
   };
 
