@@ -6,6 +6,9 @@
 <title>Tower Monitoring — PLN UIT JBM</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 <style>
 :root {
   --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
@@ -1271,6 +1274,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;padding:0 12px">ukuran bubble = hari terdeteksi</div>
           <div class="cw" style="height:240px"><canvas id="c-hist-scatter"></canvas></div>
         </div>
+      </div>
+
+      <div class="cc" style="margin-top:1rem">
+        <div class="cc-title">Peta sebaran hotspot 6 bulan</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;padding:.5rem 1rem;align-items:center;font-size:10px;font-family:var(--mono);color:var(--text3)">
+          <span>🔥 Heatmap intensitas (hari terdeteksi)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:50%;background:#e84040;display:inline-block"></span> tower riwayat hotspot (klik untuk detail)</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#3a4050;display:inline-block"></span> tower lain</span>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer;margin-left:auto">
+            <input type="checkbox" id="map-show-all" onchange="renderHotspotMap()" style="accent-color:#00d4aa"> tampilkan semua tower
+          </label>
+        </div>
+        <div id="hotspot-map" style="height:460px;width:100%;border-radius:8px;background:var(--bg2)"></div>
+        <div id="hotspot-map-empty" style="display:none;padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Belum ada data historis hotspot — jalankan proses historis 6 bulan</div>
       </div>
 
       <div class="cc" style="margin-top:1rem">
@@ -2681,6 +2698,7 @@ function renderFisikTab() {
   }
 
   renderHistTable();
+  renderHotspotMap();
 }
 
 function renderHistTable() {
@@ -2744,7 +2762,7 @@ function renderHistTable() {
 
   let html = '<table class="bay-table"><thead><tr>';
   html += '<th>#</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>';
-  html += '<th>Hari</th><th>Jarak Min</th><th>FRP Maks</th><th>Terakhir Terdeteksi</th>';
+  html += '<th>Hari</th><th>Jarak Min</th><th>FRP Maks</th><th>Terakhir Terdeteksi ↓</th>';
   html += '</tr></thead><tbody>';
   sortedHist.forEach((r,i) => {
     const h = r[A_HOTSPOT];
@@ -2767,7 +2785,124 @@ function renderHistTable() {
   });
   html += '</tbody></table>';
   hwrap.innerHTML = html;
-  if (hfoot) hfoot.textContent = fmtNum(sortedHist.length) + ' tower pernah terdeteksi · diurutkan hari terbanyak';
+  if (hfoot) hfoot.textContent = fmtNum(sortedHist.length) + ' tower pernah terdeteksi · diurutkan tanggal terbaru';
+}
+
+// ─── PETA SEBARAN HOTSPOT (Leaflet + heatmap) ──────────────
+let _hotspotMap = null;
+let _hsHeatLayer = null;
+let _hsMarkerLayer = null;
+
+function renderHotspotMap() {
+  const mapEl = document.getElementById('hotspot-map');
+  const emptyEl = document.getElementById('hotspot-map-empty');
+  if (!mapEl || typeof L === 'undefined' || !F_AHI) return;
+
+  // Kumpulkan tower dengan koordinat valid
+  const withCoord = F_AHI.filter(r => {
+    const t = r[A_TOWER_INFO];
+    return t && typeof t.lat === 'number' && typeof t.lng === 'number' && !isNaN(t.lat) && !isNaN(t.lng);
+  });
+
+  // Tower dengan riwayat hotspot
+  const histTowers = withCoord.filter(r => {
+    const h = r[A_HOTSPOT];
+    return h && (h.histDays > 0 || h.histLast);
+  });
+
+  // Kalau tidak ada data historis sama sekali, tampilkan empty
+  if (histTowers.length === 0) {
+    mapEl.style.display = 'none';
+    if (emptyEl) emptyEl.style.display = 'block';
+    return;
+  }
+  mapEl.style.display = 'block';
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  // Inisialisasi peta sekali
+  if (!_hotspotMap) {
+    _hotspotMap = L.map('hotspot-map', { scrollWheelZoom: true, attributionControl: true });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '© OpenStreetMap'
+    }).addTo(_hotspotMap);
+    _hotspotMap.setView([-7.5, 112.5], 8); // default Jawa Timur
+  }
+
+  // Bersihkan layer lama
+  if (_hsHeatLayer) { _hotspotMap.removeLayer(_hsHeatLayer); _hsHeatLayer = null; }
+  if (_hsMarkerLayer) { _hotspotMap.removeLayer(_hsMarkerLayer); _hsMarkerLayer = null; }
+
+  // ── HEATMAP dari intensitas (histDays) ──
+  const maxDays = Math.max(...histTowers.map(r => r[A_HOTSPOT].histDays || 1));
+  const heatData = histTowers.map(r => {
+    const t = r[A_TOWER_INFO];
+    const days = r[A_HOTSPOT].histDays || 1;
+    return [t.lat, t.lng, Math.max(0.3, days / maxDays)]; // intensitas 0.3-1.0
+  });
+  if (typeof L.heatLayer === 'function') {
+    _hsHeatLayer = L.heatLayer(heatData, {
+      radius: 22, blur: 18, maxZoom: 12,
+      gradient: { 0.2:'#3b7aff', 0.4:'#00d4aa', 0.6:'#f5a623', 0.8:'#e8760f', 1.0:'#e84040' }
+    }).addTo(_hotspotMap);
+  }
+
+  // ── MARKER (klik untuk popup) ──
+  _hsMarkerLayer = L.layerGroup().addTo(_hotspotMap);
+  const showAll = document.getElementById('map-show-all')?.checked;
+
+  // Tower lain (abu-abu tipis) — hanya kalau "tampilkan semua"
+  if (showAll) {
+    const others = withCoord.filter(r => {
+      const h = r[A_HOTSPOT];
+      return !(h && (h.histDays > 0 || h.histLast));
+    });
+    others.forEach(r => {
+      const t = r[A_TOWER_INFO];
+      L.circleMarker([t.lat, t.lng], {
+        radius: 2, color: '#3a4050', fillColor: '#3a4050', fillOpacity: 0.4, weight: 0
+      }).addTo(_hsMarkerLayer);
+    });
+  }
+
+  // Tower riwayat hotspot (merah, bisa diklik)
+  const fmtD = ts => {
+    if (!ts) return '–';
+    const m = String(ts).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    if (m) return m[1].padStart(2,'0')+' '+months[+m[2]-1]+' '+m[3];
+    return String(ts);
+  };
+  histTowers.forEach(r => {
+    const t = r[A_TOWER_INFO];
+    const h = r[A_HOTSPOT];
+    const days = h.histDays || 0;
+    const rad = Math.max(4, Math.min(14, 3 + days * 0.4));
+    const col = days >= 30 ? '#e84040' : days >= 15 ? '#f5a623' : '#e8760f';
+    const marker = L.circleMarker([t.lat, t.lng], {
+      radius: rad, color: col, fillColor: col, fillOpacity: 0.6, weight: 1.5
+    });
+    const popup = '<div style="font-family:system-ui,sans-serif;font-size:12px;line-height:1.6;min-width:180px">'
+      + '<div style="font-weight:600;color:#e84040;margin-bottom:4px">🔥 ' + (r[A_BAY]||'–') + '</div>'
+      + '<div><b>UPT:</b> ' + (r[A_UPT]||'–') + '</div>'
+      + '<div><b>Penghantar:</b> ' + (r[A_PHT]||'–') + '</div>'
+      + '<div><b>Hari terdeteksi:</b> ' + days + ' hari</div>'
+      + '<div><b>Terakhir:</b> ' + fmtD(h.histLast) + '</div>'
+      + '<div><b>Jarak min:</b> ' + (h.histJarak !== null && h.histJarak !== undefined ? Number(h.histJarak).toFixed(2) + ' km' : '–') + '</div>'
+      + '<div><b>FRP maks:</b> ' + (h.histFRP !== null && h.histFRP !== undefined ? Number(h.histFRP).toFixed(1) + ' MW' : '–') + '</div>'
+      + '</div>';
+    marker.bindPopup(popup);
+    marker.addTo(_hsMarkerLayer);
+  });
+
+  // Auto-fit ke sebaran hotspot
+  if (histTowers.length > 0) {
+    const bounds = L.latLngBounds(histTowers.map(r => [r[A_TOWER_INFO].lat, r[A_TOWER_INFO].lng]));
+    _hotspotMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 11 });
+  }
+
+  // Fix ukuran (Leaflet butuh invalidateSize kalau container baru terlihat)
+  setTimeout(() => { if (_hotspotMap) _hotspotMap.invalidateSize(); }, 200);
 }
 
 // ─── AUTO REFRESH HOTSPOT (jam 05.30, 11.30, 17.30, 23.30 WIB) ──
