@@ -1290,13 +1290,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <select id="map-time-filter" onchange="renderFisikTab()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 8px;font-size:10px;font-family:var(--mono);outline:none">
               <option value="0">Semua</option>
               <option value="30">1 bulan terakhir</option>
-              <option value="7">1 minggu terakhir</option>
+              <option value="7" selected>1 minggu terakhir</option>
               <option value="3">3 hari terakhir</option>
               <option value="1">1 hari terakhir</option>
             </select>
           </span>
           <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
-            <input type="checkbox" id="map-show-all" onchange="renderHotspotMap()" style="accent-color:#00d4aa"> tampilkan semua tower
+            <input type="checkbox" id="map-show-all" onchange="renderHotspotMap()" style="accent-color:#00d4aa" checked> tampilkan semua tower
           </label>
         </div>
         <div id="hotspot-map" style="height:460px;width:100%;border-radius:8px;background:var(--bg2)"></div>
@@ -2794,6 +2794,9 @@ function renderHistTable() {
 
   if (sortedHist.length === 0) {
     hwrap.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Tidak ada data sesuai filter</div>';
+    const rl = { 0:'6 bulan', 30:'1 bulan terakhir', 7:'1 minggu terakhir', 3:'3 hari terakhir', 1:'1 hari terakhir' }[timeFilter] || '6 bulan';
+    const tEl = document.getElementById('hist-table-title');
+    if (tEl) tEl.textContent = 'Daftar tower historis hotspot — ' + rl;
     if (hfoot) hfoot.textContent = '';
     return;
   }
