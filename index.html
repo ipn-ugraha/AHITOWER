@@ -1315,6 +1315,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </select>
           <input id="f-hist-search" type="text" placeholder="🔍 cari BAY/penghantar..." oninput="renderHistTable()"
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:200px;flex:1"/>
+          <button onclick="exportHistCSV()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;white-space:nowrap">⬇ Excel</button>
+          <button onclick="exportHistPDF()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;white-space:nowrap">📄 PDF</button>
         </div>
         <div id="hist-table-wrap" style="max-height:500px;overflow:auto"></div>
         <div style="padding:.5rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="hist-footer"></div>
@@ -2846,6 +2848,215 @@ function renderHistTable() {
   if (hfoot) {
     hfoot.textContent = fmtNum(sortedHist.length) + ' tower · ' + rangeLbl + ' · diurutkan tanggal terbaru';
   }
+}
+
+// ─── EXPORT TABEL HISTORIS KE EXCEL (CSV) ──────────────────
+function exportHistCSV() {
+  const histRows = window._histRows || [];
+  if (!histRows.length) { alert('Tidak ada data untuk diekspor'); return; }
+
+  // Replikasi filter yang sama dengan renderHistTable
+  const fUpt   = document.getElementById('f-hist-upt')?.value || '';
+  const fUltg  = document.getElementById('f-hist-ultg')?.value || '';
+  const fSearch = (document.getElementById('f-hist-search')?.value || '').toLowerCase();
+  const timeFilter = parseInt(document.getElementById('map-time-filter')?.value || '0');
+  const parseMs = (s) => {
+    if (!s) return 0;
+    const str = String(s).trim();
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+    const d = new Date(str).getTime();
+    return isNaN(d) ? 0 : d;
+  };
+  const cutoff = timeFilter > 0 ? Date.now() - timeFilter * 24 * 60 * 60 * 1000 : 0;
+
+  const filtered = histRows.filter(r => {
+    if (fUpt && r[A_UPT] !== fUpt) return false;
+    if (fUltg && r[A_ULTG] !== fUltg) return false;
+    if (fSearch) {
+      const hay = (r[A_BAY]+' '+r[A_PHT]+' '+r[A_ULTG]).toLowerCase();
+      if (!hay.includes(fSearch)) return false;
+    }
+    if (cutoff > 0 && parseMs(r[A_HOTSPOT].histLast) < cutoff) return false;
+    return true;
+  }).sort((a,b) => {
+    const da = parseMs(a[A_HOTSPOT].histLast), db = parseMs(b[A_HOTSPOT].histLast);
+    if (db !== da) return db - da;
+    return (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0);
+  });
+
+  if (!filtered.length) { alert('Tidak ada data sesuai filter aktif'); return; }
+
+  const fmtTgl = (ts) => {
+    if (!ts) return '';
+    const str = String(ts).trim();
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return str; // sudah DD/MM/YYYY
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return str;
+    const pad = n => String(n).padStart(2,'0');
+    return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+  };
+
+  const headers = ['No','UPT','ULTG','Penghantar','BAY','Hari Terdeteksi','Jarak Min (km)','FRP Maks (MW)','Terakhir Terdeteksi'];
+  const esc = (v) => { const s = String(v ?? ''); return /[",\n;]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; };
+  const lines = [headers.map(esc).join(',')];
+  filtered.forEach((r, i) => {
+    const h = r[A_HOTSPOT];
+    lines.push([
+      i+1,
+      r[A_UPT]||'', r[A_ULTG]||'', r[A_PHT]||'', r[A_BAY]||'',
+      h.histDays !== null ? h.histDays : '',
+      h.histJarak !== null ? Number(h.histJarak).toFixed(2) : '',
+      h.histFRP !== null ? Number(h.histFRP).toFixed(1) : '',
+      fmtTgl(h.histLast)
+    ].map(esc).join(','));
+  });
+
+  const csv = '\ufeff' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const rangeLbl = { 0:'6bulan', 30:'1bulan', 7:'1minggu', 3:'3hari', 1:'1hari' }[timeFilter] || '6bulan';
+  const today = new Date().toISOString().slice(0,10);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'historis_hotspot_' + rangeLbl + '_' + today + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ─── EXPORT TABEL HISTORIS KE PDF (print-to-PDF) ───────────
+function exportHistPDF() {
+  const histRows = window._histRows || [];
+  if (!histRows.length) { alert('Tidak ada data untuk diekspor'); return; }
+
+  const fUpt   = document.getElementById('f-hist-upt')?.value || '';
+  const fUltg  = document.getElementById('f-hist-ultg')?.value || '';
+  const fSearch = (document.getElementById('f-hist-search')?.value || '').toLowerCase();
+  const timeFilter = parseInt(document.getElementById('map-time-filter')?.value || '0');
+  const parseMs = (s) => {
+    if (!s) return 0;
+    const str = String(s).trim();
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+    const d = new Date(str).getTime();
+    return isNaN(d) ? 0 : d;
+  };
+  const cutoff = timeFilter > 0 ? Date.now() - timeFilter * 24 * 60 * 60 * 1000 : 0;
+
+  const filtered = histRows.filter(r => {
+    if (fUpt && r[A_UPT] !== fUpt) return false;
+    if (fUltg && r[A_ULTG] !== fUltg) return false;
+    if (fSearch) {
+      const hay = (r[A_BAY]+' '+r[A_PHT]+' '+r[A_ULTG]).toLowerCase();
+      if (!hay.includes(fSearch)) return false;
+    }
+    if (cutoff > 0 && parseMs(r[A_HOTSPOT].histLast) < cutoff) return false;
+    return true;
+  }).sort((a,b) => {
+    const da = parseMs(a[A_HOTSPOT].histLast), db = parseMs(b[A_HOTSPOT].histLast);
+    if (db !== da) return db - da;
+    return (b[A_HOTSPOT].histDays||0) - (a[A_HOTSPOT].histDays||0);
+  });
+
+  if (!filtered.length) { alert('Tidak ada data sesuai filter aktif'); return; }
+
+  const fmtTgl = (ts) => {
+    if (!ts) return '–';
+    const str = String(ts).trim();
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    const pad = n => String(n).padStart(2,'0');
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return pad(+m[1])+' '+months[+m[2]-1]+' '+m[3];
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return str;
+    return pad(d.getDate())+' '+months[d.getMonth()]+' '+d.getFullYear();
+  };
+  const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Ringkasan statistik
+  const rangeLbl = { 0:'6 Bulan Terakhir', 30:'1 Bulan Terakhir', 7:'1 Minggu Terakhir', 3:'3 Hari Terakhir', 1:'1 Hari Terakhir' }[timeFilter] || '6 Bulan Terakhir';
+  const totalTower = filtered.length;
+  const maxHari = Math.max(...filtered.map(r => r[A_HOTSPOT].histDays||0));
+  const validFrp = filtered.map(r=>r[A_HOTSPOT].histFRP).filter(v=>v!==null&&v>0);
+  const maxFrp = validFrp.length ? Math.max(...validFrp) : 0;
+  const validJrk = filtered.map(r=>r[A_HOTSPOT].histJarak).filter(v=>v!==null&&v>0);
+  const minJrk = validJrk.length ? Math.min(...validJrk) : 0;
+
+  // Filter aktif untuk info
+  const filterInfo = [];
+  if (fUpt) filterInfo.push('UPT: ' + fUpt);
+  if (fUltg) filterInfo.push('ULTG: ' + fUltg);
+  if (fSearch) filterInfo.push('Pencarian: "' + fSearch + '"');
+  const filterStr = filterInfo.length ? filterInfo.join(' · ') : 'Semua wilayah';
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  const cetakStr = pad(now.getDate())+' '+months[now.getMonth()]+' '+now.getFullYear()+', '+pad(now.getHours())+':'+pad(now.getMinutes())+' WIB';
+
+  // Baris tabel
+  const rows = filtered.map((r, i) => {
+    const h = r[A_HOTSPOT];
+    const days = h.histDays !== null ? h.histDays : 0;
+    const dCol = days >= 30 ? '#c0392b' : days >= 15 ? '#e67e22' : '#333';
+    return '<tr>'
+      + '<td style="text-align:center;color:#888">' + (i+1) + '</td>'
+      + '<td>' + esc(r[A_UPT]||'–') + '</td>'
+      + '<td>' + esc(r[A_ULTG]||'–') + '</td>'
+      + '<td>' + esc(r[A_PHT]||'–') + '</td>'
+      + '<td style="font-family:monospace">' + esc(r[A_BAY]||'–') + '</td>'
+      + '<td style="text-align:center;color:' + dCol + ';font-weight:600">' + days + '</td>'
+      + '<td style="text-align:right">' + (h.histJarak !== null ? Number(h.histJarak).toFixed(2) : '–') + '</td>'
+      + '<td style="text-align:right">' + (h.histFRP !== null ? Number(h.histFRP).toFixed(1) : '–') + '</td>'
+      + '<td>' + fmtTgl(h.histLast) + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Historis Hotspot</title>'
+    + '<style>'
+    + '@page { size: A4 landscape; margin: 14mm; }'
+    + 'body { font-family: Arial, Helvetica, sans-serif; color: #222; font-size: 10px; margin: 0; }'
+    + '.header { border-bottom: 3px solid #c0392b; padding-bottom: 10px; margin-bottom: 14px; }'
+    + '.header h1 { margin: 0 0 3px; font-size: 17px; color: #c0392b; }'
+    + '.header .sub { font-size: 11px; color: #555; }'
+    + '.meta { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 12px; flex-wrap: wrap; gap: 6px; }'
+    + '.meta b { color: #333; }'
+    + '.summary { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }'
+    + '.card { border: 1px solid #ddd; border-radius: 5px; padding: 8px 14px; background: #fafafa; }'
+    + '.card .lbl { font-size: 9px; color: #888; text-transform: uppercase; letter-spacing: .5px; }'
+    + '.card .val { font-size: 16px; font-weight: 700; color: #c0392b; margin-top: 2px; }'
+    + 'table { width: 100%; border-collapse: collapse; }'
+    + 'th { background: #c0392b; color: #fff; padding: 6px 5px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: .3px; }'
+    + 'td { padding: 4px 5px; border-bottom: 1px solid #eee; font-size: 9px; }'
+    + 'tr:nth-child(even) td { background: #f9f9f9; }'
+    + '.footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 8px; color: #999; display: flex; justify-content: space-between; }'
+    + '.radius-note { font-size: 9px; color: #666; margin-bottom: 10px; padding: 5px 10px; background: #eef4fb; border-left: 3px solid #3b7aff; }'
+    + '@media print { .no-print { display: none; } }'
+    + '</style></head><body>'
+    + '<div class="header"><h1>Laporan Historis Hotspot Kebakaran</h1>'
+    + '<div class="sub">Monitoring Tower PLN UIT JBM · Sumber: NASA FIRMS (VIIRS NOAA-20)</div></div>'
+    + '<div class="meta"><span><b>Rentang:</b> ' + rangeLbl + ' &nbsp;·&nbsp; <b>Filter:</b> ' + esc(filterStr) + '</span>'
+    + '<span><b>Dicetak:</b> ' + cetakStr + '</span></div>'
+    + '<div class="radius-note">📏 Jarak jangkauan referensi: hotspot dalam radius <b>2 km (2.000 m)</b> dari tower dianggap mengancam.</div>'
+    + '<div class="summary">'
+    + '<div class="card"><div class="lbl">Total Tower</div><div class="val">' + totalTower + '</div></div>'
+    + '<div class="card"><div class="lbl">Hari Terbanyak</div><div class="val">' + maxHari + ' hari</div></div>'
+    + '<div class="card"><div class="lbl">FRP Maks</div><div class="val">' + (maxFrp>0?maxFrp.toFixed(1)+' MW':'–') + '</div></div>'
+    + '<div class="card"><div class="lbl">Jarak Terdekat</div><div class="val">' + (minJrk>0?minJrk.toFixed(2)+' km':'–') + '</div></div>'
+    + '</div>'
+    + '<table><thead><tr>'
+    + '<th style="width:30px">No</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>'
+    + '<th style="width:45px">Hari</th><th style="width:65px">Jarak Min (km)</th><th style="width:70px">FRP Maks (MW)</th><th style="width:90px">Terakhir Terdeteksi</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<div class="footer"><span>Dashboard Monitoring Tower PLN UIT JBM</span><span>' + totalTower + ' tower · ' + rangeLbl + '</span></div>'
+    + '<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script>'
+    + '</body></html>';
+
+  const w = window.open('', '_blank');
+  if (!w) { alert('Popup diblokir. Izinkan popup untuk mencetak PDF.'); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }
 
 // ─── PETA SEBARAN HOTSPOT (Leaflet + heatmap) ──────────────
