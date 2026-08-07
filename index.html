@@ -2994,6 +2994,27 @@ function exportHistPDF() {
   const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
   const cetakStr = pad(now.getDate())+' '+months[now.getMonth()]+' '+now.getFullYear()+', '+pad(now.getHours())+':'+pad(now.getMinutes())+' WIB';
 
+  // Ambil gambar grafik dari canvas Chart.js (bar per UPT + scatter)
+  let chartBarImg = '', chartScatterImg = '';
+  try {
+    const cBar = document.getElementById('c-hist-upt');
+    if (cBar && cBar.width > 0) chartBarImg = cBar.toDataURL('image/png', 1.0);
+  } catch(e) {}
+  try {
+    const cSct = document.getElementById('c-hist-scatter');
+    if (cSct && cSct.width > 0) chartScatterImg = cSct.toDataURL('image/png', 1.0);
+  } catch(e) {}
+  const rangeLblChart = { 0:'6 Bulan Terakhir', 30:'1 Bulan Terakhir', 7:'1 Minggu Terakhir', 3:'3 Hari Terakhir', 1:'1 Hari Terakhir' }[timeFilter] || '6 Bulan Terakhir';
+  let chartSection = '';
+  if (chartBarImg || chartScatterImg) {
+    chartSection = '<div class="charts">'
+      + (chartBarImg ? '<div class="chart-box"><div class="chart-title">Pernah Hotspot ' + rangeLblChart + ' per UPT</div><img src="' + chartBarImg + '"/></div>' : '')
+      + (chartScatterImg ? '<div class="chart-box"><div class="chart-title">Distribusi FRP Maks vs Jarak Terdekat</div><img src="' + chartScatterImg + '"/></div>' : '')
+      + '</div>';
+  } else {
+    chartSection = '<div style="font-size:9px;color:#999;margin-bottom:12px;font-style:italic">Grafik tidak tersedia — buka tab Kerawanan dan tunggu grafik termuat sebelum ekspor.</div>';
+  }
+
   // Baris tabel
   const rows = filtered.map((r, i) => {
     const h = r[A_HOTSPOT];
@@ -3031,6 +3052,10 @@ function exportHistPDF() {
     + 'tr:nth-child(even) td { background: #f9f9f9; }'
     + '.footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 8px; color: #999; display: flex; justify-content: space-between; }'
     + '.radius-note { font-size: 9px; color: #666; margin-bottom: 10px; padding: 5px 10px; background: #eef4fb; border-left: 3px solid #3b7aff; }'
+    + '.charts { display: flex; gap: 12px; margin-bottom: 16px; page-break-inside: avoid; }'
+    + '.chart-box { flex: 1; border: 1px solid #ddd; border-radius: 5px; padding: 8px; background: #fff; }'
+    + '.chart-title { font-size: 10px; font-weight: 600; color: #444; margin-bottom: 6px; text-align: center; }'
+    + '.chart-box img { width: 100%; height: auto; display: block; }'
     + '@media print { .no-print { display: none; } }'
     + '</style></head><body>'
     + '<div class="header"><h1>Laporan Historis Hotspot Kebakaran</h1>'
@@ -3044,6 +3069,7 @@ function exportHistPDF() {
     + '<div class="card"><div class="lbl">FRP Maks</div><div class="val">' + (maxFrp>0?maxFrp.toFixed(1)+' MW':'–') + '</div></div>'
     + '<div class="card"><div class="lbl">Jarak Terdekat</div><div class="val">' + (minJrk>0?minJrk.toFixed(2)+' km':'–') + '</div></div>'
     + '</div>'
+    + chartSection
     + '<table><thead><tr>'
     + '<th style="width:30px">No</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>'
     + '<th style="width:45px">Hari</th><th style="width:65px">Jarak Min (km)</th><th style="width:70px">FRP Maks (MW)</th><th style="width:90px">Terakhir Terdeteksi</th>'
