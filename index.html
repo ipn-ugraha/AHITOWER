@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
   --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
@@ -3016,22 +3017,49 @@ function exportHistPDF() {
   }
 
   // Baris tabel
+  const escR = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const rows = filtered.map((r, i) => {
     const h = r[A_HOTSPOT];
     const days = h.histDays !== null ? h.histDays : 0;
     const dCol = days >= 30 ? '#c0392b' : days >= 15 ? '#e67e22' : '#333';
     return '<tr>'
       + '<td style="text-align:center;color:#888">' + (i+1) + '</td>'
-      + '<td>' + esc(r[A_UPT]||'–') + '</td>'
-      + '<td>' + esc(r[A_ULTG]||'–') + '</td>'
-      + '<td>' + esc(r[A_PHT]||'–') + '</td>'
-      + '<td style="font-family:monospace">' + esc(r[A_BAY]||'–') + '</td>'
+      + '<td>' + escR(r[A_UPT]||'–') + '</td>'
+      + '<td>' + escR(r[A_ULTG]||'–') + '</td>'
+      + '<td>' + escR(r[A_PHT]||'–') + '</td>'
+      + '<td style="font-family:monospace">' + escR(r[A_BAY]||'–') + '</td>'
       + '<td style="text-align:center;color:' + dCol + ';font-weight:600">' + days + '</td>'
       + '<td style="text-align:right">' + (h.histJarak !== null ? Number(h.histJarak).toFixed(2) : '–') + '</td>'
       + '<td style="text-align:right">' + (h.histFRP !== null ? Number(h.histFRP).toFixed(1) : '–') + '</td>'
       + '<td>' + fmtTgl(h.histLast) + '</td>'
       + '</tr>';
   }).join('');
+
+  // Capture peta (async via html2canvas) lalu build report
+  const mapEl = document.getElementById('hotspot-map');
+  const mapVisible = mapEl && mapEl.style.display !== 'none' && typeof html2canvas !== 'undefined';
+
+  const buildAndOpen = (mapImg) => {
+    let mapSection = '';
+    if (mapImg) {
+      mapSection = '<div class="map-box"><div class="chart-title">Peta Sebaran Hotspot ' + rangeLblChart + '</div><img src="' + mapImg + '"/></div>';
+    }
+    _finishHistPDF({ rangeLbl, filterStr, cetakStr, totalTower, maxHari, maxFrp, minJrk, chartSection, mapSection, rows });
+  };
+
+  if (mapVisible) {
+    // Beri jeda agar tile/heatmap ter-render penuh, lalu capture
+    html2canvas(mapEl, { useCORS: true, allowTaint: false, logging: false, scale: 1.5 })
+      .then(canvas => { buildAndOpen(canvas.toDataURL('image/png', 0.9)); })
+      .catch(() => { buildAndOpen(''); });
+  } else {
+    buildAndOpen('');
+  }
+}
+
+function _finishHistPDF(d) {
+  const { rangeLbl, filterStr, cetakStr, totalTower, maxHari, maxFrp, minJrk, chartSection, mapSection, rows } = d;
+  const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Historis Hotspot</title>'
     + '<style>'
@@ -3056,6 +3084,8 @@ function exportHistPDF() {
     + '.chart-box { flex: 1; border: 1px solid #ddd; border-radius: 5px; padding: 8px; background: #fff; }'
     + '.chart-title { font-size: 10px; font-weight: 600; color: #444; margin-bottom: 6px; text-align: center; }'
     + '.chart-box img { width: 100%; height: auto; display: block; }'
+    + '.map-box { border: 1px solid #ddd; border-radius: 5px; padding: 8px; background: #fff; margin-bottom: 16px; page-break-inside: avoid; }'
+    + '.map-box img { width: 100%; height: auto; display: block; border-radius: 3px; }'
     + '@media print { .no-print { display: none; } }'
     + '</style></head><body>'
     + '<div class="header"><h1>Laporan Historis Hotspot Kebakaran</h1>'
@@ -3070,6 +3100,7 @@ function exportHistPDF() {
     + '<div class="card"><div class="lbl">Jarak Terdekat</div><div class="val">' + (minJrk>0?minJrk.toFixed(2)+' km':'–') + '</div></div>'
     + '</div>'
     + chartSection
+    + mapSection
     + '<table><thead><tr>'
     + '<th style="width:30px">No</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>'
     + '<th style="width:45px">Hari</th><th style="width:65px">Jarak Min (km)</th><th style="width:70px">FRP Maks (MW)</th><th style="width:90px">Terakhir Terdeteksi</th>'
