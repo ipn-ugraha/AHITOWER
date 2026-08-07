@@ -1268,7 +1268,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
       <div class="cg2" style="margin-top:1rem">
         <div class="cc">
-          <div class="cc-title">Pernah hotspot 6 bulan per UPT</div>
+          <div class="cc-title" id="hist-upt-title">Pernah hotspot 6 bulan per UPT</div>
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:6px;padding:0 12px">tower yang pernah terdeteksi</div>
           <div class="cw" style="height:240px"><canvas id="c-hist-upt"></canvas></div>
         </div>
@@ -1287,7 +1287,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:#3a4050;display:inline-block"></span> tower lain</span>
           <span style="display:flex;align-items:center;gap:5px;margin-left:auto">
             <span style="color:var(--text2)">⏱ Rentang:</span>
-            <select id="map-time-filter" onchange="renderHotspotMap();renderHistTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 8px;font-size:10px;font-family:var(--mono);outline:none">
+            <select id="map-time-filter" onchange="renderFisikTab()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 8px;font-size:10px;font-family:var(--mono);outline:none">
               <option value="0">Semua</option>
               <option value="30">1 bulan terakhir</option>
               <option value="7">1 minggu terakhir</option>
@@ -1304,7 +1304,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
 
       <div class="cc" style="margin-top:1rem">
-        <div class="cc-title">Daftar tower historis hotspot — 6 bulan</div>
+        <div class="cc-title" id="hist-table-title">Daftar tower historis hotspot — 6 bulan</div>
         <div style="display:flex;flex-wrap:wrap;gap:10px;padding:.6rem 1rem;border-bottom:1px solid var(--border);align-items:center">
           <span style="font-size:11px;color:var(--text3);font-family:var(--mono)">Filter:</span>
           <select id="f-hist-upt" onchange="renderHistTable()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 8px;font-size:11px;font-family:var(--mono);outline:none;min-width:120px">
@@ -2609,10 +2609,25 @@ function renderFisikTab() {
   // ── HISTORIS 6 BULAN ─────────────────────────────────
   // Syarat: histDays > 0 (benar-benar pernah ada hotspot). histLast saja tidak cukup
   // karena bisa jadi data sampah (histLast terisi tapi histDays null)
-  const histRows = rows.filter(r => {
+  let histRows = rows.filter(r => {
     const h = r[A_HOTSPOT];
     return h && h.histDays > 0;
   });
+
+  // Filter rentang waktu — SINKRON dengan peta & tabel (map-time-filter)
+  const histTimeFilter = parseInt(document.getElementById('map-time-filter')?.value || '0');
+  if (histTimeFilter > 0) {
+    const parseMs = (s) => {
+      if (!s) return 0;
+      const str = String(s).trim();
+      const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+      const d = new Date(str).getTime();
+      return isNaN(d) ? 0 : d;
+    };
+    const cutoff = Date.now() - histTimeFilter * 24 * 60 * 60 * 1000;
+    histRows = histRows.filter(r => parseMs(r[A_HOTSPOT].histLast) >= cutoff);
+  }
   const histTotal     = histRows.length;
   const histMaxDays   = histRows.length ? Math.max(...histRows.map(r=>r[A_HOTSPOT].histDays||0)) : 0;
   const histMaxFRP    = histRows.length ? Math.max(...histRows.map(r=>r[A_HOTSPOT].histFRP||0)) : 0;
@@ -2634,6 +2649,12 @@ function renderFisikTab() {
     if (!u.toUpperCase().includes('UPT')) return;
     histUptMap[u] = (histUptMap[u]||0) + 1;
   });
+  // Update judul bar sesuai rentang aktif
+  const histTitleEl = document.getElementById('hist-upt-title');
+  if (histTitleEl) {
+    const rl = { 0:'6 bulan', 30:'1 bulan terakhir', 7:'1 minggu terakhir', 3:'3 hari terakhir', 1:'1 hari terakhir' }[histTimeFilter] || '6 bulan';
+    histTitleEl.textContent = 'Pernah hotspot ' + rl + ' per UPT';
+  }
   const histUKeys = Object.keys(histUptMap).sort((a,b)=>histUptMap[b]-histUptMap[a]);
   if (histUKeys.length > 0) {
     makeBarWithLabel('c-hist-upt',
@@ -2816,8 +2837,10 @@ function renderHistTable() {
   });
   html += '</tbody></table>';
   hwrap.innerHTML = html;
+  const rangeLbl = { 0:'6 bulan', 30:'1 bulan terakhir', 7:'1 minggu terakhir', 3:'3 hari terakhir', 1:'1 hari terakhir' }[timeFilter] || '6 bulan';
+  const titleEl = document.getElementById('hist-table-title');
+  if (titleEl) titleEl.textContent = 'Daftar tower historis hotspot — ' + rangeLbl;
   if (hfoot) {
-    const rangeLbl = { 0:'6 bulan', 30:'1 bulan terakhir', 7:'1 minggu terakhir', 3:'3 hari terakhir', 1:'1 hari terakhir' }[timeFilter] || '6 bulan';
     hfoot.textContent = fmtNum(sortedHist.length) + ' tower · ' + rangeLbl + ' · diurutkan tanggal terbaru';
   }
 }
