@@ -2599,10 +2599,20 @@ function renderFisikTab() {
         const conf = hs.conf !== null ? Number(hs.conf).toFixed(0)+'%' : '–';
         const jarak = hs.jarak !== null ? Number(hs.jarak).toFixed(2) : '–';
         const tgl = hs.terakhir ? (() => {
-          const d = new Date(hs.terakhir);
+          const str = String(hs.terakhir).trim();
           const pad = n => String(n).padStart(2,'0');
           const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-          return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear()+', '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes());
+          const m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})/);
+          let dWib;
+          if (m) {
+            const dUtc = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5]));
+            dWib = new Date(dUtc.getTime() + 7*60*60*1000);
+          } else {
+            const d = new Date(str);
+            if (isNaN(d.getTime())) return str;
+            dWib = new Date(d.getTime() + 7*60*60*1000);
+          }
+          return pad(dWib.getUTCDate())+' '+months[dWib.getUTCMonth()]+' '+dWib.getUTCFullYear()+', '+pad(dWib.getUTCHours())+':'+pad(dWib.getUTCMinutes())+' WIB';
         })() : '–';
         html += `<tr style="${i%2?'':'background:rgba(255,255,255,.01)'}">
           <td style="color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
@@ -2636,7 +2646,7 @@ function renderFisikTab() {
     const parseMs = (s) => {
       if (!s) return 0;
       const str = String(s).trim();
-      const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
       if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
       const d = new Date(str).getTime();
       return isNaN(d) ? 0 : d;
@@ -2764,7 +2774,7 @@ function renderHistTable() {
   const parseHistMs = (s) => {
     if (!s) return 0;
     const str = String(s).trim();
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
     if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
     const d = new Date(str).getTime();
     return isNaN(d) ? 0 : d;
@@ -2790,14 +2800,13 @@ function renderHistTable() {
   if (!hwrap) return;
 
   // Sort by tanggal terakhir terdeteksi (histLast) — paling baru dulu
-  // Format histLast = "DD/MM/YYYY" (dari script FIRMS)
+  // Format histLast = "DD/MM/YYYY" atau "DD/MM/YYYY HH:MM"
   const parseHistDate = (s) => {
     if (!s) return 0;
     const str = String(s).trim();
-    // Format DD/MM/YYYY
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
-    // Fallback: coba parse langsung (ISO, dll)
+    // Format DD/MM/YYYY [HH:MM]
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+    if (m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0)).getTime();
     const d = new Date(str).getTime();
     return isNaN(d) ? 0 : d;
   };
@@ -2822,10 +2831,13 @@ function renderHistTable() {
     const str = String(ts).trim();
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     const pad = n => String(n).padStart(2,'0');
-    // Format DD/MM/YYYY dari script FIRMS
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m) return pad(+m[1])+' '+months[+m[2]-1]+' '+m[3];
-    // Fallback ISO/lainnya
+    // Format DD/MM/YYYY [HH:MM] — tampilkan jam kalau ada
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+    if (m) {
+      let out = pad(+m[1])+' '+months[+m[2]-1]+' '+m[3];
+      if (m[4] !== undefined) out += ', ' + pad(+m[4])+':'+pad(+m[5]) + ' WIB';
+      return out;
+    }
     const d = new Date(str);
     if (isNaN(d.getTime())) return str;
     return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear();
@@ -2877,7 +2889,7 @@ function exportHistCSV() {
   const parseMs = (s) => {
     if (!s) return 0;
     const str = String(s).trim();
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
     if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
     const d = new Date(str).getTime();
     return isNaN(d) ? 0 : d;
@@ -2904,7 +2916,7 @@ function exportHistCSV() {
   const fmtTgl = (ts) => {
     if (!ts) return '';
     const str = String(ts).trim();
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
     if (m) return str; // sudah DD/MM/YYYY
     const d = new Date(str);
     if (isNaN(d.getTime())) return str;
@@ -2950,7 +2962,7 @@ function exportHistPDF() {
   const parseMs = (s) => {
     if (!s) return 0;
     const str = String(s).trim();
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
     if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
     const d = new Date(str).getTime();
     return isNaN(d) ? 0 : d;
@@ -2979,8 +2991,12 @@ function exportHistPDF() {
     const str = String(ts).trim();
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
     const pad = n => String(n).padStart(2,'0');
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m) return pad(+m[1])+' '+months[+m[2]-1]+' '+m[3];
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+    if (m) {
+      let out = pad(+m[1])+' '+months[+m[2]-1]+' '+m[3];
+      if (m[4] !== undefined) out += ', ' + pad(+m[4])+':'+pad(+m[5]);
+      return out;
+    }
     const d = new Date(str);
     if (isNaN(d.getTime())) return str;
     return pad(d.getDate())+' '+months[d.getMonth()]+' '+d.getFullYear();
@@ -3156,7 +3172,7 @@ function renderHotspotMap() {
   const parseHistD = (s) => {
     if (!s) return 0;
     const str = String(s).trim();
-    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
     if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
     const d = new Date(str).getTime();
     return isNaN(d) ? 0 : d;
@@ -3239,9 +3255,13 @@ function renderHotspotMap() {
   // Tower riwayat hotspot (merah, bisa diklik)
   const fmtD = ts => {
     if (!ts) return '–';
-    const m = String(ts).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const m = String(ts).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    if (m) return m[1].padStart(2,'0')+' '+months[+m[2]-1]+' '+m[3];
+    if (m) {
+      let out = m[1].padStart(2,'0')+' '+months[+m[2]-1]+' '+m[3];
+      if (m[4] !== undefined) out += ', ' + m[4].padStart(2,'0')+':'+m[5] + ' WIB';
+      return out;
+    }
     return String(ts);
   };
   histTowers.forEach(r => {
