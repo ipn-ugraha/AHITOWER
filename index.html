@@ -153,6 +153,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 @media(max-width:600px){.cg2,.cg3{grid-template-columns:1fr;}}
 .cc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-top:14px;}
 .cc-title{font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:.9rem;letter-spacing:.04em;}
+.tab-pane.active .cc{animation:fadeUp .35s ease both;}
+.tab-pane.active .stat-card{animation:fadeUp .3s ease both;}
+.status-strip .stat-card:nth-child(1){animation-delay:.02s;}
+.status-strip .stat-card:nth-child(2){animation-delay:.06s;}
+.status-strip .stat-card:nth-child(3){animation-delay:.10s;}
+.status-strip .stat-card:nth-child(4){animation-delay:.14s;}
+.status-strip .stat-card:nth-child(5){animation-delay:.18s;}
+.status-strip .stat-card:nth-child(6){animation-delay:.22s;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@media (prefers-reduced-motion:reduce){.cc,.stat-card{animation:none !important;}}
 .cw{position:relative;width:100%;}
 .legend{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
 .li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);}
@@ -1322,7 +1332,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <input type="checkbox" id="map-show-all" onchange="renderHotspotMap()" style="accent-color:#00d4aa" checked> tampilkan semua tower
           </label>
         </div>
-        <div id="hotspot-map" style="height:460px;width:100%;border-radius:8px;background:var(--bg2)"></div>
+        <div id="hotspot-map" style="height:460px;width:100%;min-height:460px;border-radius:8px;background:var(--bg2);position:relative;z-index:0"></div>
         <div id="hotspot-map-empty" style="display:none;padding:2rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:12px">📭 Belum ada data historis hotspot — jalankan proses historis 6 bulan</div>
       </div>
 
@@ -1734,6 +1744,13 @@ function switchTab(name) {
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
   if (name==='petir' && F_AHI) { populatePetirGlobalFilter(); onPetirGlobalFilter(); }
   if ((name==='layangan' || name==='hotspot') && F_AHI) renderFisikTab();
+  // Peta Leaflet perlu recalculate ukuran saat tab hotspot baru terlihat
+  if (name==='hotspot' && typeof _hotspotMap !== 'undefined' && _hotspotMap) {
+    setTimeout(() => {
+      _hotspotMap.invalidateSize();
+      renderHotspotMap(); // re-render agar heatmap & marker pas
+    }, 100);
+  }
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────
@@ -3279,6 +3296,15 @@ function renderHotspotMap() {
       attribution: '© OpenStreetMap'
     }).addTo(_hotspotMap);
     _hotspotMap.setView([-7.5, 112.5], 8); // default Jawa Timur
+
+    // ResizeObserver — auto-fix ukuran saat container berubah (tab dibuka, window resize)
+    if (typeof ResizeObserver !== 'undefined') {
+      const mapEl2 = document.getElementById('hotspot-map');
+      const ro = new ResizeObserver(() => {
+        if (_hotspotMap) _hotspotMap.invalidateSize();
+      });
+      ro.observe(mapEl2);
+    }
   }
 
   // Bersihkan layer lama
@@ -3352,14 +3378,18 @@ function renderHotspotMap() {
     marker.addTo(_hsMarkerLayer);
   });
 
-  // Auto-fit ke sebaran hotspot
-  if (histTowers.length > 0) {
-    const bounds = L.latLngBounds(histTowers.map(r => [r[A_TOWER_INFO].lat, r[A_TOWER_INFO].lng]));
-    _hotspotMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 11 });
-  }
-
-  // Fix ukuran (Leaflet butuh invalidateSize kalau container baru terlihat)
-  setTimeout(() => { if (_hotspotMap) _hotspotMap.invalidateSize(); }, 200);
+  // Fix ukuran (Leaflet butuh invalidateSize kalau container baru terlihat).
+  // Panggil bertahap + fitBounds ulang setelah ukuran benar.
+  const doFit = () => {
+    if (!_hotspotMap) return;
+    _hotspotMap.invalidateSize();
+    if (histTowers.length > 0) {
+      const b = L.latLngBounds(histTowers.map(r => [r[A_TOWER_INFO].lat, r[A_TOWER_INFO].lng]));
+      _hotspotMap.fitBounds(b, { padding: [30, 30], maxZoom: 11 });
+    }
+  };
+  setTimeout(doFit, 150);
+  setTimeout(doFit, 500);
 }
 
 // ─── AUTO REFRESH HOTSPOT (jam 05.30, 11.30, 17.30, 23.30 WIB) ──
