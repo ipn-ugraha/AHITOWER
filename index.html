@@ -1952,6 +1952,7 @@ function aggregate(rows, idx) {
 // ─── RENDER ALL ───────────────────────────────────────────
 function renderAll() {
   if(!F_ROWS||!F_AHI) return;
+  enrichHistWithNRT(); // gabung NRT→historis dulu, agar Overview & semua tab konsisten
   renderOverview();
   renderTowerTab();
   renderAHITab();
@@ -2470,8 +2471,106 @@ function makeBarWithLabel(id, labels, dataYa, dataTidak, onClickCb, barColor) {
 }
 
 // ─── FISIK TAB ───────────────────────────────────────────
+// Gabungkan data NRT (hotspot terkini "ADA") ke field historis tiap tower.
+// Idempoten: pakai penanda _nrtMerged agar tidak dobel saat re-render.
+// Tidak mengubah data mentah permanen — hanya memperkaya field hist* di objek
+// A_HOTSPOT sehingga semua bagian historis (metrics/grafik/peta/tabel) ikut.
+function enrichHistWithNRT() {
+  if (!F_AHI) return;
+
+  // Helper: parse waktu NRT "YYYY-MM-DD HH:MM UTC" → {ms, wibStr "DD/MM/YYYY HH:MM"}
+  const parseNRT = (ts) => {
+    if (!ts) return null;
+    const m = String(ts).trim().match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})/);
+    if (!m) return null;
+    const msUtc = Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5]);
+    const dW = new Date(msUtc + 7*60*60*1000);
+    const pad = n => String(n).padStart(2,'0');
+    const wibStr = pad(dW.getUTCDate())+'/'+pad(dW.getUTCMonth()+1)+'/'+dW.getUTCFullYear()
+                 + ' ' + pad(dW.getUTCHours())+':'+pad(dW.getUTCMinutes());
+    // Untuk banding: pakai ms WIB (biar konsisten dgn histLast yang WIB-based)
+    return { ms: msUtc + 7*60*60*1000, wibStr };
+  };
+
+  // Helper: parse histLast (WIB "DD/MM/YYYY [HH:MM]" atau Date string) → ms
+  const parseHist = (s) => {
+    if (!s) return 0;
+    const str = String(s).trim();
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+    if (m) return Date.UTC(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0));
+    const d = new Date(str).getTime();
+    return isNaN(d) ? 0 : d;
+  };
+
+  const todayFloor = (() => {
+    const n = new Date();
+    return Date.UTC(n.getFullYear(), n.getMonth(), n.getDate());
+  })();
+
+  F_AHI.forEach(r => {
+    const h = r[A_HOTSPOT];
+    if (!h) return;
+    // Reset penanda tiap render agar hitung ulang bersih (data NRT bisa berubah)
+    if (h._nrtMerged) {
+      // Kembalikan ke nilai asli sebelum enrich (disimpan di _orig*)
+      if (h._origHistDays !== undefined) {
+        h.histDays  = h._origHistDays;
+        h.histLast  = h._origHistLast;
+        h.histJarak = h._origHistJarak;
+        h.histFRP   = h._origHistFRP;
+      }
+      h._nrtMerged = false;
+    }
+
+    const status = String(h.hotspot || '').trim().toUpperCase();
+    if (status !== 'ADA') return; // hanya tower dengan hotspot NRT aktif
+
+    const nrt = parseNRT(h.terakhir);
+    if (!nrt) return;
+
+    // Simpan nilai asli (sekali) agar bisa di-restore saat re-render
+    h._origHistDays  = h.histDays;
+    h._origHistLast  = h.histLast;
+    h._origHistJarak = h.histJarak;
+    h._origHistFRP   = h.histFRP;
+
+    const histMs = parseHist(h.histLast);
+    const histLastFloor = histMs ? Date.UTC(new Date(histMs).getUTCFullYear(), new Date(histMs).getUTCMonth(), new Date(histMs).getUTCDate()) : 0;
+
+    // Kalau NRT lebih baru dari histLast → jadikan deteksi historis terbaru
+    if (nrt.ms > histMs) {
+      // Tambah hari kalau tanggal NRT (hari ini) belum tercatat di historis
+      const curDays = Number(h.histDays) || 0;
+      if (todayFloor > histLastFloor) {
+        h.histDays = curDays + 1; // hari baru
+      } else {
+        h.histDays = curDays > 0 ? curDays : 1; // hari sama, pastikan minimal 1
+      }
+      h.histLast = nrt.wibStr; // "DD/MM/YYYY HH:MM" WIB
+
+      // Jarak: ambil yang terdekat (NRT vs historis)
+      const nrtJarak = (h.jarak !== null && h.jarak !== undefined && !isNaN(h.jarak)) ? Number(h.jarak) : null;
+      if (nrtJarak !== null) {
+        h.histJarak = (h.histJarak !== null && h.histJarak !== undefined && h.histJarak > 0)
+          ? Math.min(h.histJarak, nrtJarak) : nrtJarak;
+      }
+      // FRP: ambil yang tertinggi
+      const nrtFRP = (h.frp !== null && h.frp !== undefined && !isNaN(h.frp)) ? Number(h.frp) : null;
+      if (nrtFRP !== null) {
+        h.histFRP = (h.histFRP !== null && h.histFRP !== undefined)
+          ? Math.max(h.histFRP, nrtFRP) : nrtFRP;
+      }
+      h._nrtMerged = true;
+    }
+  });
+}
+
 function renderFisikTab() {
   if (!F_AHI) return;
+
+  // Gabungkan NRT (hotspot ADA hari ini) ke data historis agar deteksi terbaru
+  // ikut tampil di metrics, grafik, peta, dan tabel historis (real-time).
+  enrichHistWithNRT();
 
   const fPHT = document.getElementById('f-pht-fisik')?.value || '';
   const rows  = fPHT ? F_AHI.filter(r=>r[A_PHT]===fPHT) : F_AHI;
