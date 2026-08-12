@@ -1273,8 +1273,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="sl sl-danger" style="margin-top:0">Kerawanan Kebakaran (Hotspot)</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:.5rem;padding:.5rem .8rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:var(--mono)">
         <span style="color:var(--text2)">📡 Sumber: <b style="color:var(--text)">FIRMS (Global) and FIRMS (US/Canada)</b> · <a href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@113.7,-7.4,8.4z" target="_blank" rel="noopener" style="color:#3b7aff;text-decoration:none">🗺 Peta interaktif ↗</a></span>
-        <span style="color:var(--text3)">Update terakhir: <span id="hotspot-last-update" style="color:var(--text);font-weight:500">–</span> <span id="hotspot-stale-badge" style="display:none;margin-left:6px;padding:1px 6px;border-radius:3px;background:rgba(245,166,35,0.15);color:#f5a623;font-size:10px">⚠ data lama</span></span>
+        <span style="display:flex;align-items:center;gap:10px">
+          <span style="color:var(--text3)">Update terakhir: <span id="hotspot-last-update" style="color:var(--text);font-weight:500">–</span> <span id="hotspot-stale-badge" style="display:none;margin-left:6px;padding:1px 6px;border-radius:3px;background:rgba(245,166,35,0.15);color:#f5a623;font-size:10px">⚠ data lama</span></span>
+          <button id="btn-cek-hotspot" onclick="cekHotspotTerkini()" style="background:var(--danger);border:none;border-radius:5px;color:#fff;padding:5px 12px;font-size:10px;font-family:var(--mono);cursor:pointer;font-weight:600;white-space:nowrap;transition:opacity .2s">🛰 Cek Hotspot Terkini</button>
+        </span>
       </div>
+      <div id="cek-hotspot-msg" style="display:none;margin-bottom:.5rem;padding:.5rem .8rem;border-radius:var(--radius);font-size:11px;font-family:var(--mono)"></div>
       <div style="margin-bottom:.75rem;padding:.4rem .8rem;background:rgba(59,122,255,0.06);border:1px solid rgba(59,122,255,0.15);border-radius:var(--radius);font-size:10px;font-family:var(--mono);color:var(--text2)">
         📏 <b style="color:var(--text)">Jarak jangkauan referensi:</b> hotspot terdeteksi dalam radius <b style="color:#3b7aff">2 km (2.000 m)</b> dari setiap tower dianggap mengancam.
       </div>
@@ -2563,6 +2567,63 @@ function enrichHistWithNRT() {
       h._nrtMerged = true;
     }
   });
+}
+
+// Tombol "Cek Hotspot Terkini" — picu checkHotspots di asettower (background)
+let _cekHotspotPolling = null;
+async function cekHotspotTerkini() {
+  const btn = document.getElementById('btn-cek-hotspot');
+  const msg = document.getElementById('cek-hotspot-msg');
+  if (!btn || !msg) return;
+
+  const showMsg = (text, type) => {
+    msg.style.display = 'block';
+    const colors = {
+      info:   'background:rgba(59,122,255,0.1);border:1px solid rgba(59,122,255,0.25);color:#3b7aff',
+      ok:     'background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);color:var(--accent)',
+      warn:   'background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);color:#f5a623',
+      danger: 'background:rgba(232,64,64,0.1);border:1px solid rgba(232,64,64,0.25);color:var(--danger)'
+    };
+    msg.style.cssText = 'display:block;margin-bottom:.5rem;padding:.5rem .8rem;border-radius:var(--radius);font-size:11px;font-family:var(--mono);' + (colors[type]||colors.info);
+    msg.innerHTML = text;
+  };
+
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  btn.textContent = '⏳ Memproses...';
+  showMsg('⏳ Meminta pengecekan hotspot terkini dari satelit NASA FIRMS...', 'info');
+
+  try {
+    const res = await api({ action: 'check_hotspots', token: TOKEN });
+    if (res.ok) {
+      showMsg('🛰 ' + (res.message || 'Pengecekan dijadwalkan.') + '<br>Proses berjalan ~1-2 menit di latar belakang. Dashboard akan otomatis memuat ulang data setelah selesai.', 'ok');
+      // Polling: cek status tiap 20 detik, maks 4 kali (~1.5 menit)
+      let tries = 0;
+      if (_cekHotspotPolling) clearInterval(_cekHotspotPolling);
+      _cekHotspotPolling = setInterval(async () => {
+        tries++;
+        if (tries > 5) {
+          clearInterval(_cekHotspotPolling);
+          showMsg('✅ Proses seharusnya sudah selesai. Klik tombol Refresh untuk memuat data terbaru.', 'ok');
+          resetBtn();
+          return;
+        }
+        showMsg('⏳ Menunggu hasil... (' + tries + '/5) Proses satelit berjalan di latar belakang.', 'info');
+      }, 20000);
+    } else {
+      showMsg('❌ Gagal: ' + (res.error || 'tidak diketahui'), 'danger');
+      resetBtn();
+    }
+  } catch (e) {
+    showMsg('❌ Gagal menghubungi server: ' + e.message, 'danger');
+    resetBtn();
+  }
+
+  function resetBtn() {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.textContent = '🛰 Cek Hotspot Terkini';
+  }
 }
 
 function renderFisikTab() {
