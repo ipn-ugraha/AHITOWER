@@ -119,6 +119,23 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 /* SECTION */
 .sl{font-size:10px;font-family:var(--mono);color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin:.1.5rem 0 .75rem;padding-left:10px;border-left:2px solid var(--accent);margin-top:1.5rem;margin-bottom:.75rem;}
+.sl-warn{border-left-color:var(--warn);color:var(--warn);}
+.sl-danger{border-left-color:var(--danger);color:var(--danger);}
+.sl-info{border-left-color:var(--accent2);color:var(--accent2);}
+.status-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;border-left:3px solid var(--text3);transition:transform .15s;}
+.stat-card:hover{transform:translateY(-2px);}
+.stat-card.ok{border-left-color:var(--accent);}
+.stat-card.warn{border-left-color:var(--warn);}
+.stat-card.danger{border-left-color:var(--danger);}
+.stat-card.info{border-left-color:var(--accent2);}
+.stat-card .sc-val{font-size:26px;font-weight:600;font-family:var(--mono);line-height:1;margin-bottom:4px;}
+.stat-card.ok .sc-val{color:var(--accent);}
+.stat-card.warn .sc-val{color:var(--warn);}
+.stat-card.danger .sc-val{color:var(--danger);}
+.stat-card.info .sc-val{color:var(--accent2);}
+.stat-card .sc-lbl{font-size:10px;color:var(--text2);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;}
+.stat-card .sc-sub{font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:3px;}
 
 /* METRICS */
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;}
@@ -443,12 +460,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="tab-btn active" onclick="switchTab('overview')">Overview</button>
       <button class="tab-btn" onclick="switchTab('tower')">Data Tower</button>
       <button class="tab-btn" onclick="switchTab('ahi')">Kondisi AHI</button>
-      <button class="tab-btn" onclick="switchTab('petir')">Petir</button>
-      <button class="tab-btn" onclick="switchTab('fisik')">Kerawanan</button>
+      <button class="tab-btn" onclick="switchTab('petir')">Petir &amp; TLA</button>
+      <button class="tab-btn" onclick="switchTab('layangan')">Layangan</button>
+      <button class="tab-btn" onclick="switchTab('hotspot')">Hotspot</button>
     </div>
 
     <!-- TAB OVERVIEW -->
     <div class="tab-pane active" id="tab-overview">
+      <div class="status-strip" id="ov-status-strip"></div>
       <div class="sl">Ringkasan aset</div>
       <div class="metrics" id="m-overview-tower"></div>
 
@@ -527,7 +546,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <span class="filter-info" id="petir-filter-info" style="margin-top:6px;display:block;font-size:10px"></span>
       </div>
 
-      <div class="sl">Kerapatan petir</div>
+      <div class="sl sl-warn">Kerapatan petir</div>
       <div class="accordion" id="acc-petir-kerapatan">
         <div class="accordion-header" onclick="toggleAcc('acc-petir-kerapatan')">
           <span><span class="accordion-title">Kerapatan Petir</span><span class="accordion-meta">distribusi multi-tahun</span></span>
@@ -1209,8 +1228,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
     </div>
 
-    <!-- TAB FISIK -->
-    <div class="tab-pane" id="tab-fisik">
+    <!-- TAB LAYANGAN -->
+    <div class="tab-pane" id="tab-layangan">
       <div class="sl">Filter Penghantar</div>
       <div class="filter-bar" style="margin-bottom:1rem">
         <div class="fg"><span class="fl">Penghantar</span>
@@ -1219,7 +1238,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <span class="filter-info" id="fisik-filter-info"></span>
       </div>
 
-      <div class="sl">Rawan Layangan</div>
+      <div class="sl sl-warn">Rawan Layangan</div>
       <div class="metrics" id="m-fisik-layangan"></div>
 
       <div class="cg2">
@@ -1235,8 +1254,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div id="pg-bar-layangan" class="pg-wrap"></div>
         <div class="cw" style="height:520px"><canvas id="c-layangan-pht"></canvas></div>
       </div>
+    </div>
 
-      <div class="sl" style="margin-top:1.5rem">Kerawanan Kebakaran (Hotspot)</div>
+    <!-- TAB HOTSPOT -->
+    <div class="tab-pane" id="tab-hotspot">
+      <div class="sl sl-danger" style="margin-top:0">Kerawanan Kebakaran (Hotspot)</div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-bottom:.5rem;padding:.5rem .8rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:var(--mono)">
         <span style="color:var(--text2)">📡 Sumber: <b style="color:var(--text)">FIRMS (Global) and FIRMS (US/Canada)</b> · <a href="https://firms.modaps.eosdis.nasa.gov/map/#d:24hrs;@113.7,-7.4,8.4z" target="_blank" rel="noopener" style="color:#3b7aff;text-decoration:none">🗺 Peta interaktif ↗</a></span>
         <span style="color:var(--text3)">Update terakhir: <span id="hotspot-last-update" style="color:var(--text);font-weight:500">–</span> <span id="hotspot-stale-badge" style="display:none;margin-left:6px;padding:1px 6px;border-radius:3px;background:rgba(245,166,35,0.15);color:#f5a623;font-size:10px">⚠ data lama</span></span>
@@ -1707,11 +1729,11 @@ function switchPage(page) {
 }
 
 function switchTab(name) {
-  const tabs=['overview','tower','ahi','petir','fisik'];
+  const tabs=['overview','tower','ahi','petir','layangan','hotspot'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===name));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
   if (name==='petir' && F_AHI) { populatePetirGlobalFilter(); onPetirGlobalFilter(); }
-  if (name==='fisik' && F_AHI) renderFisikTab();
+  if ((name==='layangan' || name==='hotspot') && F_AHI) renderFisikTab();
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────
@@ -1917,7 +1939,7 @@ function renderAll() {
   // Render petir hanya jika tab aktif, atau update data internalnya
   const petirActive = document.getElementById('tab-petir')?.classList.contains('active');
   if (petirActive) { populatePetirGlobalFilter(); onPetirGlobalFilter(); }
-  const fisikActive = document.getElementById('tab-fisik')?.classList.contains('active');
+  const fisikActive = document.getElementById('tab-layangan')?.classList.contains('active') || document.getElementById('tab-hotspot')?.classList.contains('active');
   if (fisikActive) renderFisikTab();
   else {
     // Update data internal agar siap saat tab dibuka
@@ -1927,7 +1949,50 @@ function renderAll() {
 }
 
 // ─── OVERVIEW ─────────────────────────────────────────────
+function renderStatusStrip() {
+  const el = document.getElementById('ov-status-strip');
+  if (!el) return;
+  const total = F_AHI.length;
+
+  // Hotspot aktif hari ini (NRT ADA)
+  const hsAktif = F_AHI.filter(r => {
+    const h = r[A_HOTSPOT];
+    return h && String(h.hotspot||'').trim().toUpperCase() === 'ADA';
+  }).length;
+
+  // Rawan layangan
+  const layangan = F_AHI.filter(r => r[A_LAYANGAN] === 1).length;
+
+  // Tower riwayat hotspot 6 bln
+  const histHotspot = F_AHI.filter(r => {
+    const h = r[A_HOTSPOT];
+    return h && h.histDays > 0;
+  }).length;
+
+  // AHI kritis (4-5)
+  const ahiKritis = F_AHI.filter(r => r[A_CE]==='4' || r[A_CE]==='5').length;
+
+  // Density tinggi (kerapatan sangat tinggi/tinggi ≥6)
+  const densTinggi = F_AHI.filter(r => {
+    const d = r[A_DENSITY];
+    return d !== null && d !== undefined && +d >= 6;
+  }).length;
+
+  const card = (val, lbl, sub, cls) =>
+    '<div class="stat-card '+cls+'"><div class="sc-val">'+val+'</div>'
+    + '<div class="sc-lbl">'+lbl+'</div><div class="sc-sub">'+sub+'</div></div>';
+
+  el.innerHTML =
+    card(fmtNum(total), 'Total Tower', 'aset dimonitor', 'info')
+    + card(hsAktif>0?fmtNum(hsAktif):'0', 'Hotspot Aktif', hsAktif>0?'perlu perhatian':'aman hari ini', hsAktif>0?'danger':'ok')
+    + card(fmtNum(histHotspot), 'Riwayat Hotspot', '6 bulan terakhir', histHotspot>0?'warn':'ok')
+    + card(fmtNum(layangan), 'Rawan Layangan', 'tower terdampak', layangan>0?'warn':'ok')
+    + card(fmtNum(densTinggi), 'Density Tinggi', '≥6 flash/km²/thn', densTinggi>0?'warn':'ok')
+    + card(fmtNum(ahiKritis), 'AHI Kritis', 'nilai 4–5', ahiKritis>0?'danger':'ok');
+}
+
 function renderOverview() {
+  renderStatusStrip();
   const byStatus = aggregate(F_ROWS, T_ST);
   const total    = F_ROWS.length;
   const operasi  = byStatus['Operasi']||0;
