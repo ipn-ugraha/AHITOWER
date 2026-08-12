@@ -1372,7 +1372,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </label>
         </div>
         <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-bottom:.6rem;padding:.5rem .8rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:var(--mono)">
-          <span style="color:var(--text3)">Filter tegangan:</span>
+          <span style="color:var(--text3)">Warna titik tower per tegangan:</span>
           <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text2)">
             <input type="checkbox" id="teg-70" onchange="renderHotspotMap()" style="accent-color:#f5c518" checked>
             <span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:#f5c518;border:1px solid #fff"></span> 70 kV
@@ -3682,7 +3682,7 @@ function renderHotspotMap() {
   _hsMarkerLayer = L.layerGroup().addTo(_hotspotMap);
   const showAll = document.getElementById('map-show-all')?.checked;
 
-  // Tower lain (abu-abu tipis) — hanya kalau "tampilkan semua", ikut filter tegangan
+  // Tower biasa (non-hotspot) — diwarnai per tegangan, ikut filter tegangan
   if (showAll) {
     const others = withCoord.filter(r => {
       const h = r[A_HOTSPOT];
@@ -3690,8 +3690,9 @@ function renderHotspotMap() {
     });
     others.forEach(r => {
       const t = r[A_TOWER_INFO];
+      const col = getTegColor(getTegLevel(r[A_PHT])); // warna per tegangan
       L.circleMarker([t.lat, t.lng], {
-        radius: 2, color: '#3a4050', fillColor: '#3a4050', fillOpacity: 0.4, weight: 0
+        radius: 3, color: col, fillColor: col, fillOpacity: 0.7, weight: 0
       }).addTo(_hsMarkerLayer);
     });
   }
@@ -3713,15 +3714,15 @@ function renderHotspotMap() {
     const h = r[A_HOTSPOT];
     const days = h.histDays || 0;
     const rad = Math.max(4, Math.min(14, 3 + days * 0.4));
+    const col = days >= 30 ? '#e84040' : days >= 15 ? '#f5a623' : '#e8760f';
     const tegLvl = getTegLevel(r[A_PHT]);
-    const col = getTegColor(tegLvl); // warna per tegangan
     const tegLabel = tegLvl === 'lain' ? 'Lainnya' : tegLvl + ' kV';
     const marker = L.circleMarker([t.lat, t.lng], {
-      radius: rad, color: col, fillColor: col, fillOpacity: 0.65, weight: 1.5
+      radius: rad, color: col, fillColor: col, fillOpacity: 0.6, weight: 1.5
     });
     const popup = '<div style="font-family:system-ui,sans-serif;font-size:12px;line-height:1.6;min-width:180px">'
-      + '<div style="font-weight:600;color:' + col + ';margin-bottom:4px">🔥 ' + (r[A_BAY]||'–') + '</div>'
-      + '<div><b>Tegangan:</b> <span style="color:' + col + ';font-weight:600">' + tegLabel + '</span></div>'
+      + '<div style="font-weight:600;color:#e84040;margin-bottom:4px">🔥 ' + (r[A_BAY]||'–') + '</div>'
+      + '<div><b>Tegangan:</b> ' + tegLabel + '</div>'
       + '<div><b>UPT:</b> ' + (r[A_UPT]||'–') + '</div>'
       + '<div><b>Penghantar:</b> ' + (r[A_PHT]||'–') + '</div>'
       + '<div><b>Hari terdeteksi:</b> ' + days + ' hari</div>'
