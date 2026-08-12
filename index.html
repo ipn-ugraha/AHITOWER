@@ -2456,13 +2456,26 @@ function renderFisikTab() {
     const t = r[A_HOTSPOT]?.terakhir;
     if (t && (!latestCheck || t > latestCheck)) latestCheck = t;
   });
-  // Format timestamp untuk ditampilkan
+  // Format timestamp untuk ditampilkan — konversi UTC → WIB (+7 jam)
+  // Format sumber: "2026-06-07 06:31 UTC"
   const fmtHsTime = ts => {
     if (!ts) return '';
-    const d = new Date(ts);
+    const str = String(ts).trim();
     const pad = n => String(n).padStart(2,'0');
     const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    return pad(d.getUTCDate())+' '+months[d.getUTCMonth()]+' '+d.getUTCFullYear()+', '+pad(d.getUTCHours())+':'+pad(d.getUTCMinutes())+' WIB';
+    // Parse "YYYY-MM-DD HH:MM UTC" secara eksplisit
+    const m = str.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})/);
+    if (m) {
+      // Buat Date dari UTC, lalu +7 jam untuk WIB
+      const dUtc = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5]));
+      const dWib = new Date(dUtc.getTime() + 7*60*60*1000);
+      return pad(dWib.getUTCDate())+' '+months[dWib.getUTCMonth()]+' '+dWib.getUTCFullYear()+', '+pad(dWib.getUTCHours())+':'+pad(dWib.getUTCMinutes())+' WIB';
+    }
+    // Fallback: parsing biasa
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return str;
+    const dWib = new Date(d.getTime() + 7*60*60*1000);
+    return pad(dWib.getUTCDate())+' '+months[dWib.getUTCMonth()]+' '+dWib.getUTCFullYear()+', '+pad(dWib.getUTCHours())+':'+pad(dWib.getUTCMinutes())+' WIB';
   };
   const hsTimeStr = latestCheck ? fmtHsTime(latestCheck) : '';
 
