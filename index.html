@@ -154,8 +154,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .cc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.2rem;margin-top:14px;transition:border-color .2s;}
 .cc:hover{border-color:var(--border2);}
 .cc-title{font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:.9rem;letter-spacing:.04em;}
-.tab-pane.active .cc{animation:fadeUp .35s ease both;}
-.tab-pane.active .stat-card{animation:fadeUp .3s ease both;}
+.tab-pane.active .cc{animation:fadeUp .35s ease;}
+.tab-pane.active .stat-card{animation:fadeUp .3s ease;}
 .status-strip .stat-card:nth-child(1){animation-delay:.02s;}
 .status-strip .stat-card:nth-child(2){animation-delay:.06s;}
 .status-strip .stat-card:nth-child(3){animation-delay:.10s;}
@@ -1968,9 +1968,10 @@ function renderAll() {
 }
 
 // ─── OVERVIEW ─────────────────────────────────────────────
-function renderStatusStrip() {
+function renderStatusStrip(ahiKritisParam) {
   const el = document.getElementById('ov-status-strip');
   if (!el) return;
+  if (!F_AHI || !F_AHI.length) { el.innerHTML = ''; return; }
   const total = F_AHI.length;
 
   // Hotspot aktif hari ini (NRT ADA)
@@ -1979,22 +1980,30 @@ function renderStatusStrip() {
     return h && String(h.hotspot||'').trim().toUpperCase() === 'ADA';
   }).length;
 
-  // Rawan layangan
-  const layangan = F_AHI.filter(r => r[A_LAYANGAN] === 1).length;
+  // Rawan layangan (toleran: 1, "1", atau truthy)
+  const layangan = F_AHI.filter(r => {
+    const v = r[A_LAYANGAN];
+    return v === 1 || v === '1' || v === true;
+  }).length;
 
   // Tower riwayat hotspot 6 bln
   const histHotspot = F_AHI.filter(r => {
     const h = r[A_HOTSPOT];
-    return h && h.histDays > 0;
+    return h && Number(h.histDays) > 0;
   }).length;
 
-  // AHI kritis (4-5)
-  const ahiKritis = F_AHI.filter(r => r[A_CE]==='4' || r[A_CE]==='5').length;
+  // AHI kritis (4-5) — pakai nilai dari renderOverview kalau tersedia, else hitung
+  const ahiKritis = (ahiKritisParam !== undefined) ? ahiKritisParam : F_AHI.filter(r => {
+    const v = String(r[A_CE]);
+    return v === '4' || v === '5';
+  }).length;
 
-  // Density tinggi (kerapatan sangat tinggi/tinggi ≥6)
+  // Density tinggi (≥6) — toleran koma desimal ("8,63")
   const densTinggi = F_AHI.filter(r => {
-    const d = r[A_DENSITY];
-    return d !== null && d !== undefined && +d >= 6;
+    let d = r[A_DENSITY];
+    if (d === null || d === undefined || d === '') return false;
+    if (typeof d === 'string') d = parseFloat(d.replace(',', '.'));
+    return !isNaN(d) && d >= 6;
   }).length;
 
   const card = (val, lbl, sub, cls) =>
@@ -2011,7 +2020,6 @@ function renderStatusStrip() {
 }
 
 function renderOverview() {
-  renderStatusStrip();
   const byStatus = aggregate(F_ROWS, T_ST);
   const total    = F_ROWS.length;
   const operasi  = byStatus['Operasi']||0;
@@ -2044,6 +2052,9 @@ function renderOverview() {
     mc('Struktur ⚠',      fmtNum(strukt), pct(strukt,ahiTotal)+'% warning','warn') +
     mc('Anti Binatang ✅', fmtNum(antiB),  pct(antiB,ahiTotal)+'% terpasang','') +
     mc('TLA ✅',           tlaEmpty ? '–' : fmtNum(tla), tlaEmpty ? 'belum ada data' : pct(tla,ahiTotal)+'% terpasang', tlaEmpty?'':'');
+
+  // Kartu status atas — pakai nilai yang sudah dihitung + hitung sisanya konsisten
+  renderStatusStrip(ce45);
 
   // Tower dimonitor per UPT — dari F_AHI, hanya yang mengandung 'UPT'
   const byUPTahi = aggregate(F_AHI, A_UPT);
