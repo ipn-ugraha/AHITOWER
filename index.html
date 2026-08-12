@@ -1282,6 +1282,39 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div style="margin-bottom:.75rem;padding:.4rem .8rem;background:rgba(59,122,255,0.06);border:1px solid rgba(59,122,255,0.15);border-radius:var(--radius);font-size:10px;font-family:var(--mono);color:var(--text2)">
         📏 <b style="color:var(--text)">Jarak jangkauan referensi:</b> hotspot terdeteksi dalam radius <b style="color:#3b7aff">2 km (2.000 m)</b> dari setiap tower dianggap mengancam.
       </div>
+
+      <!-- LAPORAN LAPANGAN -->
+      <div class="sl sl-danger">Laporan Lapangan (Manual)</div>
+      <div class="cc" style="border-left:3px solid var(--danger)">
+        <div style="font-size:11px;color:var(--text2);font-family:var(--mono);margin-bottom:.8rem">
+          🧑‍🚒 Catat api/hotspot yang terlihat langsung di lapangan (melengkapi data satelit yang punya jeda antar-lintasan).
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:.8rem">
+          <div>
+            <label style="font-size:10px;color:var(--text3);font-family:var(--mono);display:block;margin-bottom:3px">Latitude *</label>
+            <input id="lap-lat" type="text" placeholder="-7.418823" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:6px 8px;font-size:11px;font-family:var(--mono);outline:none">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--text3);font-family:var(--mono);display:block;margin-bottom:3px">Longitude *</label>
+            <input id="lap-lon" type="text" placeholder="112.551697" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:6px 8px;font-size:11px;font-family:var(--mono);outline:none">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--text3);font-family:var(--mono);display:block;margin-bottom:3px">Waktu kejadian</label>
+            <input id="lap-waktu" type="text" placeholder="12/08/2026 16:30" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:6px 8px;font-size:11px;font-family:var(--mono);outline:none">
+          </div>
+        </div>
+        <div style="margin-bottom:.8rem">
+          <label style="font-size:10px;color:var(--text3);font-family:var(--mono);display:block;margin-bottom:3px">Keterangan</label>
+          <input id="lap-ket" type="text" placeholder="Api semak dekat tower, sudah dilaporkan ke ULTG" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:6px 8px;font-size:11px;font-family:var(--mono);outline:none">
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button onclick="kirimLaporan()" id="btn-lap-kirim" style="background:var(--danger);border:none;border-radius:5px;color:#fff;padding:7px 16px;font-size:11px;font-family:var(--mono);cursor:pointer;font-weight:600">📍 Kirim Laporan</button>
+          <button onclick="pakaiLokasiSaya()" id="btn-lap-gps" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:7px 12px;font-size:11px;font-family:var(--mono);cursor:pointer">📡 Pakai lokasi saya</button>
+          <span id="lap-msg" style="font-size:11px;font-family:var(--mono)"></span>
+        </div>
+      </div>
+      <div id="lap-list" style="margin-top:.5rem"></div>
+
       <div class="metrics" id="m-fisik-kebakaran"></div>
       <div class="cg2">
         <div class="cc"><div class="cc-title">Distribusi tower terdeteksi hotspot</div>
@@ -1640,7 +1673,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────
-const API_URL = 'https://lively-hill-545a.ip-nugraha.workers.dev/';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyF4dOCQwIaEY0vrdXYtM9xNgBai7HKGuYhGrnUpGJiUJDJLpnvBSAg40ArcP4HvjiF/exec';
 // Data referensi penghantar (di-embed langsung, update via rebuild)
 const CSV_URL = ''; // kosongkan jika pakai embedded data
 const REF_DATA = {"TRS 150KV BANGIL-BUMICOKRO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV BANGIL-GONDANGWETAN": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150KV BANGIL-PIER": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150KV BANYUWANGI-GILIMANUK": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150KV BOJONEGORO-CEPU": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV BONDOWOSO-SITUBONDO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV GONDANGWETAN-PIER": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV GRATI-GONDANGWETAN": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150KV JEMBER-BONDOWOSO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV KEDIRI-BANARAN": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150KV KEDIRI-NEWTULUNGAGUNG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV KEREK-MLIWANG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV KEREK-SEMEN TUBAN": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150KV KRAKSAAN-GENDING": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150KV LAMONGAN-PACIRAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV MANISREJO-NGAWI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV MANISREJO-PONOROGO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV NEW PACITAN-NEW PONOROGO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV NEWTULUNGAGUNG-NEWWLINGI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV PAITON-KRAKSAAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV PAITON-NUSANTARA POWER": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV PIER-PURWOSARI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV PLTP IJEN-BANYUWANGI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV PROBOLINGGO-KRAKSAAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV PROBOLINGGO-LUMAJANG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV PURWOSARI-PAKIS": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV SAMBIKEREP-GIS WARU": {"kritikal": "ya", "tier": "2", "ktt": "tidak"}, "TRS 150KV SITUBONDO-BANYUWANGI": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150KV SITUBONDO-PAITON": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150KV SRAGEN-NGAWI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV ALTAPRIMA-SURABAYA BARAT": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV ANTOSARI-NEGARA": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV BABAT-BOJONEGORO": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV BALONGBENDO-SEKARPUTIH": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV BANARAN-NEWNGANJUK": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV BANGKALAN-SAMPANG": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV BATURITI-GIANYAR": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV BATURITI-PEMARON": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV BUDURAN-SIDOARJO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV CELUKAN BAWANG-KAPAL": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV CERME-LAMONGAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV CERME-MANYAR": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV CH GILIMANUK-GILIMANUK": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV CH PESANGGARAN-NUSA DUA": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV DARMOGRANDE-WARU": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV DRIYOREJO-BABADAN": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150kV GIANYAR-AMLAPURA": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV GILIMANUK-PEMARON": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV GILITIMUR-BANGKALAN": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV GIS GRESIK-TANDES": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV GONDANGWETAN-PROBOLINGGO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV GONDANGWETAN-REJOSO": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150kV GRATI-PIER": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV GULUK2-SUMENEP": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV GUNUNG SARI-WARU": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC (PLTU PACITAN-NEW PACITAN)-NGUNTORONADI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC BABAT-BABAT": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC BANGIL-BANGIL": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC BULUKANDANG-BULUKANDANG": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV INC CERME - CERME": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC GENTENG-GENTENG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC GILITIMUR-CH GILITIMUR": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV INC KASIH JATIM-KASIH JATIM": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV INC KIS-KIS": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150kV INC LAWANG-BANGIL": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV INC NEWNGANJUK-NEWNGANJUK": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC NEWPORONG-NEWPORONG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC PAYANGAN-PAYANGAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV INC SURYA ZIGZAG-SURYA ZIGZAG": {"kritikal": "ya", "tier": "", "ktt": "ya"}, "TRS 150kV JEMBER-BANYUWANGI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV JOMBANG BARU-JAYA KERTAS": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV JOMBANG-JATIGEDONG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KAPAL-PADANG SAMBIAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KAPAL-PEMECUTAN KELOD": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KAPAL-TANAH LOT": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KARANGPILANG - RUNGKUT": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV KARANGPILANG-BAMBE": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KEBONAGUNG-LAWANG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KEBONAGUNG-PAKIS": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KEBONAGUNG-SENGKALING": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV KEDINDING-BANGKALAN": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV KEDIRI-JAYAKERTAS": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV KENJERAN-UJUNG": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV KERTOSONO-INC (KEDIRI-JAYAKERTAS)": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV KUBU-AMLAPURA": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV LAMONGAN-BABAT": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV LUMAJANG-TANGGUL": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV MOJOAGUNG - BANARAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV MOJOAGUNG-BANARAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV NEGARA-GILIMANUK": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV NEWNGANJUK-MANISREJO": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV NGIMBANG-JATIGEDONG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV NGIMBANG-MLIWANG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PADANG SAMBIAN-PESANGGARAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PAMEKASAN-GULUK2": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PEMECUTAN KELOD-CH BANDARA NGURAH RAI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PESANGGARAN-CH BANDARA NGURAH RAI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PESANGGARAN-SANUR": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PLTS BALI TIMUR-KUBU": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PLTU GRESIK-ALTAPRIMA": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PLTU GRESIK-SAMBIKEREP": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PLTU GRESIK-SEGOROMADU": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV PLTU PACITAN-NEW PACITAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV RUNGKUT-SURABAYA SELATAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SAMPANG-PAMEKASAN": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV SANUR-GIANYAR": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SAWAHAN-GUNUNG SARI": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV SAWAHAN-KREMBANGAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SAWAHAN-SURABAYA BARAT": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV SEGOROMADU-ALTAPRIMA": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SEGOROMADU-CERME": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SEGOROMADU-PETROKIMIA": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150kV SEKARPUTIH-KERTOSONO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SEKARPUTIH-MOJOAGUNG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SEKARPUTIH-NGORO": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV SIDOARJO-NEWPORONG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SUKOLILO-KENJERAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SUKOLILO-RUNGKUT": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SURABAYA BARAT-BALONGBENDO": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV SURABAYA BARAT-CERME": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV SURABAYA BARAT-DARMOGRANDE": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV SURABAYA SELATAN-KALISARI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV SUTAMI - KEBONAGUNG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV TANAH LOT-ANTOSARI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV TANDES-SAWAHAN": {"kritikal": "tidak", "tier": "2", "ktt": "tidak"}, "TRS 150kV TANGGUL-JEMBER": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV TANGGUL-PUGER": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150kV TANJUNG AWAR AWAR-BABAT": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 150kV TUBAN-KEREK": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV UJUNG-PERAK": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 150kV UJUNG-TANDES": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV WARU-BUDURAN": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV WARU-RUNGKUT": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 150kV WLINGI-SUTAMI": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 25KV DOLOPO-NGEBEL": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 25KV GIRINGAN-GOLANG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 25KV GOLANG-DOLOPO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 500KV PAITON-JAWA POWER": {"kritikal": "tidak", "tier": "1", "ktt": "tidak"}, "TRS 500KV PAITON-NUSANTARA POWER": {"kritikal": "tidak", "tier": "1", "ktt": "tidak"}, "TRS 500KV PAITON-PAITON ENERGY": {"kritikal": "tidak", "tier": "1", "ktt": "tidak"}, "TRS 500kV GRATI-INDONESIA POWER": {"kritikal": "tidak", "tier": "1", "ktt": "tidak"}, "TRS 500kV GRATI-KRIAN": {"kritikal": "tidak", "tier": "1", "ktt": "tidak"}, "TRS 500kV GRESIK-KRIAN": {"kritikal": "ya", "tier": "1", "ktt": "tidak"}, "TRS 500kV INC UNGRN-NGBNG": {"kritikal": "ya", "tier": "1", "ktt": "tidak"}, "TRS 500kV KEDIRI-PEDAN": {"kritikal": "ya", "tier": "1", "ktt": "tidak"}, "TRS 500kV NGIMBANG-INC KRIAN": {"kritikal": "ya", "tier": "1", "ktt": "tidak"}, "TRS 500kV PAITON-GRATI": {"kritikal": "ya", "tier": "1", "ktt": "tidak"}, "TRS 500kV PAITON-KEDIRI": {"kritikal": "ya", "tier": "1", "ktt": "tidak"}, "TRS 500kV UNGARAN-KRIAN": {"kritikal": "tidak", "tier": "1", "ktt": "tidak"}, "TRS 70KV BANARAN-GUDANG GARAM": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 70KV BANARAN-PARE": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70KV BANARAN-TULUNGAGUNG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70KV BLITAR BARU-TULUNGAGUNG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70KV DOLOPO-PONOROGO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70KV KERTOSONO-NGANJUK": {"kritikal": "ya", "tier": "", "ktt": "tidak"}, "TRS 70KV MANISREJO-MRANGGEN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70KV MRANGGEN-MAGETAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70KV TRENGGALEK-PONOROGO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70KV WLINGI-BLITAR BARU": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV BLIMBING-POLEHAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV BUDURAN-MASPION": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 70kV INC PLTA TULUNGAGUNG-PLTA TULUNG AGUNG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV INC SELOREJO-SELOREJO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV INC SIMAN-SIMAN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV INC TUREN (BRANCH)-TUREN": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV KARANGKATES-SENGGURUH": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV KEBONAGUNG-GAMPINGAN": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 70kV KERTOSONO-PLOSO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV MANYAR-MASPION SBM": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV MENDALAN-SEKARPUTIH": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV MENDALAN-SENGKALING": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV NGANJUK-MANISREJO": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV POLEHAN-KEBONAGUNG": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV SEGOROMADU-BARATA": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 70kV SEGOROMADU-SEMEN GRESIK": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV SEKARPUTIH-AJINOMOTO": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 70kV SEKARPUTIH-TJIWIKIMIA": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 70kV SENGKALING-BLIMBING": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV TARIK-BANGUN": {"kritikal": "tidak", "tier": "", "ktt": "ya"}, "TRS 70kV TARIK-MIWON": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV TARIK-SEKARPUTIH": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}, "TRS 70kV TULUNGAGUNG-TRENGGALEK": {"kritikal": "tidak", "tier": "", "ktt": "tidak"}};
@@ -1750,6 +1783,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
   if (name==='petir' && F_AHI) { populatePetirGlobalFilter(); onPetirGlobalFilter(); }
   if ((name==='layangan' || name==='hotspot') && F_AHI) renderFisikTab();
+  if (name==='hotspot') muatLaporan(); // muat laporan lapangan
   // Peta Leaflet perlu recalculate ukuran saat tab hotspot baru terlihat
   if (name==='hotspot' && typeof _hotspotMap !== 'undefined' && _hotspotMap) {
     setTimeout(() => {
@@ -2624,6 +2658,109 @@ async function cekHotspotTerkini() {
     btn.style.opacity = '1';
     btn.textContent = '🛰 Cek Hotspot Terkini';
   }
+}
+
+// ── LAPORAN LAPANGAN ──────────────────────────────────────
+let _laporanData = [];
+
+async function kirimLaporan() {
+  const lat = (document.getElementById('lap-lat')?.value || '').trim();
+  const lon = (document.getElementById('lap-lon')?.value || '').trim();
+  const waktu = (document.getElementById('lap-waktu')?.value || '').trim();
+  const ket = (document.getElementById('lap-ket')?.value || '').trim();
+  const msg = document.getElementById('lap-msg');
+  const btn = document.getElementById('btn-lap-kirim');
+
+  const setMsg = (t, c) => { if (msg) { msg.textContent = t; msg.style.color = c; } };
+
+  if (!lat || !lon) { setMsg('⚠ Latitude & longitude wajib diisi', '#f5a623'); return; }
+  const latN = parseFloat(lat), lonN = parseFloat(lon);
+  if (isNaN(latN) || isNaN(lonN)) { setMsg('⚠ Koordinat harus angka', '#f5a623'); return; }
+  if (latN < -90 || latN > 90 || lonN < -180 || lonN > 180) { setMsg('⚠ Koordinat di luar jangkauan', '#f5a623'); return; }
+
+  if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = '⏳ Menyimpan...'; }
+  setMsg('⏳ Menyimpan laporan...', 'var(--text2)');
+
+  try {
+    const res = await api({ action: 'add_laporan', token: TOKEN, lat: latN, lon: lonN, waktu: waktu, ket: ket });
+    if (res.ok) {
+      let info = '✅ Laporan tersimpan';
+      if (res.towerTerdekat) info += ' · tower terdekat: ' + res.towerTerdekat + ' (' + res.jarakKm + ' km)';
+      setMsg(info, 'var(--accent)');
+      // Kosongkan form
+      document.getElementById('lap-lat').value = '';
+      document.getElementById('lap-lon').value = '';
+      document.getElementById('lap-waktu').value = '';
+      document.getElementById('lap-ket').value = '';
+      // Muat ulang daftar
+      await muatLaporan();
+    } else {
+      setMsg('❌ ' + (res.error || 'Gagal menyimpan'), 'var(--danger)');
+    }
+  } catch (e) {
+    setMsg('❌ Gagal: ' + e.message, 'var(--danger)');
+  }
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '📍 Kirim Laporan'; }
+}
+
+function pakaiLokasiSaya() {
+  const msg = document.getElementById('lap-msg');
+  const setMsg = (t, c) => { if (msg) { msg.textContent = t; msg.style.color = c; } };
+  if (!navigator.geolocation) { setMsg('⚠ Browser tidak mendukung GPS', '#f5a623'); return; }
+  setMsg('⏳ Mengambil lokasi...', 'var(--text2)');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      document.getElementById('lap-lat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('lap-lon').value = pos.coords.longitude.toFixed(6);
+      setMsg('✅ Lokasi terisi', 'var(--accent)');
+    },
+    err => { setMsg('⚠ Gagal ambil lokasi: ' + err.message, '#f5a623'); },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+}
+
+async function muatLaporan() {
+  try {
+    const res = await api({ action: 'get_laporan', token: TOKEN });
+    if (res.ok) {
+      _laporanData = res.laporan || [];
+      renderLaporan();
+      // Refresh peta agar marker laporan muncul (kalau peta sudah ada)
+      if (typeof _hotspotMap !== 'undefined' && _hotspotMap && typeof renderHotspotMap === 'function') {
+        renderHotspotMap();
+      }
+    }
+  } catch (e) { /* diam */ }
+}
+
+function renderLaporan() {
+  const el = document.getElementById('lap-list');
+  if (!el) return;
+  if (!_laporanData.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3);font-family:var(--mono);padding:.5rem 0">Belum ada laporan lapangan.</div>';
+    return;
+  }
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let html = '<div class="sl">Riwayat laporan lapangan — ' + _laporanData.length + ' laporan</div>';
+  html += '<table class="bay-table"><thead><tr>';
+  html += '<th>#</th><th>Dilaporkan</th><th>Pelapor</th><th>Koordinat</th><th>Waktu kejadian</th><th>Tower terdekat</th><th>Keterangan</th>';
+  html += '</tr></thead><tbody>';
+  _laporanData.forEach((l, i) => {
+    const koord = l.lat.toFixed(5) + ', ' + l.lon.toFixed(5);
+    const mapLink = 'https://www.google.com/maps?q=' + l.lat + ',' + l.lon;
+    const tower = l.tower ? esc(l.tower) + (l.jarak != null ? ' <span style="color:var(--text3)">(' + l.jarak + ' km)</span>' : '') : '–';
+    html += '<tr>';
+    html += '<td>' + (i+1) + '</td>';
+    html += '<td style="white-space:nowrap">' + esc(l.timestamp) + '</td>';
+    html += '<td>' + esc(l.pelapor) + '</td>';
+    html += '<td><a href="' + mapLink + '" target="_blank" rel="noopener" style="color:#3b7aff;text-decoration:none">' + koord + ' ↗</a></td>';
+    html += '<td>' + (esc(l.waktu) || '–') + '</td>';
+    html += '<td>' + tower + '</td>';
+    html += '<td>' + (esc(l.ket) || '–') + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
 
 function renderFisikTab() {
@@ -3550,6 +3687,25 @@ function renderHotspotMap() {
     marker.bindPopup(popup);
     marker.addTo(_hsMarkerLayer);
   });
+
+  // ── Marker LAPORAN LAPANGAN (manual) — warna oranye, bentuk beda ──
+  if (typeof _laporanData !== 'undefined' && _laporanData.length) {
+    _laporanData.forEach(l => {
+      if (isNaN(l.lat) || isNaN(l.lon)) return;
+      const m = L.circleMarker([l.lat, l.lon], {
+        radius: 8, color: '#fff', weight: 2, fillColor: '#f5a623', fillOpacity: 0.95
+      }).addTo(_hsMarkerLayer);
+      const popup = '<div style="font-family:monospace;font-size:11px;line-height:1.6">'
+        + '<b style="color:#f5a623">🧑‍🚒 LAPORAN LAPANGAN</b><br>'
+        + '<b>Pelapor:</b> ' + (l.pelapor||'–') + '<br>'
+        + '<b>Waktu:</b> ' + (l.waktu||'–') + '<br>'
+        + '<b>Dilaporkan:</b> ' + (l.timestamp||'–') + '<br>'
+        + (l.tower ? '<b>Tower terdekat:</b> ' + l.tower + (l.jarak!=null?' ('+l.jarak+' km)':'') + '<br>' : '')
+        + (l.ket ? '<b>Ket:</b> ' + l.ket : '')
+        + '</div>';
+      m.bindPopup(popup);
+    });
+  }
 
   // Fix ukuran (Leaflet butuh invalidateSize kalau container baru terlihat).
   // Panggil bertahap + fitBounds ulang setelah ukuran benar.
