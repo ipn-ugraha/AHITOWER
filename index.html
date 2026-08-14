@@ -3539,15 +3539,121 @@ function exportHistPDF() {
   };
 
   if (mapVisible) {
-    // Scroll peta ke atas viewport & refresh Leaflet dulu, agar html2canvas
-    // menangkap posisi yang benar (mencegah marker bergeser ke utara).
-    mapEl.scrollIntoView({ block: 'start', behavior: 'instant' });
-    window.scrollTo(0, mapEl.offsetTop - 10);
-    if (_hotspotMap) { try { _hotspotMap.invalidateSize(); } catch(e){} }
-    // Tunggu tile + reposisi selesai, baru capture
-    setTimeout(() => _captureMapForPDF(mapEl, buildAndOpen), 800);
+    // Gambar peta manual ke canvas (proyeksi Mercator) — akurat karena
+    // posisi titik dihitung dari koordinat, bukan capture DOM.
+    setTimeout(() => {
+      const img = _renderMapCanvasManual();
+      buildAndOpen(img || '');
+    }, 100);
   } else {
     buildAndOpen('');
+  }
+}
+
+// Gambar peta ke canvas manual: background polos + titik tower (warna tegangan)
+// + titik hotspot. Proyeksi Web Mercator agar posisi relatif akurat.
+function _renderMapCanvasManual() {
+  try {
+    if (!F_AHI) return '';
+    // Kumpulkan tower berkoordinat valid + info tegangan & hotspot
+    const pts = [];
+    F_AHI.forEach(r => {
+      const t = r[A_TOWER_INFO];
+      if (!t || typeof t.lat !== 'number' || typeof t.lng !== 'number' || isNaN(t.lat) || isNaN(t.lng)) return;
+      const h = r[A_HOTSPOT];
+      const isHot = h && h.histDays > 0;
+      // Filter tegangan (hormati checkbox)
+      const lvl = getTegLevel(r[A_PHT]);
+      const teg70 = document.getElementById('teg-70')?.checked !== false;
+      const teg150 = document.getElementById('teg-150')?.checked !== false;
+      const teg500 = document.getElementById('teg-500')?.checked !== false;
+      const tegLain = document.getElementById('teg-lain')?.checked !== false;
+      const allowed = (lvl==='70'&&teg70)||(lvl==='150'&&teg150)||(lvl==='500'&&teg500)||(lvl==='lain'&&tegLain);
+      if (!allowed) return;
+      pts.push({ lat: t.lat, lng: t.lng, lvl: lvl, isHot: isHot, days: isHot ? h.histDays : 0 });
+    });
+    if (pts.length === 0) return '';
+
+    // Proyeksi Web Mercator
+    const mercY = (lat) => Math.log(Math.tan(Math.PI/4 + (lat*Math.PI/180)/2));
+    const lons = pts.map(p => p.lng);
+    const latsY = pts.map(p => mercY(p.lat));
+    let minLon = Math.min(...lons), maxLon = Math.max(...lons);
+    let minY = Math.min(...latsY), maxY = Math.max(...latsY);
+    // Padding 5%
+    const padLon = (maxLon - minLon) * 0.05 || 0.1;
+    const padY = (maxY - minY) * 0.05 || 0.1;
+    minLon -= padLon; maxLon += padLon; minY -= padY; maxY += padY;
+
+    // Canvas ukuran landscape (rasio ~ peta)
+    const W = 1400, H = 620;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background polos
+    ctx.fillStyle = '#0f141c';
+    ctx.fillRect(0, 0, W, H);
+    // Grid halus
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    for (let gx = 0; gx <= W; gx += 100) { ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+    for (let gy = 0; gy <= H; gy += 100) { ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+
+    // Proyeksi koordinat → pixel
+    const toPx = (lat, lng) => {
+      const x = (lng - minLon) / (maxLon - minLon) * W;
+      const yv = mercY(lat);
+      const y = H - (yv - minY) / (maxY - minY) * H; // flip (utara di atas)
+      return [x, y];
+    };
+
+    // Gambar titik tower biasa (non-hotspot) dulu — warna tegangan, kecil
+    pts.filter(p => !p.isHot).forEach(p => {
+      const [x, y] = toPx(p.lat, p.lng);
+      ctx.fillStyle = getTegColor(p.lvl);
+      ctx.globalAlpha = 0.7;
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, 2*Math.PI); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // Gambar titik hotspot di atas — merah/oranye, lebih besar
+    pts.filter(p => p.isHot).forEach(p => {
+      const [x, y] = toPx(p.lat, p.lng);
+      const rad = Math.max(4, Math.min(12, 3 + p.days * 0.4));
+      const col = p.days >= 30 ? '#e84040' : p.days >= 15 ? '#f5a623' : '#e8760f';
+      // Glow
+      ctx.fillStyle = col; ctx.globalAlpha = 0.25;
+      ctx.beginPath(); ctx.arc(x, y, rad*2, 0, 2*Math.PI); ctx.fill();
+      // Titik
+      ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.arc(x, y, rad, 0, 2*Math.PI); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(x, y, rad, 0, 2*Math.PI); ctx.stroke();
+    });
+
+    // Legenda
+    ctx.font = '13px Arial';
+    const leg = [
+      ['70 kV', '#f5c518'], ['150 kV', '#e84040'], ['500 kV', '#3b7aff'],
+      ['Lainnya', '#8892a0'], ['🔥 Hotspot', '#e8760f']
+    ];
+    let lx = 12, ly = H - 16;
+    ctx.fillStyle = 'rgba(15,20,28,0.85)';
+    ctx.fillRect(6, H-32, 620, 26);
+    leg.forEach(([lbl, col]) => {
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(lx+6, ly-4, 5, 0, 2*Math.PI); ctx.fill();
+      ctx.fillStyle = '#e6edf5';
+      ctx.fillText(lbl, lx+16, ly);
+      lx += ctx.measureText(lbl).width + 46;
+    });
+
+    return canvas.toDataURL('image/png', 0.92);
+  } catch (e) {
+    console.warn('renderMapCanvasManual gagal:', e);
+    return '';
   }
 }
 
