@@ -1283,6 +1283,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         📏 <b style="color:var(--text)">Jarak jangkauan referensi:</b> hotspot terdeteksi dalam radius <b style="color:#3b7aff">2 km (2.000 m)</b> dari setiap tower dianggap mengancam.
       </div>
 
+      <details style="margin-bottom:.75rem;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.25);border-radius:var(--radius);font-size:11px">
+        <summary style="cursor:pointer;padding:.55rem .8rem;color:#f5a623;font-weight:600;font-family:var(--mono);list-style:none">⚠️ Penting: keterbatasan data hotspot satelit — klik untuk baca</summary>
+        <div style="padding:0 .8rem .7rem;color:var(--text2);line-height:1.65">
+          Data hotspot berasal dari satelit NASA FIRMS dan <b style="color:var(--text)">bersifat indikatif, bukan kepastian kondisi lapangan</b>. Perhatikan:
+          <ul style="margin:.5rem 0;padding-left:1.2rem">
+            <li><b>Jeda waktu:</b> satelit hanya memindai pada jam tertentu (VIIRS ±01:30 & 13:30, MODIS ±10:30 & 22:30 WIB). Api yang muncul di antara lintasan (mis. sore) belum tentu tertangkap; hotspot yang tampil bisa sudah padam.</li>
+            <li><b>Deteksi palsu (false positive):</b> satelit mendeteksi panas — cerobong industri, flare gas, atap logam, atau pembakaran terkendali bisa terbaca sebagai hotspot walau bukan ancaman.</li>
+            <li><b>Terlewat (false negative):</b> api kecil (di bawah resolusi ~375m–1km), tertutup awan, atau cepat padam bisa tidak terdeteksi.</li>
+            <li><b>Posisi & radius:</b> koordinat hotspot punya margin ±375m–1km; asosiasi ke tower dalam radius 2km adalah perkiraan, bukan jarak pasti.</li>
+            <li><b>Data NRT belum terverifikasi:</b> ini data Near Real-Time yang cepat namun bisa dikoreksi pada pemrosesan lanjutan NASA.</li>
+          </ul>
+          <b style="color:var(--text)">Gunakan sebagai peringatan awal.</b> Untuk keputusan operasional, verifikasi dengan petugas lapangan (lihat fitur Laporan Lapangan di bawah), perhatikan nilai FRP & confidence, dan prioritaskan tower dengan riwayat berulang.
+        </div>
+      </details>
+
       <!-- LAPORAN LAPANGAN -->
       <div class="sl sl-danger">Laporan Lapangan (Manual)</div>
       <div class="cc" style="border-left:3px solid var(--danger)">
@@ -3719,13 +3734,24 @@ async function _renderMapCanvasWithTiles() {
 function _renderMapCanvasManual() {
   try {
     if (!F_AHI) return '';
+    // Filter waktu (sama seperti versi tile)
+    const timeFilterM = parseInt(document.getElementById('map-time-filter')?.value || '0');
+    const cutoffM = timeFilterM > 0 ? Date.now() - timeFilterM * 24*60*60*1000 : 0;
+    const parseHistDateM = (s) => {
+      if (!s) return 0;
+      const m = String(s).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+      if (m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0)).getTime();
+      const d = new Date(String(s)).getTime();
+      return isNaN(d) ? 0 : d;
+    };
     // Kumpulkan tower berkoordinat valid + info tegangan & hotspot
     const pts = [];
     F_AHI.forEach(r => {
       const t = r[A_TOWER_INFO];
       if (!t || typeof t.lat !== 'number' || typeof t.lng !== 'number' || isNaN(t.lat) || isNaN(t.lng)) return;
       const h = r[A_HOTSPOT];
-      const isHot = h && h.histDays > 0;
+      let isHot = h && h.histDays > 0;
+      if (isHot && cutoffM > 0 && parseHistDateM(h.histLast) < cutoffM) isHot = false;
       // Filter tegangan (hormati checkbox)
       const lvl = getTegLevel(r[A_PHT]);
       const teg70 = document.getElementById('teg-70')?.checked !== false;
@@ -3918,6 +3944,11 @@ function _finishHistPDF(d) {
     + 'tr:nth-child(even) td { background: #f9f9f9; }'
     + '.footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 8px; color: #999; display: flex; justify-content: space-between; }'
     + '.radius-note { font-size: 9px; color: #666; margin-bottom: 10px; padding: 5px 10px; background: #eef4fb; border-left: 3px solid #3b7aff; }'
+    + '.disclaimer { font-size: 8px; color: #555; margin-top: 14px; padding: 8px 12px; background: #fff8e6; border: 1px solid #f0d68a; border-left: 3px solid #e0a800; border-radius: 4px; line-height: 1.5; page-break-inside: avoid; }'
+    + '.disclaimer b { color: #7a5c00; }'
+    + '.disclaimer .t { font-size: 9px; font-weight: 700; color: #7a5c00; margin-bottom: 4px; display: block; }'
+    + '.disclaimer ul { margin: 4px 0; padding-left: 14px; }'
+    + '.disclaimer li { margin-bottom: 2px; }'
     + '.charts { display: flex; gap: 12px; margin-bottom: 16px; page-break-inside: avoid; }'
     + '.chart-box { flex: 1; border: 1px solid #ddd; border-radius: 5px; padding: 8px; background: #fff; }'
     + '.chart-title { font-size: 10px; font-weight: 600; color: #444; margin-bottom: 6px; text-align: center; }'
@@ -3943,6 +3974,17 @@ function _finishHistPDF(d) {
     + '<th style="width:30px">No</th><th>UPT</th><th>ULTG</th><th>Penghantar</th><th>BAY</th>'
     + '<th style="width:45px">Hari</th><th style="width:65px">Jarak Min (km)</th><th style="width:70px">FRP Maks (MW)</th><th style="width:90px">Terakhir Terdeteksi</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table>'
+    + '<div class="disclaimer"><span class="t">⚠️ Keterbatasan Data Hotspot Satelit — Bersifat Indikatif</span>'
+    + 'Data berasal dari satelit NASA FIRMS (Near Real-Time) dan bukan kepastian kondisi lapangan. '
+    + '<ul>'
+    + '<li><b>Jeda waktu:</b> satelit memindai pada jam tertentu (VIIRS ±01:30 &amp; 13:30, MODIS ±10:30 &amp; 22:30 WIB); api di antara lintasan bisa tak tertangkap, dan hotspot yang tampil mungkin sudah padam.</li>'
+    + '<li><b>Deteksi palsu:</b> panas industri, flare gas, atap logam, atau pembakaran terkendali dapat terbaca sebagai hotspot.</li>'
+    + '<li><b>Terlewat:</b> api kecil (di bawah resolusi 375m–1km), tertutup awan, atau cepat padam bisa tidak terdeteksi.</li>'
+    + '<li><b>Posisi &amp; radius:</b> koordinat hotspot bermargin ±375m–1km; asosiasi ke tower dalam radius 2km adalah perkiraan.</li>'
+    + '<li><b>NRT belum terverifikasi:</b> deteksi cepat namun dapat dikoreksi pada pemrosesan lanjutan.</li>'
+    + '</ul>'
+    + '<b>Gunakan sebagai peringatan awal</b> — verifikasi dengan petugas lapangan, perhatikan FRP &amp; confidence, dan prioritaskan tower dengan riwayat berulang.'
+    + '</div>'
     + '<div class="footer"><span>Dashboard Monitoring Tower PLN UIT JBM</span><span>' + totalTower + ' tower · ' + rangeLbl + '</span></div>'
     + '<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script>'
     + '</body></html>';
