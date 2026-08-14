@@ -744,7 +744,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <button onclick="densRankPage=densRankPage+1;renderDensityRanking()" id="rank-next" style="padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer">Berikutnya →</button>
           </div>
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px;line-height:1.6">
-            Density = sambaran petir tertinggi (>15kA) yang tercatat pada penghantar (dari tahun mana pun 2021–2026).<br>
+            Density = sambaran petir tertinggi (>15kA) yang tercatat pada penghantar (dari tahun mana pun 2021–2026). Angka di ujung bar = <b>tower kena petir / total tower (persen)</b>.<br>
             <span style="color:var(--text2)">ℹ️ Peringkat ini hanya berdasarkan <b>density petir</b>. Untuk <b>prioritas pemasangan TLA</b> yang mempertimbangkan banyak faktor (density + tahanan pentanahan + tinggi + elevasi + tren, khusus tower belum ber-TLA), lihat panel <b>"Daftar tower prioritas TLA"</b> di bawah.</span>
           </div>
         </div>
@@ -5873,9 +5873,10 @@ function renderDensityRanking() {
   const canvas = document.getElementById('c-density-ranking');
   if (!canvas) return;
 
-  // Hitung density maksimum & jumlah tower kena petir per penghantar
-  const perPht = {};       // pht → density maks
-  const towerCntPht = {};  // pht → jumlah tower kena petir (density >0 di tahun mana pun)
+  // Hitung density maksimum, jumlah tower kena petir, & total tower per penghantar
+  const perPht = {};         // pht → density maks
+  const towerCntPht = {};    // pht → jumlah tower kena petir (density >0)
+  const towerTotalPht = {};  // pht → total tower dalam penghantar
   F_AHI.forEach(r => {
     const pht = r[A_PHT];
     if (!pht) return;
@@ -5883,8 +5884,8 @@ function renderDensityRanking() {
     let maxD = 0;
     DENS_YEARS.forEach(y => { const v = d[y]; if (typeof v === 'number' && v > maxD) maxD = v; });
     if (!perPht[pht] || maxD > perPht[pht]) perPht[pht] = maxD;
-    // Tower ini dihitung "kena petir" bila density maks-nya >0
-    if (maxD > 0) towerCntPht[pht] = (towerCntPht[pht] || 0) + 1;
+    towerTotalPht[pht] = (towerTotalPht[pht] || 0) + 1;       // semua tower
+    if (maxD > 0) towerCntPht[pht] = (towerCntPht[pht] || 0) + 1; // yang kena petir
   });
 
   // Urutkan semua (rank penuh)
@@ -5928,10 +5929,12 @@ function renderDensityRanking() {
   const fullLabels = ranked.map(([p]) => p);
   const vals = ranked.map(([,v]) => v);
   const towerCnts = ranked.map(([p]) => towerCntPht[p] || 0); // jumlah tower kena petir
+  const towerTotals = ranked.map(([p]) => towerTotalPht[p] || 0); // total tower
+  const towerPcts = ranked.map((_, i) => towerTotals[i] > 0 ? Math.round(towerCnts[i]/towerTotals[i]*100) : 0);
   // Warna berdasarkan kategori density
   const colors = vals.map(v => v >= 15 ? '#e84040' : v >= 8 ? '#f5a623' : v >= 4 ? '#f5c518' : '#00d4aa');
 
-  // Plugin: tulis jumlah tower kena petir di ujung kanan tiap bar
+  // Plugin: tulis "kena/total (persen)" di ujung kanan tiap bar
   const towerCountLabel = {
     id: 'towerCountLabel',
     afterDatasetsDraw(chart) {
@@ -5939,13 +5942,14 @@ function renderDensityRanking() {
       const meta = chart.getDatasetMeta(0);
       ctx.save();
       ctx.font = '10px monospace';
-      ctx.fillStyle = '#c9d3e0';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
       meta.data.forEach((bar, i) => {
-        const cnt = towerCnts[i];
+        const cnt = towerCnts[i], tot = towerTotals[i], pct = towerPcts[i];
         if (cnt === undefined) return;
-        const txt = cnt + ' twr';
+        const txt = cnt + '/' + tot + ' (' + pct + '%)';
+        // Warna label mengikuti tingkat keterpaparan
+        ctx.fillStyle = pct >= 50 ? '#e84040' : pct >= 25 ? '#f5a623' : '#8892a0';
         ctx.fillText(txt, bar.x + 6, bar.y);
       });
       ctx.restore();
@@ -5971,7 +5975,7 @@ function renderDensityRanking() {
       indexAxis: 'y', // horizontal bar (penghantar di sumbu Y)
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { right: 48 } }, // ruang untuk label jumlah tower
+      layout: { padding: { right: 90 } }, // ruang untuk label "kena/total (persen)"
       onClick: (evt, elements) => {
         if (elements && elements.length) {
           const idx = elements[0].index;
@@ -5989,7 +5993,10 @@ function renderDensityRanking() {
           callbacks: {
             title: (items) => fullLabels[items[0].dataIndex],
             label: (item) => 'Density maks: ' + item.parsed.x,
-            afterLabel: (item) => (towerCnts[item.dataIndex] || 0) + ' tower kena petir · klik untuk profil'
+            afterLabel: (item) => {
+              const i = item.dataIndex;
+              return towerCnts[i] + ' dari ' + towerTotals[i] + ' tower kena petir (' + towerPcts[i] + '%) · klik untuk profil';
+            }
           }
         }
       },
