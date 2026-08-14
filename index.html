@@ -1047,6 +1047,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="cc" id="cc-density-line">
         <!-- Penghantar dari filter global -->
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <button onclick="kembaliKeRanking()" id="btn-density-back" style="display:none;padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--accent);cursor:pointer;font-weight:600">← Kembali ke peringkat</button>
           <select id="f-pht-density" onchange="renderDensityLine()" style="display:none"><option value="">—</option></select>
           <span id="density-pht-label" style="font-size:12px;color:var(--text);font-family:var(--mono);font-weight:500">Pilih 1 penghantar di filter global</span>
           <span id="density-stats" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
@@ -5839,6 +5840,15 @@ function showCriticalTowers() {
   document.getElementById('modal-bay').style.display = 'flex';
 }
 
+// Kembali dari profil per-tower ke peringkat penghantar (reset pilihan)
+function kembaliKeRanking() {
+  const selG = document.getElementById('f-pht-petir');
+  const selD = document.getElementById('f-pht-density');
+  if (selD) selD.value = '';
+  if (selG) { selG.value = ''; onPetirGlobalFilter(); }
+  else { renderDensityLine(); }
+}
+
 // Ranking penghantar terawan petir (agregat, tampil saat 'Semua Penghantar')
 let densityRankingChart = null;
 function renderDensityRanking() {
@@ -5951,6 +5961,8 @@ function renderDensityLine() {
     const dStats = document.getElementById('density-stats');
     if (dStats) dStats.textContent = '';
     if (rankEl) rankEl.style.display = 'block';
+    const backBtn = document.getElementById('btn-density-back');
+    if (backBtn) backBtn.style.display = 'none';
     renderDensityRanking();
     return;
   }
@@ -5958,6 +5970,8 @@ function renderDensityLine() {
   if (emptyEl)  emptyEl.style.display = 'none';
   if (cwEl)     cwEl.style.display = 'block';
   if (actionEl) actionEl.style.display = 'grid';
+  const backBtn = document.getElementById('btn-density-back');
+  if (backBtn) backBtn.style.display = 'inline-block';
 
   // Ambil semua tower, filter PHT valid, urutkan by nomor # dari BAY/TOWER
   const rows = F_AHI.filter(r=>r[A_PHT]===pht && r[A_PHT]!=='' && r[A_BAY]!=='')
