@@ -726,7 +726,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <!-- Agregat: ranking penghantar terawan (default 'Semua Penghantar') -->
         <div id="density-ranking" style="display:none;margin-bottom:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-            <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)">⚡ Peringkat Penghantar Paling Rawan Petir</div>
+            <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)">⚡ Peringkat Penghantar Paling Rawan Petir <span id="rank-filter-note" style="font-size:10px;font-weight:400;color:var(--text3)"></span></div>
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">klik penghantar untuk profil</span>
               <select id="rank-per-page" onchange="densRankPage=0;renderDensityRanking()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:3px 6px;font-size:10px;font-family:var(--mono)">
@@ -4835,7 +4835,7 @@ function onPetirGlobalFilter() {
   const densLabel = document.getElementById('density-pht-label');
   if (densLabel) densLabel.textContent = fPht ? fPht : 'Pilih 1 penghantar di filter global';
   // Reset pagination
-  TLA_PRIO_PAGE = 1; CLEAN_PAGE = 1;
+  TLA_PRIO_PAGE = 1; CLEAN_PAGE = 1; densRankPage = 0;
   // Render semua section
   renderPetirTab();
   renderTLAPriority();
@@ -5877,16 +5877,50 @@ function renderDensityRanking() {
   const perPht = {};         // pht → density maks
   const towerCntPht = {};    // pht → jumlah tower kena petir (density >0)
   const towerTotalPht = {};  // pht → total tower dalam penghantar
+
+  // ── Baca filter aktif (UPT, Tegangan, Kritikal, TIER, KTT) ──
+  const fUPT = document.getElementById('f-upt')?.value || '';
+  const fTeg = document.getElementById('f-teg')?.value || '';
+  const fKritikal = document.getElementById('f-kritikal')?.value || '';
+  const fKTT = document.getElementById('f-ktt')?.value || '';
+  const fTier = (typeof SELECTED_TIERS !== 'undefined' && SELECTED_TIERS.size > 0) ? SELECTED_TIERS : null;
+  // Cek penghantar lolos filter Kritikal/TIER/KTT (dari REF_DATA)
+  const phtLolosRef = (pht) => {
+    if (!fKritikal && !fTier && !fKTT) return true;
+    const ref = (typeof REF_DATA !== 'undefined' && REF_DATA[pht]) ? REF_DATA[pht] : null;
+    if (!ref) return false;
+    if (fKritikal && ref.kritikal !== fKritikal) return false;
+    if (fTier && !fTier.has(ref.tier)) return false;
+    if (fKTT && ref.ktt !== fKTT) return false;
+    return true;
+  };
+  // Cek tegangan dari nama penghantar
+  const phtLolosTeg = (pht) => {
+    if (!fTeg) return true;
+    return getTegLevel(pht) === String(fTeg);
+  };
+
   F_AHI.forEach(r => {
     const pht = r[A_PHT];
     if (!pht) return;
+    // Terapkan filter UPT (dari kolom), Tegangan & Kritikal/TIER/KTT (dari nama/REF)
+    if (fUPT && r[A_UPT] !== fUPT) return;
+    if (!phtLolosTeg(pht)) return;
+    if (!phtLolosRef(pht)) return;
     const d = r[A_DENS_ALL] || {};
     let maxD = 0;
     DENS_YEARS.forEach(y => { const v = d[y]; if (typeof v === 'number' && v > maxD) maxD = v; });
     if (!perPht[pht] || maxD > perPht[pht]) perPht[pht] = maxD;
-    towerTotalPht[pht] = (towerTotalPht[pht] || 0) + 1;       // semua tower
-    if (maxD > 0) towerCntPht[pht] = (towerCntPht[pht] || 0) + 1; // yang kena petir
+    towerTotalPht[pht] = (towerTotalPht[pht] || 0) + 1;
+    if (maxD > 0) towerCntPht[pht] = (towerCntPht[pht] || 0) + 1;
   });
+
+  // Info filter aktif di header ranking
+  const filterNote = document.getElementById('rank-filter-note');
+  if (filterNote) {
+    const aktif = [fUPT, fTeg, fKritikal, fKTT].filter(Boolean).length + (fTier ? 1 : 0);
+    filterNote.textContent = aktif > 0 ? '· ' + aktif + ' filter aktif' : '';
+  }
 
   // Urutkan semua (rank penuh)
   const rankedAll = Object.entries(perPht)
