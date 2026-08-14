@@ -1409,6 +1409,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 10px;font-size:11px;font-family:var(--mono);outline:none;min-width:200px;flex:1"/>
           <button onclick="exportHistCSV()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;white-space:nowrap">⬇ Excel</button>
           <button onclick="exportHistPDF()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;white-space:nowrap">📄 PDF</button>
+          <button onclick="downloadPetaPNG()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:4px 12px;font-size:11px;font-family:var(--mono);cursor:pointer;white-space:nowrap">🖼 Gambar Peta</button>
         </div>
         <div id="hist-table-wrap" style="max-height:500px;overflow:auto"></div>
         <div style="padding:.5rem 1rem;border-top:1px solid var(--border);font-size:11px;color:var(--text3);font-family:var(--mono)" id="hist-footer"></div>
@@ -3366,9 +3367,55 @@ function exportHistCSV() {
 }
 
 // ─── EXPORT TABEL HISTORIS KE PDF (print-to-PDF) ───────────
+// Download gambar peta sebagai PNG langsung (tanpa popup/print).
+// Alternatif bebas-blokir untuk melihat peta hotspot resolusi tinggi.
+function downloadPetaPNG() {
+  const mapEl = document.getElementById('hotspot-map');
+  if (!mapEl || mapEl.style.display === 'none') {
+    alert('Buka peta hotspot dulu (aktifkan tampilan peta).');
+    return;
+  }
+  if (typeof html2canvas === 'undefined') {
+    alert('Library capture belum termuat. Refresh halaman.');
+    return;
+  }
+  // Scroll peta ke atas & refresh Leaflet agar capture akurat
+  window.scrollTo(0, mapEl.offsetTop - 10);
+  if (_hotspotMap) { try { _hotspotMap.invalidateSize(); } catch(e){} }
+
+  const btn = event?.target;
+  const txtAsli = btn ? btn.textContent : '';
+  if (btn) { btn.textContent = '⏳ Memproses...'; btn.disabled = true; }
+
+  setTimeout(() => {
+    _captureMapForPDF(mapEl, (dataUrl) => {
+      if (btn) { btn.textContent = txtAsli; btn.disabled = false; }
+      if (!dataUrl) { alert('Gagal menangkap peta. Coba lagi.'); return; }
+      // Download langsung
+      const a = document.createElement('a');
+      const now = new Date();
+      const pad = n => String(n).padStart(2,'0');
+      const stamp = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) + '_' + pad(now.getHours()) + pad(now.getMinutes());
+      a.download = 'peta_hotspot_' + stamp + '.png';
+      a.href = dataUrl;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  }, 800);
+}
+
 function exportHistPDF() {
   const histRows = window._histRows || [];
   if (!histRows.length) { alert('Tidak ada data untuk diekspor'); return; }
+
+  // Buka window SEKARANG (saat masih dalam gesture klik user) agar tidak diblokir.
+  // Kalau diblokir (pdfWin null), nanti fallback ke iframe tersembunyi.
+  let pdfWin = null;
+  try { pdfWin = window.open('', '_blank'); } catch(e) { pdfWin = null; }
+  if (pdfWin) {
+    pdfWin.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Menyiapkan PDF...</title></head><body style="font-family:Arial,sans-serif;padding:40px;text-align:center;color:#555"><h2 style="color:#c0392b">Menyiapkan laporan PDF...</h2><p>Mohon tunggu, sedang menangkap peta dan menyusun data.</p></body></html>');
+  }
 
   const fUpt   = document.getElementById('f-hist-upt')?.value || '';
   const fUltg  = document.getElementById('f-hist-ultg')?.value || '';
@@ -3488,7 +3535,7 @@ function exportHistPDF() {
     if (mapImg) {
       mapSection = '<div class="map-box"><div class="chart-title">Peta Sebaran Hotspot ' + rangeLblChart + '</div><img src="' + mapImg + '"/></div>';
     }
-    _finishHistPDF({ rangeLbl, filterStr, cetakStr, totalTower, maxHari, maxFrp, minJrk, chartSection, mapSection, rows });
+    _finishHistPDF({ rangeLbl, filterStr, cetakStr, totalTower, maxHari, maxFrp, minJrk, chartSection, mapSection, rows, pdfWin });
   };
 
   if (mapVisible) {
@@ -3505,45 +3552,81 @@ function exportHistPDF() {
 }
 
 function _captureMapForPDF(mapEl, buildAndOpen) {
-    // Beri jeda agar tile/heatmap ter-render penuh, lalu capture.
-    // Fix "marker bergeser ke utara": html2canvas sering salah hitung posisi
-    // layer Leaflet (transform translate3d). Kita kunci geometri container
-    // & scroll agar capture sejajar dengan tile.
-    const rect = mapEl.getBoundingClientRect();
+    // html2canvas + Leaflet: marker/tile bergeser karena SETIAP pane
+    // (.leaflet-map-pane, .leaflet-marker-pane, .leaflet-overlay-pane, dst)
+    // punya transform translate3d sendiri. html2canvas 1.4.1 tidak
+    // mengakumulasi nested transform dengan benar → marker geser.
+    // Solusi: salin transform SEMUA pane dari peta asli ke clone,
+    // dan salin posisi tiap tile & marker path secara eksplisit.
+    const y = window.scrollY || window.pageYOffset || 0;
+
+    // Kumpulkan transform semua pane & elemen ber-transform di peta asli,
+    // dipetakan by selector-path agar bisa diterapkan ke clone.
+    const collectTransforms = (root) => {
+      const map = [];
+      const all = root.querySelectorAll('.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-zoom-animated');
+      all.forEach((el, idx) => {
+        const cs = getComputedStyle(el);
+        map.push({ idx, transform: cs.transform, left: cs.left, top: cs.top });
+      });
+      return map;
+    };
+    const origTransforms = collectTransforms(mapEl);
+
     html2canvas(mapEl, {
       useCORS: true,
       allowTaint: false,
       logging: false,
-      scale: 1.5,
+      scale: 2,
       backgroundColor: '#0a0e14',
-      width: mapEl.offsetWidth,
-      height: mapEl.offsetHeight,
-      windowWidth: document.documentElement.scrollWidth,
-      windowHeight: document.documentElement.scrollHeight,
+      width: mapEl.clientWidth,
+      height: mapEl.clientHeight,
       scrollX: 0,
-      scrollY: -window.scrollY,       // kompensasi posisi scroll halaman
-      x: 0,
-      y: 0,
+      scrollY: -y,
+      windowWidth: document.documentElement.clientWidth,
+      windowHeight: document.documentElement.clientHeight,
+      ignoreElements: (el) => {
+        return el.classList && (el.classList.contains('leaflet-control-zoom') ||
+                                el.classList.contains('leaflet-control-attribution'));
+      },
       onclone: (clonedDoc) => {
-        // Pastikan container hasil clone tidak punya offset scroll & terlihat penuh
         const cm = clonedDoc.getElementById('hotspot-map');
-        if (cm) {
-          cm.style.position = 'relative';
-          cm.style.top = '0';
-          cm.style.left = '0';
-          // Leaflet pane pakai transform; biarkan apa adanya agar sinkron dgn tile.
-          // Paksa semua tile & pane visible.
-          const panes = cm.querySelectorAll('.leaflet-pane, .leaflet-tile, .leaflet-tile-container');
-          panes.forEach(p => { p.style.visibility = 'visible'; p.style.opacity = '1'; });
+        if (!cm) return;
+        cm.style.position = 'relative';
+        cm.style.overflow = 'hidden';
+        // Terapkan transform yang sudah dikumpulkan ke elemen clone
+        // (urutan querySelectorAll sama karena struktur DOM identik).
+        const clonedAll = cm.querySelectorAll('.leaflet-pane, .leaflet-tile, .leaflet-marker-icon, .leaflet-zoom-animated');
+        origTransforms.forEach(rec => {
+          const el = clonedAll[rec.idx];
+          if (!el) return;
+          if (rec.transform && rec.transform !== 'none') el.style.transform = rec.transform;
+          if (rec.left && rec.left !== 'auto') el.style.left = rec.left;
+          if (rec.top && rec.top !== 'auto') el.style.top = rec.top;
+          el.style.visibility = 'visible';
+          el.style.opacity = '1';
+        });
+        // Pastikan SVG overlay (circleMarker digambar di SVG) ikut posisinya
+        const origSvg = mapEl.querySelector('.leaflet-overlay-pane svg');
+        const cloneSvg = cm.querySelector('.leaflet-overlay-pane svg');
+        if (origSvg && cloneSvg) {
+          const cs = getComputedStyle(origSvg);
+          cloneSvg.style.transform = cs.transform;
+          cloneSvg.style.left = cs.left;
+          cloneSvg.style.top = cs.top;
+          // Salin viewBox & dimensi agar path sejajar
+          if (origSvg.getAttribute('viewBox')) cloneSvg.setAttribute('viewBox', origSvg.getAttribute('viewBox'));
+          if (origSvg.getAttribute('width')) cloneSvg.setAttribute('width', origSvg.getAttribute('width'));
+          if (origSvg.getAttribute('height')) cloneSvg.setAttribute('height', origSvg.getAttribute('height'));
         }
       }
     })
-      .then(canvas => { buildAndOpen(canvas.toDataURL('image/png', 0.9)); })
+      .then(canvas => { buildAndOpen(canvas.toDataURL('image/png', 0.92)); })
       .catch((e) => { console.warn('html2canvas gagal:', e); buildAndOpen(''); });
 }
 
 function _finishHistPDF(d) {
-  const { rangeLbl, filterStr, cetakStr, totalTower, maxHari, maxFrp, minJrk, chartSection, mapSection, rows } = d;
+  const { rangeLbl, filterStr, cetakStr, totalTower, maxHari, maxFrp, minJrk, chartSection, mapSection, rows, pdfWin } = d;
   const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Historis Hotspot</title>'
@@ -3594,11 +3677,59 @@ function _finishHistPDF(d) {
     + '<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script>'
     + '</body></html>';
 
-  const w = window.open('', '_blank');
-  if (!w) { alert('Popup diblokir. Izinkan popup untuk mencetak PDF.'); return; }
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
+  const w = pdfWin && !pdfWin.closed ? pdfWin : null;
+  if (w) {
+    // Window popup tersedia — pakai itu
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  } else {
+    // Popup diblokir — fallback ke iframe tersembunyi (tidak kena blokir popup)
+    cetakViaIframe(html);
+  }
+}
+
+// Cetak PDF via iframe tersembunyi — alternatif kalau popup diblokir
+function cetakViaIframe(html) {
+  // Hapus iframe lama kalau ada
+  const old = document.getElementById('_pdf-iframe');
+  if (old) old.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = '_pdf-iframe';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  // Hapus auto-print script dari html (kita trigger manual setelah load)
+  const htmlNoScript = html.replace(/<script>[\s\S]*?<\/script>/gi, '');
+  doc.write(htmlNoScript);
+  doc.close();
+
+  // Tunggu konten (termasuk gambar peta) ter-render, lalu print
+  iframe.onload = () => {
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch(e) {
+        alert('Gagal mencetak: ' + e.message + '\nCoba izinkan popup di address bar.');
+      }
+    }, 600);
+  };
+  // Fallback kalau onload tidak trigger (konten sudah ada)
+  setTimeout(() => {
+    try {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    } catch(e) {}
+  }, 1200);
 }
 
 // ─── PETA SEBARAN HOTSPOT (Leaflet + heatmap) ──────────────
