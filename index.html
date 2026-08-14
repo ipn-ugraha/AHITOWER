@@ -3539,14 +3539,158 @@ function exportHistPDF() {
   };
 
   if (mapVisible) {
-    // Gambar peta manual ke canvas (proyeksi Mercator) — akurat karena
-    // posisi titik dihitung dari koordinat, bukan capture DOM.
-    setTimeout(() => {
-      const img = _renderMapCanvasManual();
-      buildAndOpen(img || '');
-    }, 100);
+    // Gambar peta ke canvas dengan background tile OSM asli + titik akurat.
+    _renderMapCanvasWithTiles().then(img => buildAndOpen(img || '')).catch(() => {
+      // Fallback: peta polos tanpa tile kalau tile gagal load
+      buildAndOpen(_renderMapCanvasManual() || '');
+    });
   } else {
     buildAndOpen('');
+  }
+}
+
+// ── Peta PDF dengan background tile OpenStreetMap asli ──
+// Hitung zoom & tile yang mencakup semua tower, muat tile, gambar background,
+// lalu proyeksikan titik pakai rumus tile Web Mercator (posisi akurat).
+async function _renderMapCanvasWithTiles() {
+  if (!F_AHI) return '';
+
+  // Kumpulkan titik (hormati filter tegangan)
+  const teg70 = document.getElementById('teg-70')?.checked !== false;
+  const teg150 = document.getElementById('teg-150')?.checked !== false;
+  const teg500 = document.getElementById('teg-500')?.checked !== false;
+  const tegLain = document.getElementById('teg-lain')?.checked !== false;
+  const pts = [];
+  F_AHI.forEach(r => {
+    const t = r[A_TOWER_INFO];
+    if (!t || typeof t.lat !== 'number' || typeof t.lng !== 'number' || isNaN(t.lat) || isNaN(t.lng)) return;
+    const lvl = getTegLevel(r[A_PHT]);
+    const allowed = (lvl==='70'&&teg70)||(lvl==='150'&&teg150)||(lvl==='500'&&teg500)||(lvl==='lain'&&tegLain);
+    if (!allowed) return;
+    const h = r[A_HOTSPOT];
+    pts.push({ lat: t.lat, lng: t.lng, lvl, isHot: h && h.histDays > 0, days: (h && h.histDays) || 0 });
+  });
+  if (pts.length === 0) return '';
+
+  // Bounds koordinat
+  const lats = pts.map(p => p.lat), lngs = pts.map(p => p.lng);
+  let minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  let minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+  // Padding 8%
+  const padLat = (maxLat-minLat)*0.08 || 0.05, padLng = (maxLng-minLng)*0.08 || 0.05;
+  minLat -= padLat; maxLat += padLat; minLng -= padLng; maxLng += padLng;
+
+  // Fungsi konversi lat/lng → koordinat tile global (Web Mercator) pada zoom z
+  const lngToTileX = (lng, z) => (lng + 180) / 360 * Math.pow(2, z);
+  const latToTileY = (lat, z) => {
+    const r = lat * Math.PI / 180;
+    return (1 - Math.log(Math.tan(r) + 1/Math.cos(r)) / Math.PI) / 2 * Math.pow(2, z);
+  };
+
+  // Pilih zoom agar area muat dalam ~ canvas (target lebar 1400px, tile 256px)
+  const TILE = 256, CANVAS_W = 1400, CANVAS_H = 640;
+  let zoom = 12;
+  for (let z = 14; z >= 6; z--) {
+    const xSpan = (lngToTileX(maxLng, z) - lngToTileX(minLng, z)) * TILE;
+    const ySpan = (latToTileY(minLat, z) - latToTileY(maxLat, z)) * TILE;
+    if (xSpan <= CANVAS_W && ySpan <= CANVAS_H) { zoom = z; break; }
+  }
+
+  // Tile range pada zoom terpilih
+  const x0 = lngToTileX(minLng, zoom), x1 = lngToTileX(maxLng, zoom);
+  const y0 = latToTileY(maxLat, zoom), y1 = latToTileY(minLat, zoom); // y0 atas (maxLat)
+  const tileX0 = Math.floor(x0), tileX1 = Math.floor(x1);
+  const tileY0 = Math.floor(y0), tileY1 = Math.floor(y1);
+
+  // Canvas cukup untuk semua tile
+  const nX = tileX1 - tileX0 + 1, nY = tileY1 - tileY0 + 1;
+  const fullW = nX * TILE, fullH = nY * TILE;
+  const canvas = document.createElement('canvas');
+  canvas.width = fullW; canvas.height = fullH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#aad3df'; ctx.fillRect(0, 0, fullW, fullH); // warna laut default
+
+  // Muat semua tile (paralel), gambar ke posisi grid.
+  // Pakai CartoDB (Voyager) — mengizinkan CORS untuk canvas (OSM sering taint).
+  const loadTile = (tx, ty) => new Promise((resolve) => {
+    const sub = ['a','b','c','d'][(tx+ty) % 4];
+    // Coba CartoDB dulu (CORS-friendly), fallback OSM kalau gagal
+    const tryLoad = (url, isRetry) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve({ img, tx, ty });
+      img.onerror = () => {
+        if (!isRetry) tryLoad(`https://${['a','b','c'][(tx+ty)%3]}.tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`, true);
+        else resolve(null);
+      };
+      img.src = url;
+    };
+    tryLoad(`https://${sub}.basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${tx}/${ty}.png`, false);
+  });
+  const promises = [];
+  for (let tx = tileX0; tx <= tileX1; tx++)
+    for (let ty = tileY0; ty <= tileY1; ty++)
+      promises.push(loadTile(tx, ty));
+  const tiles = await Promise.all(promises);
+  tiles.forEach(t => {
+    if (!t) return;
+    const px = (t.tx - tileX0) * TILE, py = (t.ty - tileY0) * TILE;
+    try { ctx.drawImage(t.img, px, py); } catch(e){}
+  });
+
+  // Proyeksi lat/lng → pixel canvas (relatif ke tile grid)
+  const toPx = (lat, lng) => {
+    const gx = lngToTileX(lng, zoom), gy = latToTileY(lat, zoom);
+    return [ (gx - tileX0) * TILE, (gy - tileY0) * TILE ];
+  };
+
+  // Titik tower biasa (warna tegangan)
+  pts.filter(p => !p.isHot).forEach(p => {
+    const [x,y] = toPx(p.lat, p.lng);
+    ctx.fillStyle = getTegColor(p.lvl); ctx.globalAlpha = 0.85;
+    ctx.beginPath(); ctx.arc(x, y, 2.5, 0, 2*Math.PI); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+  // Titik hotspot (glow merah/oranye)
+  pts.filter(p => p.isHot).forEach(p => {
+    const [x,y] = toPx(p.lat, p.lng);
+    const rad = Math.max(4, Math.min(12, 3 + p.days*0.4));
+    const col = p.days >= 30 ? '#e84040' : p.days >= 15 ? '#f5a623' : '#e8760f';
+    ctx.fillStyle = col; ctx.globalAlpha = 0.3;
+    ctx.beginPath(); ctx.arc(x, y, rad*2, 0, 2*Math.PI); ctx.fill();
+    ctx.globalAlpha = 0.95;
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, 2*Math.PI); ctx.fill();
+    ctx.globalAlpha = 1; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, rad, 0, 2*Math.PI); ctx.stroke();
+  });
+
+  // Crop ke area tower (buang tile berlebih di pinggir)
+  const cropX = Math.max(0, (x0 - tileX0) * TILE - 20);
+  const cropY = Math.max(0, (y0 - tileY0) * TILE - 20);
+  const cropW = Math.min(fullW - cropX, (x1 - x0) * TILE + 40);
+  const cropH = Math.min(fullH - cropY, (y1 - y0) * TILE + 40);
+  const out = document.createElement('canvas');
+  out.width = cropW; out.height = cropH;
+  const octx = out.getContext('2d');
+  octx.drawImage(canvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+  // Legenda
+  octx.font = '13px Arial';
+  const leg = [['70kV','#f5c518'],['150kV','#e84040'],['500kV','#3b7aff'],['Lainnya','#8892a0'],['🔥Hotspot','#e8760f']];
+  octx.fillStyle = 'rgba(255,255,255,0.9)'; octx.fillRect(6, cropH-30, 560, 24);
+  let lx = 14;
+  leg.forEach(([lbl,col]) => {
+    octx.fillStyle = col; octx.beginPath(); octx.arc(lx+5, cropH-18, 5, 0, 2*Math.PI); octx.fill();
+    octx.fillStyle = '#222'; octx.fillText(lbl, lx+14, cropH-14);
+    lx += octx.measureText(lbl).width + 42;
+  });
+
+  try {
+    return out.toDataURL('image/png', 0.9);
+  } catch(e) {
+    // Tile OSM bisa taint canvas (CORS) → fallback ke peta polos
+    console.warn('Canvas tainted (CORS tile), fallback polos:', e);
+    return _renderMapCanvasManual();
   }
 }
 
