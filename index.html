@@ -3492,13 +3492,54 @@ function exportHistPDF() {
   };
 
   if (mapVisible) {
-    // Beri jeda agar tile/heatmap ter-render penuh, lalu capture
-    html2canvas(mapEl, { useCORS: true, allowTaint: false, logging: false, scale: 1.5 })
-      .then(canvas => { buildAndOpen(canvas.toDataURL('image/png', 0.9)); })
-      .catch(() => { buildAndOpen(''); });
+    // Scroll peta ke atas viewport & refresh Leaflet dulu, agar html2canvas
+    // menangkap posisi yang benar (mencegah marker bergeser ke utara).
+    mapEl.scrollIntoView({ block: 'start', behavior: 'instant' });
+    window.scrollTo(0, mapEl.offsetTop - 10);
+    if (_hotspotMap) { try { _hotspotMap.invalidateSize(); } catch(e){} }
+    // Tunggu tile + reposisi selesai, baru capture
+    setTimeout(() => _captureMapForPDF(mapEl, buildAndOpen), 800);
   } else {
     buildAndOpen('');
   }
+}
+
+function _captureMapForPDF(mapEl, buildAndOpen) {
+    // Beri jeda agar tile/heatmap ter-render penuh, lalu capture.
+    // Fix "marker bergeser ke utara": html2canvas sering salah hitung posisi
+    // layer Leaflet (transform translate3d). Kita kunci geometri container
+    // & scroll agar capture sejajar dengan tile.
+    const rect = mapEl.getBoundingClientRect();
+    html2canvas(mapEl, {
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      scale: 1.5,
+      backgroundColor: '#0a0e14',
+      width: mapEl.offsetWidth,
+      height: mapEl.offsetHeight,
+      windowWidth: document.documentElement.scrollWidth,
+      windowHeight: document.documentElement.scrollHeight,
+      scrollX: 0,
+      scrollY: -window.scrollY,       // kompensasi posisi scroll halaman
+      x: 0,
+      y: 0,
+      onclone: (clonedDoc) => {
+        // Pastikan container hasil clone tidak punya offset scroll & terlihat penuh
+        const cm = clonedDoc.getElementById('hotspot-map');
+        if (cm) {
+          cm.style.position = 'relative';
+          cm.style.top = '0';
+          cm.style.left = '0';
+          // Leaflet pane pakai transform; biarkan apa adanya agar sinkron dgn tile.
+          // Paksa semua tile & pane visible.
+          const panes = cm.querySelectorAll('.leaflet-pane, .leaflet-tile, .leaflet-tile-container');
+          panes.forEach(p => { p.style.visibility = 'visible'; p.style.opacity = '1'; });
+        }
+      }
+    })
+      .then(canvas => { buildAndOpen(canvas.toDataURL('image/png', 0.9)); })
+      .catch((e) => { console.warn('html2canvas gagal:', e); buildAndOpen(''); });
 }
 
 function _finishHistPDF(d) {
