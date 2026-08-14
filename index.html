@@ -1081,8 +1081,23 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div id="density-summary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px"></div>
 
         <!-- Empty state -->
-        <div id="density-empty" style="padding:3rem;text-align:center;color:var(--text3);font-family:var(--mono);font-size:13px;background:var(--bg2);border-radius:var(--radius);margin-bottom:10px;display:none">
-          📊 Pilih penghantar di dropdown untuk melihat profil density
+        <div id="density-empty" style="padding:2.5rem 2rem;text-align:center;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--radius);margin-bottom:10px;display:none">
+          <div style="font-size:32px;margin-bottom:8px">📊⚡</div>
+          <div style="color:var(--text);font-family:var(--mono);font-size:14px;font-weight:600;margin-bottom:6px">Profil Density Petir per Tower</div>
+          <div style="color:var(--text2);font-size:12px;line-height:1.6;max-width:480px;margin:0 auto">
+            Grafik ini menampilkan sambaran petir, tahanan pentanahan, TLA, dan elevasi untuk setiap tower dalam satu penghantar.<br>
+            <b style="color:#f5a623">👆 Pilih penghantar</b> di dropdown atas untuk melihat profilnya.
+          </div>
+        </div>
+
+        <!-- Agregat: ranking penghantar terawan (default 'Semua Penghantar') -->
+        <div id="density-ranking" style="display:none;margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)">⚡ Peringkat Penghantar Paling Rawan Petir</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">klik penghantar untuk lihat profil per-tower</div>
+          </div>
+          <div class="cw" style="height:420px"><canvas id="c-density-ranking"></canvas></div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">Density = sambaran petir tertinggi (>15kA) yang tercatat pada penghantar (dari tahun mana pun 2021–2026).</div>
         </div>
 
         <!-- Grafik utama -->
@@ -1283,8 +1298,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         📏 <b style="color:var(--text)">Jarak jangkauan referensi:</b> hotspot terdeteksi dalam radius <b style="color:#3b7aff">2 km (2.000 m)</b> dari setiap tower dianggap mengancam.
       </div>
 
-      <details style="margin-bottom:.75rem;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.25);border-radius:var(--radius);font-size:11px">
-        <summary style="cursor:pointer;padding:.55rem .8rem;color:#f5a623;font-weight:600;font-family:var(--mono);list-style:none">⚠️ Penting: keterbatasan data hotspot satelit — klik untuk baca</summary>
+      <div style="margin-bottom:.75rem;background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.25);border-radius:var(--radius);font-size:11px">
+        <div style="padding:.55rem .8rem .2rem;color:#f5a623;font-weight:600;font-family:var(--mono)">⚠️ Penting: keterbatasan data hotspot satelit</div>
         <div style="padding:0 .8rem .7rem;color:var(--text2);line-height:1.65">
           Data hotspot berasal dari satelit NASA FIRMS dan <b style="color:var(--text)">bersifat indikatif, bukan kepastian kondisi lapangan</b>. Perhatikan:
           <ul style="margin:.5rem 0;padding-left:1.2rem">
@@ -1296,7 +1311,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </ul>
           <b style="color:var(--text)">Gunakan sebagai peringatan awal.</b> Untuk keputusan operasional, verifikasi dengan petugas lapangan (lihat fitur Laporan Lapangan di bawah), perhatikan nilai FRP & confidence, dan prioritaskan tower dengan riwayat berulang.
         </div>
-      </details>
+      </div>
 
       <!-- LAPORAN LAPANGAN -->
       <div class="sl sl-danger">Laporan Lapangan (Manual)</div>
@@ -4406,6 +4421,7 @@ const PETIR_WARNA = {
 const PETIR_ORDER = ['SANGAT TINGGI','TINGGI','SEDANG','RENDAH'];
 
 let PETIR_PHT_DATA = []; // agregat per penghantar
+let _densityAutoPicked = false; // penanda auto-pilih penghantar pertama (sekali)
 let PETIR_PAGES    = { pht:0, thn:0 };
 let PETIR_SORTED   = { pht:[], thn:[] };
 
@@ -5823,6 +5839,87 @@ function showCriticalTowers() {
   document.getElementById('modal-bay').style.display = 'flex';
 }
 
+// Ranking penghantar terawan petir (agregat, tampil saat 'Semua Penghantar')
+let densityRankingChart = null;
+function renderDensityRanking() {
+  if (!F_AHI) return;
+  const canvas = document.getElementById('c-density-ranking');
+  if (!canvas) return;
+
+  // Hitung density maksimum per penghantar (dari tahun mana pun)
+  const perPht = {};
+  F_AHI.forEach(r => {
+    const pht = r[A_PHT];
+    if (!pht) return;
+    const d = r[A_DENS_ALL] || {};
+    let maxD = 0;
+    DENS_YEARS.forEach(y => { const v = d[y]; if (typeof v === 'number' && v > maxD) maxD = v; });
+    if (!perPht[pht] || maxD > perPht[pht]) perPht[pht] = maxD;
+  });
+
+  // Urutkan, ambil top 15
+  const ranked = Object.entries(perPht)
+    .filter(([,v]) => v > 0)
+    .sort((a,b) => b[1] - a[1])
+    .slice(0, 15);
+
+  if (ranked.length === 0) {
+    if (densityRankingChart) { densityRankingChart.destroy(); densityRankingChart = null; }
+    return;
+  }
+
+  const labels = ranked.map(([p]) => p.length > 34 ? p.slice(0,32)+'…' : p);
+  const fullLabels = ranked.map(([p]) => p);
+  const vals = ranked.map(([,v]) => v);
+  // Warna berdasarkan kategori density
+  const colors = vals.map(v => v >= 15 ? '#e84040' : v >= 8 ? '#f5a623' : v >= 4 ? '#f5c518' : '#00d4aa');
+
+  if (densityRankingChart) densityRankingChart.destroy();
+  densityRankingChart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Density petir maks (>15kA)',
+        data: vals,
+        backgroundColor: colors,
+        borderRadius: 3,
+        barThickness: 'flex',
+        maxBarThickness: 22
+      }]
+    },
+    options: {
+      indexAxis: 'y', // horizontal bar (penghantar di sumbu Y)
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: (evt, elements) => {
+        if (elements && elements.length) {
+          const idx = elements[0].index;
+          const pht = fullLabels[idx];
+          const sel = document.getElementById('f-pht-density');
+          const selG = document.getElementById('f-pht-petir');
+          if (sel) { sel.value = pht; }
+          if (selG) { selG.value = pht; onPetirGlobalFilter(); }
+          else { renderDensityLine(); }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => fullLabels[items[0].dataIndex],
+            label: (item) => 'Density maks: ' + item.parsed.x + ' (klik untuk profil per-tower)'
+          }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8892a0', font: { size: 10 } }, title: { display: true, text: 'Density petir tertinggi (sambaran >15kA)', color: '#8892a0', font: { size: 10 } } },
+        y: { grid: { display: false }, ticks: { color: '#c9d3e0', font: { size: 10, family: 'monospace' } } }
+      }
+    }
+  });
+}
+
 function renderDensityLine() {
   if (!F_AHI) return;
 
@@ -5843,16 +5940,21 @@ function renderDensityLine() {
   const cwEl     = document.getElementById('cw-density-line');
   const actionEl = document.getElementById('density-action');
   const summaryEl2 = document.getElementById('density-summary');
+  const rankEl   = document.getElementById('density-ranking');
 
   if (!pht) {
-    if (emptyEl)  emptyEl.style.display = 'block';
+    // Default 'Semua Penghantar' → tampilkan ranking penghantar terawan (agregat)
+    if (emptyEl)  emptyEl.style.display = 'none';
     if (cwEl)     cwEl.style.display = 'none';
     if (actionEl) actionEl.style.display = 'none';
     if (summaryEl2) summaryEl2.innerHTML = '';
     const dStats = document.getElementById('density-stats');
     if (dStats) dStats.textContent = '';
+    if (rankEl) rankEl.style.display = 'block';
+    renderDensityRanking();
     return;
   }
+  if (rankEl)   rankEl.style.display = 'none';
   if (emptyEl)  emptyEl.style.display = 'none';
   if (cwEl)     cwEl.style.display = 'block';
   if (actionEl) actionEl.style.display = 'grid';
