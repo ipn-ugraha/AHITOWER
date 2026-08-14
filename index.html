@@ -665,6 +665,116 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
       </div>
 
+      <div class="accordion" id="acc-petir-profil">
+        <div class="accordion-header" onclick="toggleAcc('acc-petir-profil')">
+          <span><span class="accordion-title">Profil Density Petir per Tower</span><span class="accordion-meta">per penghantar</span></span>
+          <span style="display:flex;align-items:center;gap:10px">
+            <span id="acc-ind-profil" style="background:rgba(245,166,35,0.12);color:#f5a623;font-size:11px;font-weight:500;padding:3px 9px;border-radius:6px;font-family:var(--mono)">–</span>
+            <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
+        </div>
+        <div class="accordion-body" style="height:0px">
+          <div class="accordion-inner">
+
+      <div class="cc" id="cc-density-line">
+        <!-- Penghantar dari filter global -->
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
+          <button onclick="kembaliKeRanking()" id="btn-density-back" style="display:none;padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--accent);cursor:pointer;font-weight:600">← Kembali ke peringkat</button>
+          <select id="f-pht-density" onchange="renderDensityLine()" style="display:none"><option value="">—</option></select>
+          <span id="density-pht-label" style="font-size:12px;color:var(--text);font-family:var(--mono);font-weight:500">Pilih 1 penghantar di filter global</span>
+          <span id="density-stats" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
+          <button onclick="toggleDensityOptions()" id="btn-density-opts" style="padding:4px 10px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer;margin-left:auto">⚙ Opsi</button>
+        </div>
+
+        <!-- Panel opsi (collapsed by default) -->
+        <div id="density-options" style="display:none;margin-bottom:10px">
+          <div style="display:flex;flex-wrap:wrap;gap:10px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:var(--mono);margin-bottom:6px">
+            <span style="color:var(--text3)">Tahun:</span>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2021" checked onchange="renderDensityLine()" style="accent-color:#7f7f7f"> <span style="color:#7f7f7f">2021</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2022" checked onchange="renderDensityLine()" style="accent-color:#9c6ade"> <span style="color:#9c6ade">2022</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2023" checked onchange="renderDensityLine()" style="accent-color:#3b7aff"> <span style="color:#3b7aff">2023</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2024" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> <span style="color:#00d4aa">2024</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2025" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> <span style="color:#f5a623">2025</span></label>
+            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2026" checked onchange="renderDensityLine()" style="accent-color:#e84040"> <span style="color:#e84040;font-weight:600">2026</span></label>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:14px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:var(--mono);margin-bottom:6px">
+            <span style="color:var(--text3)">Layer:</span>
+            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-ohm" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> Tahanan ▐</label>
+            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-tla" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> TLA ▲</label>
+            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-elev" checked onchange="renderDensityLine()" style="accent-color:#8b6f4d"> Elevasi ⛰</label>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;padding:6px 10px;font-size:10px;color:var(--text2);font-family:var(--mono)">
+            <span>⚡ <span style="color:#e84040">SgtTinggi</span> <span style="color:#f5a623">Tinggi</span> <span style="color:#d4bf00">Sedang</span> <span style="color:#00d4aa">Rendah</span></span>
+            <span>▐ <span style="color:#00d4aa">≤5Ω</span> <span style="color:#f5a623">5-10Ω</span> <span style="color:#e84040">&gt;10Ω</span></span>
+            <span><span style="color:#00d4aa">▲</span> TLA · <span style="color:#8b6f4d">⛰</span> Elevasi</span>
+          </div>
+        </div>
+
+        <!-- 6 Mini card tahun -->
+        <div id="density-summary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px"></div>
+
+        <!-- Empty state -->
+        <div id="density-empty" style="padding:2.5rem 2rem;text-align:center;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--radius);margin-bottom:10px;display:none">
+          <div style="font-size:32px;margin-bottom:8px">📊⚡</div>
+          <div style="color:var(--text);font-family:var(--mono);font-size:14px;font-weight:600;margin-bottom:6px">Profil Density Petir per Tower</div>
+          <div style="color:var(--text2);font-size:12px;line-height:1.6;max-width:480px;margin:0 auto">
+            Grafik ini menampilkan sambaran petir, tahanan pentanahan, TLA, dan elevasi untuk setiap tower dalam satu penghantar.<br>
+            <b style="color:#f5a623">👆 Pilih penghantar</b> di dropdown atas untuk melihat profilnya.
+          </div>
+        </div>
+
+        <!-- Agregat: ranking penghantar terawan (default 'Semua Penghantar') -->
+        <div id="density-ranking" style="display:none;margin-bottom:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+            <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)">⚡ Peringkat Penghantar Paling Rawan Petir</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">klik penghantar untuk profil</span>
+              <select id="rank-per-page" onchange="densRankPage=0;renderDensityRanking()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:3px 6px;font-size:10px;font-family:var(--mono)">
+                <option value="15">15/hal</option>
+                <option value="25">25/hal</option>
+                <option value="50">50/hal</option>
+                <option value="9999">Semua</option>
+              </select>
+            </div>
+          </div>
+          <div class="cw" id="cw-density-ranking" style="height:420px"><canvas id="c-density-ranking"></canvas></div>
+          <div id="rank-pagination" style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:8px">
+            <button onclick="densRankPage=Math.max(0,densRankPage-1);renderDensityRanking()" id="rank-prev" style="padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer">← Sebelumnya</button>
+            <span id="rank-page-info" style="font-size:11px;color:var(--text2);font-family:var(--mono)"></span>
+            <button onclick="densRankPage=densRankPage+1;renderDensityRanking()" id="rank-next" style="padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer">Berikutnya →</button>
+          </div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px;line-height:1.6">
+            Density = sambaran petir tertinggi (>15kA) yang tercatat pada penghantar (dari tahun mana pun 2021–2026).<br>
+            <span style="color:var(--text2)">ℹ️ Peringkat ini hanya berdasarkan <b>density petir</b>. Untuk <b>prioritas pemasangan TLA</b> yang mempertimbangkan banyak faktor (density + tahanan pentanahan + tinggi + elevasi + tren, khusus tower belum ber-TLA), lihat panel <b>"Daftar tower prioritas TLA"</b> di bawah.</span>
+          </div>
+        </div>
+
+        <!-- Grafik utama -->
+        <div class="cw" id="cw-density-line" style="height:340px;display:none"><canvas id="c-density-line"></canvas></div>
+
+        <!-- 3 Action card di bawah -->
+        <div id="density-action" style="display:none;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
+          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius);border-left:3px solid #e84040">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚡ TOWER KRITIS</div>
+            <div style="font-size:14px;font-weight:500" id="da-kritis">–</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-kritis-sub">density ≥ 6</div>
+          </div>
+          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius);border-left:3px solid #00d4aa">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🛡 SUDAH ADA TLA</div>
+            <div style="font-size:14px;font-weight:500" id="da-tla">–</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-tla-pct">–</div>
+          </div>
+          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius);border-left:3px solid #f5a623;cursor:pointer" onclick="showCriticalTowers()">
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚠ PRIORITAS TLA</div>
+            <div style="font-size:14px;font-weight:500" id="da-prio">–</div>
+            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-prio-sub">lolos threshold · belum TLA · klik</div>
+          </div>
+        </div>
+      </div>
+
+          </div>
+        </div>
+      </div>
       <div class="accordion" id="acc-petir-prioritas">
         <div class="accordion-header" onclick="toggleAcc('acc-petir-prioritas')">
           <span><span class="accordion-title">Prioritas Pemasangan TLA</span><span class="accordion-meta">threshold multi-faktor</span></span>
@@ -1027,103 +1137,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
         <div style="padding:.6rem 1rem;background:rgba(156,106,222,0.08);border-top:1px solid var(--border);font-size:10px;color:var(--text2);font-family:var(--mono);line-height:1.6">
           <b style="color:#9c6ade">Formula:</b> <code style="background:var(--bg2);padding:1px 5px;border-radius:3px">score = Σ(faktorNorm × bobot) / Σbobot × 100</code> · faktor: density, tahanan, tinggi, span, elevasi, tren · normalisasi min-max per faktor, hanya faktor aktif dihitung.
-        </div>
-      </div>
-
-          </div>
-        </div>
-      </div>
-      <div class="accordion" id="acc-petir-profil">
-        <div class="accordion-header" onclick="toggleAcc('acc-petir-profil')">
-          <span><span class="accordion-title">Profil Density Petir per Tower</span><span class="accordion-meta">per penghantar</span></span>
-          <span style="display:flex;align-items:center;gap:10px">
-            <span id="acc-ind-profil" style="background:rgba(245,166,35,0.12);color:#f5a623;font-size:11px;font-weight:500;padding:3px 9px;border-radius:6px;font-family:var(--mono)">–</span>
-            <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </span>
-        </div>
-        <div class="accordion-body" style="height:0px">
-          <div class="accordion-inner">
-
-      <div class="cc" id="cc-density-line">
-        <!-- Penghantar dari filter global -->
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border)">
-          <button onclick="kembaliKeRanking()" id="btn-density-back" style="display:none;padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--accent);cursor:pointer;font-weight:600">← Kembali ke peringkat</button>
-          <select id="f-pht-density" onchange="renderDensityLine()" style="display:none"><option value="">—</option></select>
-          <span id="density-pht-label" style="font-size:12px;color:var(--text);font-family:var(--mono);font-weight:500">Pilih 1 penghantar di filter global</span>
-          <span id="density-stats" style="font-size:11px;color:var(--text3);font-family:var(--mono)"></span>
-          <button onclick="toggleDensityOptions()" id="btn-density-opts" style="padding:4px 10px;font-size:11px;font-family:var(--mono);background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);cursor:pointer;margin-left:auto">⚙ Opsi</button>
-        </div>
-
-        <!-- Panel opsi (collapsed by default) -->
-        <div id="density-options" style="display:none;margin-bottom:10px">
-          <div style="display:flex;flex-wrap:wrap;gap:10px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:var(--mono);margin-bottom:6px">
-            <span style="color:var(--text3)">Tahun:</span>
-            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2021" checked onchange="renderDensityLine()" style="accent-color:#7f7f7f"> <span style="color:#7f7f7f">2021</span></label>
-            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2022" checked onchange="renderDensityLine()" style="accent-color:#9c6ade"> <span style="color:#9c6ade">2022</span></label>
-            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2023" checked onchange="renderDensityLine()" style="accent-color:#3b7aff"> <span style="color:#3b7aff">2023</span></label>
-            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2024" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> <span style="color:#00d4aa">2024</span></label>
-            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2025" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> <span style="color:#f5a623">2025</span></label>
-            <label style="cursor:pointer;display:flex;align-items:center;gap:4px"><input type="checkbox" id="dl-y2026" checked onchange="renderDensityLine()" style="accent-color:#e84040"> <span style="color:#e84040;font-weight:600">2026</span></label>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:14px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:11px;font-family:var(--mono);margin-bottom:6px">
-            <span style="color:var(--text3)">Layer:</span>
-            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-ohm" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> Tahanan ▐</label>
-            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-tla" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> TLA ▲</label>
-            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-elev" checked onchange="renderDensityLine()" style="accent-color:#8b6f4d"> Elevasi ⛰</label>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:12px;padding:6px 10px;font-size:10px;color:var(--text2);font-family:var(--mono)">
-            <span>⚡ <span style="color:#e84040">SgtTinggi</span> <span style="color:#f5a623">Tinggi</span> <span style="color:#d4bf00">Sedang</span> <span style="color:#00d4aa">Rendah</span></span>
-            <span>▐ <span style="color:#00d4aa">≤5Ω</span> <span style="color:#f5a623">5-10Ω</span> <span style="color:#e84040">&gt;10Ω</span></span>
-            <span><span style="color:#00d4aa">▲</span> TLA · <span style="color:#8b6f4d">⛰</span> Elevasi</span>
-          </div>
-        </div>
-
-        <!-- 6 Mini card tahun -->
-        <div id="density-summary" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px"></div>
-
-        <!-- Empty state -->
-        <div id="density-empty" style="padding:2.5rem 2rem;text-align:center;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--radius);margin-bottom:10px;display:none">
-          <div style="font-size:32px;margin-bottom:8px">📊⚡</div>
-          <div style="color:var(--text);font-family:var(--mono);font-size:14px;font-weight:600;margin-bottom:6px">Profil Density Petir per Tower</div>
-          <div style="color:var(--text2);font-size:12px;line-height:1.6;max-width:480px;margin:0 auto">
-            Grafik ini menampilkan sambaran petir, tahanan pentanahan, TLA, dan elevasi untuk setiap tower dalam satu penghantar.<br>
-            <b style="color:#f5a623">👆 Pilih penghantar</b> di dropdown atas untuk melihat profilnya.
-          </div>
-        </div>
-
-        <!-- Agregat: ranking penghantar terawan (default 'Semua Penghantar') -->
-        <div id="density-ranking" style="display:none;margin-bottom:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-            <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)">⚡ Peringkat Penghantar Paling Rawan Petir</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)">klik penghantar untuk lihat profil per-tower</div>
-          </div>
-          <div class="cw" style="height:420px"><canvas id="c-density-ranking"></canvas></div>
-          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px;line-height:1.6">
-            Density = sambaran petir tertinggi (>15kA) yang tercatat pada penghantar (dari tahun mana pun 2021–2026).<br>
-            <span style="color:var(--text2)">ℹ️ Peringkat ini hanya berdasarkan <b>density petir</b>. Untuk <b>prioritas pemasangan TLA</b> yang mempertimbangkan banyak faktor (density + tahanan pentanahan + tinggi + elevasi + tren, khusus tower belum ber-TLA), lihat panel <b>"Daftar tower prioritas TLA"</b> di bawah.</span>
-          </div>
-        </div>
-
-        <!-- Grafik utama -->
-        <div class="cw" id="cw-density-line" style="height:340px;display:none"><canvas id="c-density-line"></canvas></div>
-
-        <!-- 3 Action card di bawah -->
-        <div id="density-action" style="display:none;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
-          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius);border-left:3px solid #e84040">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚡ TOWER KRITIS</div>
-            <div style="font-size:14px;font-weight:500" id="da-kritis">–</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-kritis-sub">density ≥ 6</div>
-          </div>
-          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius);border-left:3px solid #00d4aa">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">🛡 SUDAH ADA TLA</div>
-            <div style="font-size:14px;font-weight:500" id="da-tla">–</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-tla-pct">–</div>
-          </div>
-          <div style="padding:8px 12px;background:var(--bg2);border-radius:var(--radius);border-left:3px solid #f5a623;cursor:pointer" onclick="showCriticalTowers()">
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:2px">⚠ PRIORITAS TLA</div>
-            <div style="font-size:14px;font-weight:500" id="da-prio">–</div>
-            <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="da-prio-sub">lolos threshold · belum TLA · klik</div>
-          </div>
         </div>
       </div>
 
@@ -5854,6 +5867,7 @@ function kembaliKeRanking() {
 
 // Ranking penghantar terawan petir (agregat, tampil saat 'Semua Penghantar')
 let densityRankingChart = null;
+let densRankPage = 0; // halaman aktif pagination ranking
 function renderDensityRanking() {
   if (!F_AHI) return;
   const canvas = document.getElementById('c-density-ranking');
@@ -5870,16 +5884,42 @@ function renderDensityRanking() {
     if (!perPht[pht] || maxD > perPht[pht]) perPht[pht] = maxD;
   });
 
-  // Urutkan, ambil top 15
-  const ranked = Object.entries(perPht)
+  // Urutkan semua (rank penuh)
+  const rankedAll = Object.entries(perPht)
     .filter(([,v]) => v > 0)
-    .sort((a,b) => b[1] - a[1])
-    .slice(0, 15);
+    .sort((a,b) => b[1] - a[1]);
 
-  if (ranked.length === 0) {
+  if (rankedAll.length === 0) {
     if (densityRankingChart) { densityRankingChart.destroy(); densityRankingChart = null; }
+    const info = document.getElementById('rank-page-info');
+    if (info) info.textContent = 'Tidak ada data';
     return;
   }
+
+  // Pagination
+  const perPage = parseInt(document.getElementById('rank-per-page')?.value || '15');
+  const totalPages = Math.max(1, Math.ceil(rankedAll.length / perPage));
+  if (densRankPage >= totalPages) densRankPage = totalPages - 1;
+  if (densRankPage < 0) densRankPage = 0;
+  const startIdx = densRankPage * perPage;
+  const ranked = rankedAll.slice(startIdx, startIdx + perPage);
+
+  // Update info & tombol halaman
+  const pageInfo = document.getElementById('rank-page-info');
+  if (pageInfo) {
+    const from = startIdx + 1, to = startIdx + ranked.length;
+    pageInfo.textContent = 'Peringkat ' + from + '–' + to + ' dari ' + rankedAll.length + ' penghantar' + (totalPages > 1 ? ' · hal ' + (densRankPage+1) + '/' + totalPages : '');
+  }
+  const prevBtn = document.getElementById('rank-prev');
+  const nextBtn = document.getElementById('rank-next');
+  const pagWrap = document.getElementById('rank-pagination');
+  if (pagWrap) pagWrap.style.display = totalPages > 1 ? 'flex' : 'none';
+  if (prevBtn) { prevBtn.disabled = densRankPage <= 0; prevBtn.style.opacity = densRankPage <= 0 ? '0.4' : '1'; prevBtn.style.cursor = densRankPage <= 0 ? 'default' : 'pointer'; }
+  if (nextBtn) { nextBtn.disabled = densRankPage >= totalPages-1; nextBtn.style.opacity = densRankPage >= totalPages-1 ? '0.4' : '1'; nextBtn.style.cursor = densRankPage >= totalPages-1 ? 'default' : 'pointer'; }
+
+  // Tinggi canvas dinamis: ~26px per bar (min 200, biar bar tidak gepeng)
+  const cwWrap = document.getElementById('cw-density-ranking');
+  if (cwWrap) cwWrap.style.height = Math.max(200, ranked.length * 26 + 40) + 'px';
 
   const labels = ranked.map(([p]) => p.length > 34 ? p.slice(0,32)+'…' : p);
   const fullLabels = ranked.map(([p]) => p);
