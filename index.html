@@ -5638,7 +5638,7 @@ function showTLADetail(idx) {
     + '<div style="padding:10px 12px;background:rgba(59,122,255,0.08);border:1px solid rgba(59,122,255,0.2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">' + alasanMasuk + '</div>'
     + '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Rincian Faktor Kriteria</div>'
     + faktorHtml
-    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:10px;line-height:1.5">💡 Skor dihitung dari faktor yang memenuhi, dibobot sesuai persentase. Faktor ✓ hijau = nilai tower melewati ambang batas.</div>'
+    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:10px;line-height:1.5">💡 ' + (orMode ? 'Mode ATAU: skor = faktor tertinggi + bonus 0.7 dari faktor lain (tower banyak faktor tinggi diprioritaskan, tower ekstrem 1 faktor tetap terhitung).' : 'Mode DAN: skor = jumlah faktor tertimbang sesuai bobot.') + ' Faktor ✓ hijau = nilai tower melewati ambang batas.</div>'
     + '</div>'
     + '</div></div>';
 
@@ -5852,7 +5852,7 @@ function exportTLAPrioPDF() {
     + '<div class="t">⚙ Kriteria Terpilih</div>'
     + '<div class="crit-grid">'
     + '<div><b>Logika threshold:</b> ' + esc(logikaStr) + '</div>'
-    + '<div><b>Metode:</b> Pembobotan (weighted scoring)</div>'
+    + '<div><b>Metode:</b> ' + (orMode ? 'Hybrid MAX + bonus 0.7 (mode ATAU)' : 'Pembobotan (weighted, mode DAN)') + '</div>'
     + '<div><b>Urutan tabel:</b> ' + esc(sortLabel) + '</div>'
     + '<div><b>Filter:</b> ' + filterAktif.join(' · ') + '</div>'
     + '</div>'
@@ -6026,6 +6026,9 @@ function renderTLAPriority() {
   const pMin = p100Vals.length ? Math.min(...p100Vals) : 0;
   const pMax = p100Vals.length ? Math.max(...p100Vals, 200) : 200;
 
+  // Mode logika: OR pakai scoring hybrid (MAX+bonus), AND pakai pembobotan murni
+  const orModeGlobal = document.getElementById('th-logic-or')?.checked || false;
+
   const scored = candidates.map(r => {
     const d = maxDensityAll(r), o = r[A_OHM], e = r[A_ELEV];
     const tInfo = r[A_TOWER_INFO];
@@ -6040,7 +6043,27 @@ function renderTLAPriority() {
     const tN = Math.max(0, Math.min(1, (trend + 3) / 6));
     const p100 = maxPetir100(r);
     const pN = (p100 !== null && p100 > 0) ? norm(p100, pMin, pMax) : 0;
-    const score = ((dN * wD) + (oN * wO) + (hN * wH) + (spN * wSp) + (eN * wE) + (tN * wT) + (pN * wP100)) / wSum * 100;
+
+    // Kontribusi tiap faktor (ternormalisasi × bobot)
+    const kontrib = [dN*wD, oN*wO, hN*wH, spN*wSp, eN*wE, tN*wT, pN*wP100];
+    const sumKontrib = kontrib.reduce((a,b)=>a+b, 0);
+
+    let score;
+    if (orModeGlobal) {
+      // HYBRID (mode OR): faktor tertinggi + bonus 0.7 dari faktor lain.
+      // Tower ekstrem 1 faktor tidak tenggelam; tower banyak faktor tinggi tetap teratas.
+      const maxKontrib = Math.max(...kontrib, 0);
+      const sumLain = sumKontrib - maxKontrib;
+      const BONUS = 0.7;
+      const rawHybrid = maxKontrib + (sumLain * BONUS);
+      // Normalisasi: skor maksimum teoretis = wMax + (wSum - wMax) × BONUS
+      const wMax = Math.max(wD, wO, wH, wSp, wE, wT, wP100, 0.0001);
+      const maxTheoretical = wMax + (wSum - wMax) * BONUS;
+      score = maxTheoretical > 0 ? (rawHybrid / maxTheoretical) * 100 : 0;
+    } else {
+      // PEMBOBOTAN murni (mode AND): jumlah tertimbang / total bobot
+      score = sumKontrib / wSum * 100;
+    }
     return { row:r, score, density:d, ohm:o, tinggi:h, tinggiParsed:tInfo?.tinggiParsed, tipe:tInfo?.tipe, span:sp, elev:e, trend, petir100:p100, petir100Year:petir100YearOf(r) };
   })
   .filter(s => {
