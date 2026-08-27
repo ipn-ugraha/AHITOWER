@@ -5516,8 +5516,14 @@ function showTLADetail(idx) {
   const gw = (k) => +document.getElementById('th-'+k+'-weight')?.value || 0;
 
   // Evaluasi tiap faktor: aktif? nilai? threshold? lolos?
+  // Rincian density per tahun (untuk faktor density)
+  const dAll = r[A_DENS_ALL] || {};
+  const densByYear = DENS_YEARS.map(y => ({ year:y, val: (typeof dAll[y]==='number'?dAll[y]:null) }));
+  const maxYearVal = Math.max(...densByYear.map(d => d.val||0), 0.001);
+  const maxYear = densByYear.reduce((best,d) => (d.val!=null && (best===null||d.val>best.val))?d:best, null);
+
   const faktorDetail = [];
-  if (wOn.d) faktorDetail.push({ nama:'Density petir (maks 2021–2026)', nilai:s.density, unit:'', th:thD, lolos:(s.density!=null&&s.density>=thD), bobot:gw('density'), warna:'#e84040' });
+  if (wOn.d) faktorDetail.push({ nama:'Density petir (maks 2021–2026)', nilai:s.density, unit:'', th:thD, lolos:(s.density!=null&&s.density>=thD), bobot:gw('density'), warna:'#e84040', densByYear:densByYear, maxYear:maxYear, maxYearVal:maxYearVal });
   if (wOn.o) faktorDetail.push({ nama:'Tahanan pentanahan', nilai:s.ohm, unit:'Ω', th:thO, lolos:(s.ohm!=null&&s.ohm>=thO), bobot:gw('ohm'), warna:'#f5a623' });
   if (wOn.h) faktorDetail.push({ nama:'Tinggi tower', nilai:s.tinggi, unit:'m', th:thH, lolos:(s.tinggi!=null&&s.tinggi>=thH), bobot:gw('tinggi'), warna:'#3b7aff', ket:'ambang '+teg+'kV' });
   if (wOn.sp) faktorDetail.push({ nama:'Span (gawang)', nilai:s.span, unit:'m', th:thSp, lolos:(s.span!=null&&s.span>=thSp), bobot:gw('span'), warna:'#16A085', ket:'ambang '+teg+'kV' });
@@ -5532,11 +5538,32 @@ function showTLADetail(idx) {
     const badge = f.lolos
       ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">✓ Memenuhi</span>'
       : '<span style="background:rgba(136,146,160,0.12);color:var(--text3);padding:2px 8px;border-radius:4px;font-size:11px">— Tidak</span>';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:' + (f.lolos?'rgba(0,212,170,0.05)':'var(--bg2)') + ';border:1px solid ' + (f.lolos?'rgba(0,212,170,0.2)':'var(--border)') + ';border-radius:6px;margin-bottom:6px">'
+    // Rincian per tahun (khusus density)
+    let yearHtml = '';
+    if (f.densByYear) {
+      const bars = f.densByYear.map(d => {
+        const isMax = f.maxYear && d.year === f.maxYear.year;
+        const h = d.val!=null ? Math.max(3, (d.val / f.maxYearVal) * 40) : 2;
+        const barCol = d.val==null ? 'var(--border2)' : isMax ? '#e84040' : (d.val>=f.th ? '#f5a623' : '#5a6272');
+        return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1">'
+          + '<div style="font-size:9px;font-family:var(--mono);color:' + (isMax?'#e84040':'var(--text3)') + ';font-weight:' + (isMax?'700':'400') + '">' + (d.val!=null?d.val.toFixed(1):'–') + '</div>'
+          + '<div style="width:100%;max-width:26px;height:' + h + 'px;background:' + barCol + ';border-radius:2px 2px 0 0"></div>'
+          + '<div style="font-size:8px;font-family:var(--mono);color:var(--text3)">' + d.year.slice(2) + '</div>'
+          + '</div>';
+      }).join('');
+      yearHtml = '<div style="margin-top:8px;padding:8px;background:var(--bg);border:1px solid var(--border);border-radius:5px">'
+        + '<div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-bottom:6px">Rincian per tahun' + (f.maxYear?' · tertinggi: <b style="color:#e84040">'+f.maxYear.year+' ('+f.maxYear.val.toFixed(1)+')</b>':'') + '</div>'
+        + '<div style="display:flex;align-items:flex-end;gap:4px;height:60px">' + bars + '</div>'
+        + '</div>';
+    }
+    return '<div style="padding:8px 10px;background:' + (f.lolos?'rgba(0,212,170,0.05)':'var(--bg2)') + ';border:1px solid ' + (f.lolos?'rgba(0,212,170,0.2)':'var(--border)') + ';border-radius:6px;margin-bottom:6px">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">'
       + '<div style="flex:1">'
       + '<div style="font-size:12px;font-weight:600;color:var(--text)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + f.warna + ';margin-right:6px"></span>' + f.nama + '</div>'
       + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Nilai: <b style="color:' + (f.lolos?'#00d4aa':'var(--text2)') + '">' + fmt1(f.nilai) + f.unit + '</b> · Threshold: ≥' + f.th + f.unit + (f.ket?' ('+f.ket+')':'') + ' · Bobot: ' + f.bobot + '%</div>'
-      + '</div>' + badge + '</div>';
+      + '</div>' + badge + '</div>'
+      + yearHtml
+      + '</div>';
   }).join('');
 
   // Kesimpulan
