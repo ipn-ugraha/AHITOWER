@@ -1085,6 +1085,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="tla-prio-info">diurutkan berdasarkan score</div>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
+              <select id="tla-pdf-sort" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);padding:4px 8px;font-size:10px;font-family:var(--mono)" title="Urutan tabel di PDF">
+                <option value="score">Urut PDF: Score</option>
+                <option value="upt">Urut PDF: UPT</option>
+                <option value="pht">Urut PDF: Penghantar</option>
+              </select>
               <button onclick="exportTLAPrioPDF()" style="padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--accent);border:none;border-radius:6px;color:#0d0f14;cursor:pointer;font-weight:600">📄 Export PDF</button>
               <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="tla-prio-count">–</div>
             </div>
@@ -5489,8 +5494,20 @@ let _lastTLAScored = [];
 
 // Export PDF daftar prioritas TLA + info kriteria terpilih
 function exportTLAPrioPDF() {
-  const data = _lastTLAScored || [];
-  if (!data.length) { alert('Tidak ada data prioritas TLA untuk diekspor. Pastikan ada tower yang lolos kriteria.'); return; }
+  const dataRaw = _lastTLAScored || [];
+  if (!dataRaw.length) { alert('Tidak ada data prioritas TLA untuk diekspor. Pastikan ada tower yang lolos kriteria.'); return; }
+
+  // Sort sesuai pilihan dropdown (default score desc)
+  const sortBy = document.getElementById('tla-pdf-sort')?.value || 'score';
+  const data = [...dataRaw];
+  if (sortBy === 'upt') {
+    data.sort((a,b) => String(a.row[A_UPT]||'').localeCompare(String(b.row[A_UPT]||'')) || b.score - a.score);
+  } else if (sortBy === 'pht') {
+    data.sort((a,b) => String(a.row[A_PHT]||'').localeCompare(String(b.row[A_PHT]||'')) || b.score - a.score);
+  } else {
+    data.sort((a,b) => b.score - a.score); // score desc
+  }
+  const sortLabel = { score:'Score (kritis dulu)', upt:'UPT', pht:'Penghantar' }[sortBy] || 'Score';
 
   // ── Kumpulkan kriteria terpilih ──
   const orMode = document.getElementById('th-logic-or')?.checked || false;
@@ -5655,6 +5672,7 @@ function exportTLAPrioPDF() {
     + '<div class="crit-grid">'
     + '<div><b>Logika threshold:</b> ' + esc(logikaStr) + '</div>'
     + '<div><b>Metode:</b> Pembobotan (weighted scoring)</div>'
+    + '<div><b>Urutan tabel:</b> ' + esc(sortLabel) + '</div>'
     + '<div><b>Filter:</b> ' + filterAktif.join(' · ') + '</div>'
     + '</div>'
     + '<table class="mini-table"><thead><tr><th>Faktor Aktif</th><th>Threshold</th><th>Bobot</th></tr></thead><tbody>'
