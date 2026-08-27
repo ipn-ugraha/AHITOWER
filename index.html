@@ -839,7 +839,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               </div>
               <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
                 <span style="color:var(--text3)">min ≥</span>
-                <input type="number" id="th-density-val" value="6" min="0" max="50" step="0.5" oninput="onThresholdChange()"
+                <input type="number" id="th-density-val" value="12" min="0" max="50" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
                 <input type="range" id="th-density-weight" min="0" max="100" value="80" oninput="onThresholdChange();updateThWeightLabel('density')"
@@ -859,13 +859,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #f5a623;opacity:.45" id="th-row-ohm">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
               <div style="display:flex;align-items:center;gap:8px">
-                <input type="checkbox" id="th-ohm-on" onchange="onThresholdChange()" style="accent-color:#f5a623;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-ohm-on" checked onchange="onThresholdChange()" style="accent-color:#f5a623;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500">▐ Tahanan Pentanahan</span>
                 <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">Ω</span>
               </div>
               <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
                 <span style="color:var(--text3)">min ≥</span>
-                <input type="number" id="th-ohm-val" value="5" min="0" max="100" step="0.5" oninput="onThresholdChange()"
+                <input type="number" id="th-ohm-val" value="10" min="0" max="100" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
                 <input type="range" id="th-ohm-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('ohm')"
@@ -1042,11 +1042,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);font-size:11px;font-family:var(--mono);flex-wrap:wrap">
             <span style="color:var(--text2)">Logika threshold:</span>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text)">
-              <input type="radio" name="th-logic" id="th-logic-and" value="and" checked onchange="onThresholdChange()" style="accent-color:var(--accent);cursor:pointer">
+              <input type="radio" name="th-logic" id="th-logic-and" value="and" onchange="onThresholdChange()" style="accent-color:var(--accent);cursor:pointer">
               <b>DAN</b> (lolos semua faktor)
             </label>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text)">
-              <input type="radio" name="th-logic" id="th-logic-or" value="or" onchange="onThresholdChange()" style="accent-color:var(--accent);cursor:pointer">
+              <input type="radio" name="th-logic" id="th-logic-or" value="or" checked onchange="onThresholdChange()" style="accent-color:var(--accent);cursor:pointer">
               <b>ATAU</b> (lolos salah satu)
             </label>
             <span style="color:var(--text3);font-size:10px;flex-basis:100%;line-height:1.5">DAN = tower harus memenuhi semua ambang aktif. ATAU = cukup memenuhi salah satu (menangkap tower yang ekstrem di satu aspek, mis. tahanan sangat tinggi walau density rendah).</span>
@@ -1084,7 +1084,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <div style="font-size:12px;font-weight:500">Daftar tower prioritas TLA</div>
               <div style="font-size:10px;color:var(--text3);font-family:var(--mono)" id="tla-prio-info">diurutkan berdasarkan score</div>
             </div>
-            <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="tla-prio-count">–</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <button onclick="exportTLAPrioPDF()" style="padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--accent);border:none;border-radius:6px;color:#0d0f14;cursor:pointer;font-weight:600">📄 Export PDF</button>
+              <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="tla-prio-count">–</div>
+            </div>
           </div>
           <!-- 5 Metric card sejajar -->
           <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
@@ -5374,12 +5377,12 @@ function updateThWeightLabel(k) {
 
 function resetThresholds() {
   // Default: density ≥15, tahanan ≥5 (ON); elev ≥100, trend ≥0 (OFF)
-  const andRadio = document.getElementById('th-logic-and');
-  if (andRadio) andRadio.checked = true; // default logika AND
+  const orRadio = document.getElementById('th-logic-or');
+  if (orRadio) orRadio.checked = true; // default logika OR
   document.getElementById('th-density-on').checked = true;
-  document.getElementById('th-density-val').value = 6;
-  document.getElementById('th-ohm-on').checked = false;  // OFF
-  document.getElementById('th-ohm-val').value = 5;
+  document.getElementById('th-density-val').value = 12;
+  document.getElementById('th-ohm-on').checked = true;  // ON
+  document.getElementById('th-ohm-val').value = 10;
   document.getElementById('th-tinggi-on').checked = true;  // ON
   // Reset 4 threshold tinggi per tegangan
   const tinggiDefaults = { '70':20, '150':30, '275':38, '500':55 };
@@ -5480,6 +5483,135 @@ function tinggiThresholdByVoltage(kV) {
   if (teg >= 150) return get('th-tinggi-150', 30);
   if (teg >= 70)  return get('th-tinggi-70', 20);
   return get('th-tinggi-70', 18);
+}
+
+let _lastTLAScored = [];
+
+// Export PDF daftar prioritas TLA + info kriteria terpilih
+function exportTLAPrioPDF() {
+  const data = _lastTLAScored || [];
+  if (!data.length) { alert('Tidak ada data prioritas TLA untuk diekspor. Pastikan ada tower yang lolos kriteria.'); return; }
+
+  // ── Kumpulkan kriteria terpilih ──
+  const orMode = document.getElementById('th-logic-or')?.checked || false;
+  const logikaStr = orMode ? 'ATAU (lolos salah satu faktor)' : 'DAN (lolos semua faktor)';
+
+  const faktor = [];
+  const wD = document.getElementById('th-density-on')?.checked;
+  const wO = document.getElementById('th-ohm-on')?.checked;
+  const wH = document.getElementById('th-tinggi-on')?.checked;
+  const wSp = document.getElementById('th-span-on')?.checked;
+  const wE = document.getElementById('th-elev-on')?.checked;
+  const wT = document.getElementById('th-trend-on')?.checked;
+  const gw = (k) => document.getElementById('th-'+k+'-weight')?.value || '0';
+  if (wD) faktor.push({ nama:'Density petir', threshold:'≥ ' + (document.getElementById('th-density-val')?.value||'–'), bobot:gw('density') });
+  if (wO) faktor.push({ nama:'Tahanan pentanahan', threshold:'≥ ' + (document.getElementById('th-ohm-val')?.value||'–') + ' Ω', bobot:gw('ohm') });
+  if (wH) faktor.push({ nama:'Tinggi tower', threshold:'≥ ambang per tegangan', bobot:gw('tinggi') });
+  if (wSp) faktor.push({ nama:'Span (gawang)', threshold:'≥ ambang per tegangan', bobot:gw('span') });
+  if (wE) faktor.push({ nama:'Elevasi', threshold:'≥ ' + (document.getElementById('th-elev-val')?.value||'–') + ' mdpl', bobot:gw('elev') });
+  if (wT) faktor.push({ nama:'Tren density', threshold:'≥ ' + (document.getElementById('th-trend-val')?.value||'–'), bobot:gw('trend') });
+
+  // Filter global aktif
+  const fUPT = document.getElementById('f-petir-upt')?.value || document.getElementById('f-upt')?.value || '';
+  const fPht = document.getElementById('f-pht-petir')?.value || '';
+  const fTeg = document.getElementById('f-petir-teg')?.value || '';
+  const includeInstalled = document.getElementById('f-tla-prio-include-installed')?.checked;
+
+  // ── Ringkasan severity ──
+  const kritis = data.filter(s => s.status.key==='kritis').length;
+  const tinggi = data.filter(s => s.status.key==='tinggi').length;
+  const sedang = data.filter(s => s.status.key==='sedang').length;
+  const rendah = data.filter(s => s.status.key==='rendah').length;
+  const terpasang = data.filter(s => s.hasTLA).length;
+
+  const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const now = new Date().toLocaleString('id-ID', { dateStyle:'full', timeStyle:'short' });
+
+  // ── Baris tabel ──
+  const rows = data.map((s, i) => {
+    const r = s.row;
+    const bay = r[A_BAY] || '–';
+    const upt = r[A_UPT] || '–';
+    const pht = r[A_PHT] || '–';
+    const tegV = r[A_TOWER_INFO]?.teg || '–';
+    return '<tr>'
+      + '<td>' + (i+1) + '</td>'
+      + '<td style="text-align:left">' + esc(bay) + '</td>'
+      + '<td style="text-align:left">' + esc(pht) + '</td>'
+      + '<td>' + esc(tegV) + '</td>'
+      + '<td>' + (s.density!=null?Number(s.density).toFixed(1):'–') + '</td>'
+      + '<td>' + (s.ohm!=null?Number(s.ohm).toFixed(1):'–') + '</td>'
+      + '<td>' + (s.tinggi!=null?s.tinggi:'–') + '</td>'
+      + '<td>' + (s.elev!=null?s.elev:'–') + '</td>'
+      + '<td><b>' + Math.round(s.score) + '</b></td>'
+      + '<td>' + s.status.label + '</td>'
+      + '<td>' + (s.hasTLA?'✅':'—') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  const faktorRows = faktor.map(f =>
+    '<tr><td style="text-align:left">' + esc(f.nama) + '</td><td>' + esc(f.threshold) + '</td><td>' + esc(f.bobot) + '%</td></tr>'
+  ).join('');
+
+  const filterAktif = [];
+  if (fUPT) filterAktif.push('UPT: ' + esc(fUPT));
+  if (fPht) filterAktif.push('Penghantar: ' + esc(fPht));
+  if (fTeg) filterAktif.push('Tegangan: ' + esc(fTeg) + ' kV');
+  filterAktif.push('Sudah TLA: ' + (includeInstalled ? 'termasuk' : 'dikecualikan'));
+
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Prioritas TLA</title><style>'
+    + '@page { size: A4 landscape; margin: 12mm; }'
+    + 'body { font-family: Arial, sans-serif; color: #222; font-size: 10px; }'
+    + 'h1 { font-size: 16px; margin: 0 0 2px; color: #1a1a2e; }'
+    + '.sub { font-size: 10px; color: #666; margin-bottom: 10px; }'
+    + '.crit-box { background: #f0f5ff; border: 1px solid #c5d8f0; border-radius: 5px; padding: 8px 12px; margin-bottom: 10px; }'
+    + '.crit-box .t { font-size: 11px; font-weight: 700; color: #2a4a7a; margin-bottom: 5px; }'
+    + '.crit-grid { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 10px; }'
+    + '.crit-grid div { }'
+    + '.crit-grid b { color: #1a1a2e; }'
+    + 'table { width: 100%; border-collapse: collapse; margin-top: 6px; }'
+    + 'th, td { border: 1px solid #ccc; padding: 3px 5px; text-align: center; }'
+    + 'th { background: #2a4a7a; color: #fff; font-size: 9px; }'
+    + 'td { font-size: 9px; }'
+    + 'tr:nth-child(even) td { background: #f5f7fa; }'
+    + '.mini-table { width: auto; margin: 6px 0; }'
+    + '.mini-table th { background: #4a6a9a; }'
+    + '.sev-row { display: flex; gap: 14px; font-size: 10px; margin: 8px 0; flex-wrap: wrap; }'
+    + '.sev-row span { padding: 2px 8px; border-radius: 4px; }'
+    + '.footer { margin-top: 12px; font-size: 8px; color: #888; border-top: 1px solid #ddd; padding-top: 6px; display: flex; justify-content: space-between; }'
+    + '</style></head><body>'
+    + '<h1>Daftar Prioritas Pemasangan TLA</h1>'
+    + '<div class="sub">Dashboard Monitoring Tower PLN UIT JBM · Dicetak: ' + esc(now) + '</div>'
+
+    + '<div class="crit-box">'
+    + '<div class="t">⚙ Kriteria Terpilih</div>'
+    + '<div class="crit-grid">'
+    + '<div><b>Logika threshold:</b> ' + esc(logikaStr) + '</div>'
+    + '<div><b>Metode:</b> Pembobotan (weighted scoring)</div>'
+    + '<div><b>Filter:</b> ' + filterAktif.join(' · ') + '</div>'
+    + '</div>'
+    + '<table class="mini-table"><thead><tr><th>Faktor Aktif</th><th>Threshold</th><th>Bobot</th></tr></thead><tbody>'
+    + (faktorRows || '<tr><td colspan="3">Tidak ada faktor aktif</td></tr>')
+    + '</tbody></table>'
+    + '</div>'
+
+    + '<div class="sev-row">'
+    + '<span style="background:#fde8e8;color:#e84040">🔴 Kritis: ' + kritis + '</span>'
+    + '<span style="background:#fef2e0;color:#c47f16">🟠 Tinggi: ' + tinggi + '</span>'
+    + '<span style="background:#fbf7d8;color:#a08800">🟡 Sedang: ' + sedang + '</span>'
+    + '<span style="background:#e0f7f0;color:#00a884">🟢 Rendah: ' + rendah + '</span>'
+    + '<span style="background:#eee;color:#555">✅ Sudah TLA: ' + terpasang + '</span>'
+    + '<span style="background:#eef;color:#333"><b>Total: ' + data.length + ' tower</b></span>'
+    + '</div>'
+
+    + '<table><thead><tr>'
+    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>Density</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Elevasi</th><th>Score</th><th>Severity</th><th>TLA</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table>'
+
+    + '<div class="footer"><span>Prioritas TLA · metode pembobotan</span><span>' + data.length + ' tower · ' + faktor.length + ' faktor aktif</span></div>'
+    + '</body></html>';
+
+  cetakViaIframe(html);
 }
 
 function renderTLAPriority() {
@@ -5640,6 +5772,7 @@ function renderTLAPriority() {
 
   // SEMUA card dihitung dari filteredScored agar SINKRON dengan tabel
   const filteredScored = applyTLAPrioFilters(scored);
+  _lastTLAScored = filteredScored; // simpan untuk export PDF
   const kritis   = filteredScored.filter(s => s.status.key === 'kritis').length;
   const tinggi   = filteredScored.filter(s => s.status.key === 'tinggi').length;
   const sedang   = filteredScored.filter(s => s.status.key === 'sedang').length;
