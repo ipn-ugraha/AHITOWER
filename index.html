@@ -1092,13 +1092,24 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </span>
           </div>
 
-          <!-- Info severity (read-only, tanpa input) -->
-          <div style="margin-top:6px;padding:6px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:10px;font-family:var(--mono);text-align:center;color:var(--text3)">
-            <b style="color:var(--text2)">Level Severity:</b>
-            <span style="color:#e84040;margin-left:8px">🔴 Kritis ≥80</span> ·
-            <span style="color:#f5a623">🟠 Tinggi 60–79</span> ·
-            <span style="color:#d4bf00">🟡 Sedang 40–59</span> ·
-            <span style="color:#00d4aa">🟢 Rendah &lt;40</span>
+          <!-- Ambang severity (bisa diatur) -->
+          <div style="margin-top:6px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);font-size:10px;font-family:var(--mono)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <b style="color:var(--text2)">Ambang Level Severity</b>
+              <button onclick="resetSeverityThresholds()" style="font-size:9px;padding:2px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text3);cursor:pointer">↻ default</button>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+              <label style="display:flex;align-items:center;gap:4px;color:#e84040">🔴 Kritis ≥
+                <input type="number" id="sev-kritis" value="65" min="0" max="100" step="1" oninput="onThresholdChange()"
+                  style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#e84040;font-family:var(--mono);font-weight:600;text-align:right"></label>
+              <label style="display:flex;align-items:center;gap:4px;color:#f5a623">🟠 Tinggi ≥
+                <input type="number" id="sev-tinggi" value="50" min="0" max="100" step="1" oninput="onThresholdChange()"
+                  style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#f5a623;font-family:var(--mono);font-weight:600;text-align:right"></label>
+              <label style="display:flex;align-items:center;gap:4px;color:#d4bf00">🟡 Sedang ≥
+                <input type="number" id="sev-sedang" value="35" min="0" max="100" step="1" oninput="onThresholdChange()"
+                  style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#d4bf00;font-family:var(--mono);font-weight:600;text-align:right"></label>
+              <span style="color:#00d4aa">🟢 Rendah di bawahnya</span>
+            </div>
           </div>
 
           <div style="display:flex;gap:8px;margin-top:6px">
@@ -1164,7 +1175,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </select>
           <select id="f-tla-prio-severity" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
             <option value="">Semua Severity</option>
-            <option value="kritis">🔴 Kritis (≥80)</option>
+            <option value="kritis">🔴 Kritis</option>
             <option value="tinggi">🟠 Tinggi (60–79)</option>
             <option value="sedang">🟡 Sedang (40–59)</option>
             <option value="rendah">🟢 Rendah (&lt;40)</option>
@@ -5412,6 +5423,13 @@ function updateThWeightLabel(k) {
   if (inp && lbl) lbl.textContent = inp.value + '%';
 }
 
+function resetSeverityThresholds() {
+  const k = document.getElementById('sev-kritis'); if (k) k.value = 65;
+  const t = document.getElementById('sev-tinggi'); if (t) t.value = 50;
+  const s = document.getElementById('sev-sedang'); if (s) s.value = 35;
+  onThresholdChange();
+}
+
 function resetThresholds() {
   // Default: density ≥15, tahanan ≥5 (ON); elev ≥100, trend ≥0 (OFF)
   const orRadio = document.getElementById('th-logic-or');
@@ -6014,6 +6032,20 @@ function renderTLAPriority() {
 
   const norm = (v, min, max) => max > min ? Math.max(0, Math.min(1, (v - min) / (max - min))) : 0;
 
+  // Normalisasi berbasis threshold (C): nilai di threshold = 0.6, naik ke 1.0 di 2×threshold.
+  // Tower yang memenuhi ambang bahaya langsung dapat skor bermakna (tidak tergantung rentang data).
+  // Di bawah threshold: skala 0→0.6 proporsional.
+  const normVsTh = (v, th) => {
+    if (v === null || v === undefined || v <= 0) return 0;
+    if (!th || th <= 0) return Math.max(0, Math.min(1, v / 20)); // fallback jika threshold 0
+    if (v >= th) {
+      // threshold → 0.6, 2×threshold → 1.0
+      return Math.min(1, 0.6 + 0.4 * ((v - th) / th));
+    }
+    // 0 → 0, threshold → 0.6
+    return 0.6 * (v / th);
+  };
+
   // Hitung score per tower
   // Min-max untuk tinggi tower
   const tinggiVals = candidates.map(r => r[A_TOWER_INFO]?.tinggi).filter(v => v !== null && v !== undefined && v > 0);
@@ -6035,14 +6067,16 @@ function renderTLAPriority() {
     const h = tInfo?.tinggi ?? null;
     const sp = tInfo?.span ?? null;
     const trend = calcTrend(r);
-    const dN = (d !== null && d !== undefined) ? norm(d, dMin, dMax) : 0;
-    const oN = (o !== null && o > 0) ? norm(o, oMin, oMax) : 0;
-    const hN = (h !== null && h > 0) ? norm(h, hMin, hMax) : 0;
-    const spN = (sp !== null && sp > 0) ? norm(sp, spMin, spMax) : 0;
-    const eN = (e !== null && e > 0) ? norm(e, eMin, eMax) : 0;
+    const teg = tInfo?.teg || 150;
+    // Normalisasi berbasis threshold (skor bermakna relatif ambang bahaya)
+    const dN = normVsTh(d, thDensity !== null ? thDensity : 12);
+    const oN = normVsTh(o, thOhm !== null ? thOhm : 10);
+    const hN = normVsTh(h, tinggiThresholdByVoltage(teg));
+    const spN = normVsTh(sp, spanThresholdByVoltage(teg));
+    const eN = normVsTh(e, thElev !== null ? thElev : 50);
     const tN = Math.max(0, Math.min(1, (trend + 3) / 6));
     const p100 = maxPetir100(r);
-    const pN = (p100 !== null && p100 > 0) ? norm(p100, pMin, pMax) : 0;
+    const pN = normVsTh(p100, thPetir100 !== null ? thPetir100 : 100);
 
     // Kontribusi tiap faktor (ternormalisasi × bobot)
     const kontrib = [dN*wD, oN*wO, hN*wH, spN*wSp, eN*wE, tN*wT, pN*wP100];
@@ -6118,9 +6152,13 @@ function renderTLAPriority() {
   // Tambah status berbasis level severity score (4 level)
   scored.forEach(s => {
     const hasTLA = s.row[A_TLA] === 1;
-    if (s.score >= 80)      s.status = { key:'kritis', label:'🔴 Kritis', color:'#e84040' };
-    else if (s.score >= 60) s.status = { key:'tinggi', label:'🟠 Tinggi', color:'#f5a623' };
-    else if (s.score >= 40) s.status = { key:'sedang', label:'🟡 Sedang', color:'#d4bf00' };
+    // Ambang severity dari input (bisa diatur user)
+    const sevK = +document.getElementById('sev-kritis')?.value || 65;
+    const sevT = +document.getElementById('sev-tinggi')?.value || 50;
+    const sevS = +document.getElementById('sev-sedang')?.value || 35;
+    if (s.score >= sevK)      s.status = { key:'kritis', label:'🔴 Kritis', color:'#e84040' };
+    else if (s.score >= sevT) s.status = { key:'tinggi', label:'🟠 Tinggi', color:'#f5a623' };
+    else if (s.score >= sevS) s.status = { key:'sedang', label:'🟡 Sedang', color:'#d4bf00' };
     else                    s.status = { key:'rendah', label:'🟢 Rendah', color:'#00d4aa' };
     s.hasTLA = hasTLA;
   });
