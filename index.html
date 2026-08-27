@@ -842,9 +842,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-density-val" value="12" min="0" max="50" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-density-weight" min="0" max="100" value="80" oninput="onThresholdChange();updateThWeightLabel('density')"
+                <input type="range" id="th-density-weight" min="0" max="100" value="25" oninput="onThresholdChange();updateThWeightLabel('density')"
                   style="width:80px;accent-color:#e84040">
-                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">80%</span>
+                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">25%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -868,9 +868,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-ohm-val" value="10" min="0" max="100" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-ohm-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('ohm')"
+                <input type="range" id="th-ohm-weight" min="0" max="100" value="30" oninput="onThresholdChange();updateThWeightLabel('ohm')"
                   style="width:80px;accent-color:#f5a623">
-                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">10%</span>
+                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">30%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -962,10 +962,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           </div>
 
           <!-- Petir >100kA -->
-          <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #e91e8c;opacity:.45" id="th-row-petir100">
+          <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #e91e8c" id="th-row-petir100">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
               <div style="display:flex;align-items:center;gap:8px">
-                <input type="checkbox" id="th-petir100-on" onchange="onThresholdChange()" style="accent-color:#e91e8c;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-petir100-on" checked onchange="onThresholdChange()" style="accent-color:#e91e8c;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500">⚡ Petir &gt;100kA</span>
                 <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">sambaran arus tinggi</span>
               </div>
@@ -975,9 +975,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                   style="width:65px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e91e8c;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3)">kA</span>
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-petir100-weight" min="0" max="100" value="15" oninput="onThresholdChange();updateThWeightLabel('petir100')"
+                <input type="range" id="th-petir100-weight" min="0" max="100" value="25" oninput="onThresholdChange();updateThWeightLabel('petir100')"
                   style="width:80px;accent-color:#e91e8c">
-                <span id="th-petir100-weight-val" style="color:#e91e8c;font-weight:500;min-width:30px;text-align:right">15%</span>
+                <span id="th-petir100-weight-val" style="color:#e91e8c;font-weight:500;min-width:30px;text-align:right">25%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -5428,11 +5428,11 @@ function resetThresholds() {
   document.getElementById('th-elev-val').value = 50;
   document.getElementById('th-trend-on').checked = false;
   document.getElementById('th-trend-val').value = 0;
-  const p100on = document.getElementById('th-petir100-on'); if (p100on) p100on.checked = false;
+  const p100on = document.getElementById('th-petir100-on'); if (p100on) p100on.checked = true;
   const p100val = document.getElementById('th-petir100-val'); if (p100val) p100val.value = 100;
-  // Bobot default: density 80, ohm 10, tinggi 20, elev 10, trend 10, petir100 15
+  // Bobot rekomendasi: tahanan 30, petir>100kA 25, density 25, tinggi 20 (span/elev/tren 10)
   ['density','ohm','tinggi','span','elev','trend','petir100'].forEach((k,i) => {
-    const def = [80,10,20,10,10,10,15][i];
+    const def = [25,30,20,10,10,10,25][i];
     const inp = document.getElementById('th-'+k+'-weight');
     const lbl = document.getElementById('th-'+k+'-weight-val');
     if (inp) inp.value = def;
