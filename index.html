@@ -6612,6 +6612,11 @@ function renderDensityLine() {
     DENS_YEARS.forEach(y => { const v = p[y]; if (typeof v === 'number' && (mx===null || v>mx)) { mx = v; yr = y; } });
     return yr;
   });
+  // Data lengkap per tahun tiap tower (untuk tooltip)
+  const petir100AllYears = rows.map(r => {
+    const p = r[A_PETIR100] || {};
+    return DENS_YEARS.map(y => ({ year:y, val:(typeof p[y]==='number'?p[y]:null) }));
+  });
   // Density per tahun (object {2021:.., 2022:..})
   const densAllArr = rows.map(r=>r[A_DENS_ALL]||{});
   // Density per tahun untuk semua tower
@@ -6822,11 +6827,11 @@ function renderDensityLine() {
   });
 
   // Render grafik profil petir >100kA (bar per tower)
-  renderPetir100Profile(labels, petir100, petir100Year);
+  renderPetir100Profile(labels, petir100, petir100Year, petir100AllYears);
 }
 
 let petir100Chart = null;
-function renderPetir100Profile(labels, petir100, petir100Year) {
+function renderPetir100Profile(labels, petir100, petir100Year, petir100AllYears) {
   const wrap = document.getElementById('petir100-profile');
   const canvas = document.getElementById('c-petir100-line');
   if (!wrap || !canvas) return;
@@ -6836,27 +6841,9 @@ function renderPetir100Profile(labels, petir100, petir100Year) {
 
   const TC = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#8892a0';
   const GC = 'rgba(255,255,255,0.05)';
-  // Plugin: tulis tahun di atas bar yang ada nilai
-  const yearLabel = {
-    id: 'p100YearLabel',
-    afterDatasetsDraw(chart) {
-      const { ctx } = chart;
-      const meta = chart.getDatasetMeta(0);
-      ctx.save();
-      ctx.font = '8px monospace';
-      ctx.fillStyle = '#e91e8c';
-      ctx.textAlign = 'center';
-      meta.data.forEach((bar, i) => {
-        const yr = petir100Year[i];
-        if (yr && petir100[i] != null) ctx.fillText("'" + yr.slice(2), bar.x, bar.y - 3);
-      });
-      ctx.restore();
-    }
-  };
   if (petir100Chart) petir100Chart.destroy();
   petir100Chart = new Chart(canvas, {
     type: 'bar',
-    plugins: [yearLabel],
     data: {
       labels: labels,
       datasets: [{
@@ -6872,8 +6859,12 @@ function renderPetir100Profile(labels, petir100, petir100Year) {
       plugins: {
         legend: { display: false },
         tooltip: { callbacks: {
-          label: (i) => i.parsed.y != null ? 'Arus maks: ' + i.parsed.y.toFixed(0) + ' kA' : 'Tidak ada',
-          afterLabel: (i) => petir100Year[i.dataIndex] ? 'Tahun: ' + petir100Year[i.dataIndex] : ''
+          label: (i) => i.parsed.y != null ? 'Arus maks: ' + i.parsed.y.toFixed(0) + ' kA' : 'Tidak ada sambaran >100kA',
+          afterLabel: (i) => {
+            const yrs = petir100AllYears[i.dataIndex] || [];
+            const lines = yrs.map(d => '  ' + d.year + ': ' + (d.val != null ? d.val.toFixed(0) + ' kA' : '–'));
+            return ['Per tahun:'].concat(lines);
+          }
         } }
       },
       scales: {
