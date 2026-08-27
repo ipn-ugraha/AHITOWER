@@ -835,7 +835,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <div style="display:flex;align-items:center;gap:8px">
                 <input type="checkbox" id="th-density-on" checked onchange="onThresholdChange()" style="accent-color:#e84040;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500">⚡ Density Petir</span>
-                <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">flash/km²/thn</span>
+                <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">maks 2021–2026</span>
               </div>
               <div style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;flex-wrap:wrap">
                 <span style="color:var(--text3)">min ≥</span>
@@ -5533,7 +5533,7 @@ function exportTLAPrioPDF() {
   const sp275 = document.getElementById('th-span-275')?.value || '450';
   const sp500 = document.getElementById('th-span-500')?.value || '500';
   const spanDetailStr = '≥ ' + sp70 + 'm (70kV), ≥ ' + sp150 + 'm (150kV), ≥ ' + sp275 + 'm (275kV), ≥ ' + sp500 + 'm (500kV)';
-  if (wD) faktor.push({ nama:'Density petir', threshold:'≥ ' + (document.getElementById('th-density-val')?.value||'–'), bobot:gw('density') });
+  if (wD) faktor.push({ nama:'Density petir (maks 2021–2026)', threshold:'≥ ' + (document.getElementById('th-density-val')?.value||'–'), bobot:gw('density') });
   if (wO) faktor.push({ nama:'Tahanan pentanahan', threshold:'≥ ' + (document.getElementById('th-ohm-val')?.value||'–') + ' Ω', bobot:gw('ohm') });
   if (wH) faktor.push({ nama:'Tinggi tower', threshold:tinggiDetailStr, bobot:gw('tinggi') });
   if (wSp) faktor.push({ nama:'Span (gawang)', threshold:spanDetailStr, bobot:gw('span') });
@@ -5697,7 +5697,7 @@ function exportTLAPrioPDF() {
     + '<div style="font-size:9px;color:#666;margin-bottom:4px">💡 Sel dengan <span style="background:#d4f5e0;color:#0a7a4a;font-weight:700;padding:0 4px">latar hijau</span> = nilai memenuhi kriteria threshold terpilih.</div>'
 
     + '<table><thead><tr>'
-    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>Density</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Elevasi</th><th>Score</th><th>Severity</th><th>TLA</th>'
+    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Elevasi</th><th>Score</th><th>Severity</th><th>TLA</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table>'
 
     + '<div class="footer"><span>Prioritas TLA · metode pembobotan</span><span>' + data.length + ' tower · ' + faktor.length + ' faktor aktif</span></div>'
@@ -5968,6 +5968,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
     if (typeof va === 'string') return va.localeCompare(vb) * sortDir;
     return (va - vb) * sortDir;
   });
+  _tlaTableSorted = sorted; // simpan untuk modal detail (index = globalIdx)
 
   if (cntEl) cntEl.textContent = '⚠ ' + fmtNum(filtered.length) + ' / ' + fmtNum(scored.length) + ' tower';
   if (infoEl) infoEl.textContent = infoText;
@@ -6015,7 +6016,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
     const globalIdx = startIdx + i;
     const r = s.row;
     const sc = cScore(s.score);
-    html += '<tr style="' + (i%2 ? '' : 'background:rgba(255,255,255,.01)') + '">'
+    html += '<tr onclick="showTLADetail(' + globalIdx + ')" style="cursor:pointer;' + (i%2 ? '' : 'background:rgba(255,255,255,.01)') + '" onmouseover="this.style.background=\'rgba(59,122,255,0.08)\'" onmouseout="this.style.background=\'' + (i%2 ? 'transparent' : 'rgba(255,255,255,.01)') + '\'">'
       + '<td style="color:var(--text3);font-family:var(--mono);font-size:11px">' + (globalIdx+1) + '</td>'
       + '<td style="font-size:11px;color:var(--text2)">' + (r[A_UPT]||'–') + '</td>'
       + '<td style="font-size:11px;color:var(--text2)">' + (r[A_ULTG]||'–') + '</td>'
