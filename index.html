@@ -5760,8 +5760,22 @@ function renderTLAPriority() {
   if (document.getElementById('th-elev-on')?.checked)    thElev    = +document.getElementById('th-elev-val').value;
   if (document.getElementById('th-trend-on')?.checked)   thTrend   = +document.getElementById('th-trend-val').value;
 
+  // Density untuk kriteria TLA: MAKSIMUM semua tahun (2021-2026), bukan cuma terbaru.
+  // Mencerminkan tower paling rawan sepanjang waktu.
+  const maxDensityAll = (r) => {
+    const dAll = r[A_DENS_ALL] || {};
+    let mx = null;
+    DENS_YEARS.forEach(y => {
+      const v = dAll[y];
+      if (typeof v === 'number' && (mx === null || v > mx)) mx = v;
+    });
+    // Fallback ke A_DENSITY (2026) kalau A_DENS_ALL kosong
+    if (mx === null) { const v = r[A_DENSITY]; if (typeof v === 'number') mx = v; }
+    return mx;
+  };
+
   // Hitung min-max untuk normalisasi
-  const densVals = candidates.map(r => r[A_DENSITY]).filter(v => v !== null && v !== undefined);
+  const densVals = candidates.map(r => maxDensityAll(r)).filter(v => v !== null && v !== undefined);
   const ohmVals  = candidates.map(r => r[A_OHM]).filter(v => v !== null && v !== undefined && v > 0);
   const elevVals = candidates.map(r => r[A_ELEV]).filter(v => v !== null && v !== undefined && v > 0);
   const dMin = Math.min(...densVals,0), dMax = Math.max(...densVals, 20);
@@ -5792,7 +5806,7 @@ function renderTLAPriority() {
   const spMax = spanVals.length ? Math.max(...spanVals, 400) : 400;
 
   const scored = candidates.map(r => {
-    const d = r[A_DENSITY], o = r[A_OHM], e = r[A_ELEV];
+    const d = maxDensityAll(r), o = r[A_OHM], e = r[A_ELEV];
     const tInfo = r[A_TOWER_INFO];
     const h = tInfo?.tinggi ?? null;
     const sp = tInfo?.span ?? null;
