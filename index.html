@@ -5504,10 +5504,22 @@ function exportTLAPrioPDF() {
   const wE = document.getElementById('th-elev-on')?.checked;
   const wT = document.getElementById('th-trend-on')?.checked;
   const gw = (k) => document.getElementById('th-'+k+'-weight')?.value || '0';
+  // Detail threshold tinggi per tegangan
+  const t70 = document.getElementById('th-tinggi-70')?.value || '20';
+  const t150 = document.getElementById('th-tinggi-150')?.value || '30';
+  const t275 = document.getElementById('th-tinggi-275')?.value || '38';
+  const t500 = document.getElementById('th-tinggi-500')?.value || '55';
+  const tinggiDetailStr = '≥ ' + t70 + 'm (70kV), ≥ ' + t150 + 'm (150kV), ≥ ' + t275 + 'm (275kV), ≥ ' + t500 + 'm (500kV)';
+  // Detail threshold span per tegangan
+  const sp70 = document.getElementById('th-span-70')?.value || '300';
+  const sp150 = document.getElementById('th-span-150')?.value || '400';
+  const sp275 = document.getElementById('th-span-275')?.value || '450';
+  const sp500 = document.getElementById('th-span-500')?.value || '500';
+  const spanDetailStr = '≥ ' + sp70 + 'm (70kV), ≥ ' + sp150 + 'm (150kV), ≥ ' + sp275 + 'm (275kV), ≥ ' + sp500 + 'm (500kV)';
   if (wD) faktor.push({ nama:'Density petir', threshold:'≥ ' + (document.getElementById('th-density-val')?.value||'–'), bobot:gw('density') });
   if (wO) faktor.push({ nama:'Tahanan pentanahan', threshold:'≥ ' + (document.getElementById('th-ohm-val')?.value||'–') + ' Ω', bobot:gw('ohm') });
-  if (wH) faktor.push({ nama:'Tinggi tower', threshold:'≥ ambang per tegangan', bobot:gw('tinggi') });
-  if (wSp) faktor.push({ nama:'Span (gawang)', threshold:'≥ ambang per tegangan', bobot:gw('span') });
+  if (wH) faktor.push({ nama:'Tinggi tower', threshold:tinggiDetailStr, bobot:gw('tinggi') });
+  if (wSp) faktor.push({ nama:'Span (gawang)', threshold:spanDetailStr, bobot:gw('span') });
   if (wE) faktor.push({ nama:'Elevasi', threshold:'≥ ' + (document.getElementById('th-elev-val')?.value||'–') + ' mdpl', bobot:gw('elev') });
   if (wT) faktor.push({ nama:'Tren density', threshold:'≥ ' + (document.getElementById('th-trend-val')?.value||'–'), bobot:gw('trend') });
 
@@ -5527,6 +5539,56 @@ function exportTLAPrioPDF() {
   const esc = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const now = new Date().toLocaleString('id-ID', { dateStyle:'full', timeStyle:'short' });
 
+  // ── Distribusi per UPT & per tegangan (untuk pie chart) ──
+  const byUPT = {}, byTeg = {};
+  data.forEach(s => {
+    const upt = (s.row[A_UPT] || 'Lainnya').replace('UPT ','');
+    byUPT[upt] = (byUPT[upt] || 0) + 1;
+    const teg = String(s.row[A_TOWER_INFO]?.teg || 'Lain') + (s.row[A_TOWER_INFO]?.teg ? ' kV' : '');
+    byTeg[teg] = (byTeg[teg] || 0) + 1;
+  });
+  // Generator SVG pie chart + legenda
+  const palette = ['#3b7aff','#e84040','#f5a623','#00d4aa','#9c6ade','#d4bf00','#e8760f','#16a085','#e91e8c','#5c6bc0'];
+  const makePie = (dataObj, title) => {
+    const entries = Object.entries(dataObj).sort((a,b)=>b[1]-a[1]);
+    const total = entries.reduce((s,[,v])=>s+v,0);
+    if (total === 0) return '';
+    const cx=70, cy=70, rad=60;
+    let ang = -Math.PI/2; // mulai dari atas
+    let slices = '', legend = '';
+    entries.forEach(([label,val],i) => {
+      const frac = val/total;
+      const a2 = ang + frac*2*Math.PI;
+      const x1 = cx + rad*Math.cos(ang), y1 = cy + rad*Math.sin(ang);
+      const x2 = cx + rad*Math.cos(a2), y2 = cy + rad*Math.sin(a2);
+      const large = frac > 0.5 ? 1 : 0;
+      const col = palette[i % palette.length];
+      // Full circle jika 1 kategori
+      if (entries.length === 1) {
+        slices += '<circle cx="'+cx+'" cy="'+cy+'" r="'+rad+'" fill="'+col+'"/>';
+      } else {
+        slices += '<path d="M'+cx+','+cy+' L'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+rad+','+rad+' 0 '+large+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' Z" fill="'+col+'"/>';
+      }
+      const pct = Math.round(frac*100);
+      legend += '<div style="display:flex;align-items:center;gap:4px;margin-bottom:2px"><span style="display:inline-block;width:9px;height:9px;background:'+col+';border-radius:2px"></span><span>'+esc(label)+': <b>'+val+'</b> ('+pct+'%)</span></div>';
+      ang = a2;
+    });
+    return '<div style="display:flex;align-items:center;gap:12px">'
+      + '<svg width="140" height="140" viewBox="0 0 140 140">' + slices + '</svg>'
+      + '<div style="font-size:9px;line-height:1.4">' + legend + '</div>'
+      + '</div>';
+  };
+  const pieUPT = makePie(byUPT, 'UPT');
+  const pieTeg = makePie(byTeg, 'Tegangan');
+
+  // Nilai threshold untuk cek per sel
+  const thD = wD ? (+document.getElementById('th-density-val')?.value || 0) : null;
+  const thO = wO ? (+document.getElementById('th-ohm-val')?.value || 0) : null;
+  const thE = wE ? (+document.getElementById('th-elev-val')?.value || 0) : null;
+  const tinggiTh = (teg) => { const t=parseInt(teg)||150; return t>=500?+t500:t>=275?+t275:t>=150?+t150:+t70; };
+  // Warna highlight sel yang memenuhi kriteria (hijau muda)
+  const HL = 'background:#d4f5e0;font-weight:700;color:#0a7a4a';
+
   // ── Baris tabel ──
   const rows = data.map((s, i) => {
     const r = s.row;
@@ -5534,15 +5596,20 @@ function exportTLAPrioPDF() {
     const upt = r[A_UPT] || '–';
     const pht = r[A_PHT] || '–';
     const tegV = r[A_TOWER_INFO]?.teg || '–';
+    // Cek tiap sel apakah memenuhi kriteria terpilih
+    const dMet = thD !== null && s.density != null && s.density >= thD;
+    const oMet = thO !== null && s.ohm != null && s.ohm >= thO;
+    const hMet = wH && s.tinggi != null && s.tinggi >= tinggiTh(tegV);
+    const eMet = thE !== null && s.elev != null && s.elev >= thE;
     return '<tr>'
       + '<td>' + (i+1) + '</td>'
       + '<td style="text-align:left">' + esc(bay) + '</td>'
       + '<td style="text-align:left">' + esc(pht) + '</td>'
       + '<td>' + esc(tegV) + '</td>'
-      + '<td>' + (s.density!=null?Number(s.density).toFixed(1):'–') + '</td>'
-      + '<td>' + (s.ohm!=null?Number(s.ohm).toFixed(1):'–') + '</td>'
-      + '<td>' + (s.tinggi!=null?s.tinggi:'–') + '</td>'
-      + '<td>' + (s.elev!=null?s.elev:'–') + '</td>'
+      + '<td style="' + (dMet?HL:'') + '">' + (s.density!=null?Number(s.density).toFixed(1):'–') + '</td>'
+      + '<td style="' + (oMet?HL:'') + '">' + (s.ohm!=null?Number(s.ohm).toFixed(1):'–') + '</td>'
+      + '<td style="' + (hMet?HL:'') + '">' + (s.tinggi!=null?s.tinggi:'–') + '</td>'
+      + '<td style="' + (eMet?HL:'') + '">' + (s.elev!=null?s.elev:'–') + '</td>'
       + '<td><b>' + Math.round(s.score) + '</b></td>'
       + '<td>' + s.status.label + '</td>'
       + '<td>' + (s.hasTLA?'✅':'—') + '</td>'
@@ -5603,6 +5670,13 @@ function exportTLAPrioPDF() {
     + '<span style="background:#eee;color:#555">✅ Sudah TLA: ' + terpasang + '</span>'
     + '<span style="background:#eef;color:#333"><b>Total: ' + data.length + ' tower</b></span>'
     + '</div>'
+
+    + '<div style="display:flex;gap:30px;flex-wrap:wrap;margin:10px 0;padding:10px 12px;background:#fafbfd;border:1px solid #e0e5ee;border-radius:5px">'
+    + '<div><div style="font-size:10px;font-weight:700;color:#2a4a7a;margin-bottom:4px">Distribusi per UPT</div>' + pieUPT + '</div>'
+    + '<div><div style="font-size:10px;font-weight:700;color:#2a4a7a;margin-bottom:4px">Distribusi per Tegangan</div>' + pieTeg + '</div>'
+    + '</div>'
+
+    + '<div style="font-size:9px;color:#666;margin-bottom:4px">💡 Sel dengan <span style="background:#d4f5e0;color:#0a7a4a;font-weight:700;padding:0 4px">latar hijau</span> = nilai memenuhi kriteria threshold terpilih.</div>'
 
     + '<table><thead><tr>'
     + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>Density</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Elevasi</th><th>Score</th><th>Severity</th><th>TLA</th>'
