@@ -5721,6 +5721,16 @@ function exportTLAPrioPDF() {
   const tinggiTh = (teg) => { const t=parseInt(teg)||150; return t>=500?+t500:t>=275?+t275:t>=150?+t150:+t70; };
   // Warna highlight sel yang memenuhi kriteria (hijau muda)
   const HL = 'background:#d4f5e0;font-weight:700;color:#0a7a4a';
+  // Cari tahun density tertinggi per tower
+  const maxDensYear = (r) => {
+    const dAll = r[A_DENS_ALL] || {};
+    let best = null;
+    DENS_YEARS.forEach(y => {
+      const v = dAll[y];
+      if (typeof v === 'number' && (best === null || v > best.val)) best = { year:y, val:v };
+    });
+    return best;
+  };
 
   // ── Baris tabel ──
   const rows = data.map((s, i) => {
@@ -5734,12 +5744,16 @@ function exportTLAPrioPDF() {
     const oMet = thO !== null && s.ohm != null && s.ohm >= thO;
     const hMet = wH && s.tinggi != null && s.tinggi >= tinggiTh(tegV);
     const eMet = thE !== null && s.elev != null && s.elev >= thE;
+    // Tahun density tertinggi (tampil kecil jika sel density memenuhi kriteria)
+    const dYear = dMet ? maxDensYear(r) : null;
+    const densCell = (s.density!=null?Number(s.density).toFixed(1):'–')
+      + (dYear ? '<br><span style="font-size:7px;font-weight:400;color:#0a7a4a">thn ' + dYear.year + '</span>' : '');
     return '<tr>'
       + '<td>' + (i+1) + '</td>'
       + '<td style="text-align:left">' + esc(bay) + '</td>'
       + '<td style="text-align:left">' + esc(pht) + '</td>'
       + '<td>' + esc(tegV) + '</td>'
-      + '<td style="' + (dMet?HL:'') + '">' + (s.density!=null?Number(s.density).toFixed(1):'–') + '</td>'
+      + '<td style="' + (dMet?HL:'') + '">' + densCell + '</td>'
       + '<td style="' + (oMet?HL:'') + '">' + (s.ohm!=null?Number(s.ohm).toFixed(1):'–') + '</td>'
       + '<td style="' + (hMet?HL:'') + '">' + (s.tinggi!=null?s.tinggi:'–') + '</td>'
       + '<td style="' + (eMet?HL:'') + '">' + (s.elev!=null?s.elev:'–') + '</td>'
@@ -7324,7 +7338,7 @@ function api(params){
     // Fetch dengan timeout + retry (file cache besar bisa lambat saat cold start)
     const attempt = (tries) => {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 45000); // 45 detik per percobaan
+      const timer = setTimeout(() => ctrl.abort(), 90000); // 90 detik per percobaan (cache besar)
       fetch(url, { method:'GET', redirect:'follow', cache:'no-store', signal: ctrl.signal })
         .then(r => { clearTimeout(timer); return r.json(); })
         .then(d => resolve(d))
