@@ -5493,6 +5493,95 @@ function tinggiThresholdByVoltage(kV) {
 let _lastTLAScored = [];
 
 // Export PDF daftar prioritas TLA + info kriteria terpilih
+let _tlaTableSorted = [];
+
+// Modal detail: kenapa tower ini masuk kriteria prioritas TLA
+function showTLADetail(idx) {
+  const s = _tlaTableSorted[idx];
+  if (!s) return;
+  const r = s.row;
+  const teg = r[A_TOWER_INFO]?.teg || 150;
+
+  // Baca threshold & status aktif tiap faktor
+  const orMode = document.getElementById('th-logic-or')?.checked || false;
+  const wOn = { d:document.getElementById('th-density-on')?.checked, o:document.getElementById('th-ohm-on')?.checked,
+                h:document.getElementById('th-tinggi-on')?.checked, sp:document.getElementById('th-span-on')?.checked,
+                e:document.getElementById('th-elev-on')?.checked, t:document.getElementById('th-trend-on')?.checked };
+  const thD = +document.getElementById('th-density-val')?.value || 0;
+  const thO = +document.getElementById('th-ohm-val')?.value || 0;
+  const thE = +document.getElementById('th-elev-val')?.value || 0;
+  const thT = +document.getElementById('th-trend-val')?.value || 0;
+  const thH = tinggiThresholdByVoltage(teg);
+  const thSp = spanThresholdByVoltage(teg);
+  const gw = (k) => +document.getElementById('th-'+k+'-weight')?.value || 0;
+
+  // Evaluasi tiap faktor: aktif? nilai? threshold? lolos?
+  const faktorDetail = [];
+  if (wOn.d) faktorDetail.push({ nama:'Density petir (maks 2021–2026)', nilai:s.density, unit:'', th:thD, lolos:(s.density!=null&&s.density>=thD), bobot:gw('density'), warna:'#e84040' });
+  if (wOn.o) faktorDetail.push({ nama:'Tahanan pentanahan', nilai:s.ohm, unit:'Ω', th:thO, lolos:(s.ohm!=null&&s.ohm>=thO), bobot:gw('ohm'), warna:'#f5a623' });
+  if (wOn.h) faktorDetail.push({ nama:'Tinggi tower', nilai:s.tinggi, unit:'m', th:thH, lolos:(s.tinggi!=null&&s.tinggi>=thH), bobot:gw('tinggi'), warna:'#3b7aff', ket:'ambang '+teg+'kV' });
+  if (wOn.sp) faktorDetail.push({ nama:'Span (gawang)', nilai:s.span, unit:'m', th:thSp, lolos:(s.span!=null&&s.span>=thSp), bobot:gw('span'), warna:'#16A085', ket:'ambang '+teg+'kV' });
+  if (wOn.e) faktorDetail.push({ nama:'Elevasi', nilai:s.elev, unit:'mdpl', th:thE, lolos:(s.elev!=null&&s.elev>=thE), bobot:gw('elev'), warna:'#9c6ade' });
+  if (wOn.t) faktorDetail.push({ nama:'Tren density', nilai:s.trend, unit:'/thn', th:thT, lolos:(s.trend!=null&&s.trend>=thT), bobot:gw('trend'), warna:'#00d4aa' });
+
+  const lolosCount = faktorDetail.filter(f => f.lolos).length;
+
+  // Build rows faktor
+  const fmt1 = (v) => v!=null ? Number(v).toFixed(1) : '–';
+  const faktorHtml = faktorDetail.map(f => {
+    const badge = f.lolos
+      ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">✓ Memenuhi</span>'
+      : '<span style="background:rgba(136,146,160,0.12);color:var(--text3);padding:2px 8px;border-radius:4px;font-size:11px">— Tidak</span>';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:' + (f.lolos?'rgba(0,212,170,0.05)':'var(--bg2)') + ';border:1px solid ' + (f.lolos?'rgba(0,212,170,0.2)':'var(--border)') + ';border-radius:6px;margin-bottom:6px">'
+      + '<div style="flex:1">'
+      + '<div style="font-size:12px;font-weight:600;color:var(--text)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + f.warna + ';margin-right:6px"></span>' + f.nama + '</div>'
+      + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:2px">Nilai: <b style="color:' + (f.lolos?'#00d4aa':'var(--text2)') + '">' + fmt1(f.nilai) + f.unit + '</b> · Threshold: ≥' + f.th + f.unit + (f.ket?' ('+f.ket+')':'') + ' · Bobot: ' + f.bobot + '%</div>'
+      + '</div>' + badge + '</div>';
+  }).join('');
+
+  // Kesimpulan
+  const alasanMasuk = orMode
+    ? 'Mode <b>ATAU</b>: tower masuk karena memenuhi <b style="color:#00d4aa">' + lolosCount + ' dari ' + faktorDetail.length + '</b> faktor kriteria (cukup salah satu).'
+    : 'Mode <b>DAN</b>: tower masuk karena memenuhi <b style="color:#00d4aa">SEMUA ' + faktorDetail.length + '</b> faktor kriteria aktif.';
+
+  const modalHtml = '<div id="tla-detail-modal" onclick="if(event.target===this)closeTLADetail()" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">'
+    + '<div style="background:var(--bg);border:1px solid var(--border2);border-radius:12px;max-width:560px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.5)">'
+    + '<div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--bg)">'
+    + '<div>'
+    + '<div style="font-size:15px;font-weight:600;color:var(--text)">' + (r[A_BAY]||'–') + '</div>'
+    + '<div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:3px">' + (r[A_PHT]||'–') + ' · ' + teg + 'kV · ' + (r[A_UPT]||'–') + '</div>'
+    + '</div>'
+    + '<button onclick="closeTLADetail()" style="background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--text2);width:28px;height:28px;cursor:pointer;font-size:16px;flex-shrink:0">×</button>'
+    + '</div>'
+    + '<div style="padding:16px 20px">'
+    + '<div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">'
+    + '<div style="flex:1;min-width:120px;padding:10px;background:var(--bg2);border-radius:8px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">SKOR PRIORITAS</div>'
+    + '<div style="font-size:24px;font-weight:700;color:' + (s.status?.color||'var(--text)') + '">' + Math.round(s.score) + '</div>'
+    + '<div style="font-size:11px;color:' + (s.status?.color||'var(--text3)') + '">' + (s.status?.label||'–') + '</div>'
+    + '</div>'
+    + '<div style="flex:1;min-width:120px;padding:10px;background:var(--bg2);border-radius:8px;text-align:center">'
+    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:3px">STATUS TLA</div>'
+    + '<div style="font-size:16px;font-weight:600;color:' + (s.hasTLA?'#00d4aa':'#f5a623') + ';margin-top:6px">' + (s.hasTLA?'✅ Terpasang':'⚠️ Belum') + '</div>'
+    + '</div>'
+    + '</div>'
+    + '<div style="padding:10px 12px;background:rgba(59,122,255,0.08);border:1px solid rgba(59,122,255,0.2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">' + alasanMasuk + '</div>'
+    + '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Rincian Faktor Kriteria</div>'
+    + faktorHtml
+    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:10px;line-height:1.5">💡 Skor dihitung dari faktor yang memenuhi, dibobot sesuai persentase. Faktor ✓ hijau = nilai tower melewati ambang batas.</div>'
+    + '</div>'
+    + '</div></div>';
+
+  // Hapus modal lama jika ada, lalu tambah baru
+  const old = document.getElementById('tla-detail-modal');
+  if (old) old.remove();
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+function closeTLADetail() {
+  const m = document.getElementById('tla-detail-modal');
+  if (m) m.remove();
+}
+
 function exportTLAPrioPDF() {
   const dataRaw = _lastTLAScored || [];
   if (!dataRaw.length) { alert('Tidak ada data prioritas TLA untuk diekspor. Pastikan ada tower yang lolos kriteria.'); return; }
