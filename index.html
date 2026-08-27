@@ -5673,13 +5673,21 @@ function exportTLAPrioPDF() {
   const now = new Date().toLocaleString('id-ID', { dateStyle:'full', timeStyle:'short' });
 
   // ── Distribusi per UPT & per tegangan (untuk pie chart) ──
-  const byUPT = {}, byTeg = {};
+  const byUPT = {}, byTeg = {}, byPht = {};
   data.forEach(s => {
     const upt = (s.row[A_UPT] || 'Lainnya').replace('UPT ','');
     byUPT[upt] = (byUPT[upt] || 0) + 1;
     const teg = String(s.row[A_TOWER_INFO]?.teg || 'Lain') + (s.row[A_TOWER_INFO]?.teg ? ' kV' : '');
     byTeg[teg] = (byTeg[teg] || 0) + 1;
+    const pht = s.row[A_PHT] || 'Lainnya';
+    byPht[pht] = (byPht[pht] || 0) + 1;
   });
+  // Statistik penghantar
+  const jmlPenghantar = Object.keys(byPht).length;
+  const jmlUPT = Object.keys(byUPT).length;
+  const jmlTeg = Object.keys(byTeg).length;
+  // Penghantar dengan tower prioritas terbanyak
+  const topPht = Object.entries(byPht).sort((a,b)=>b[1]-a[1]).slice(0,3);
   // Generator SVG pie chart + legenda
   const palette = ['#3b7aff','#e84040','#f5a623','#00d4aa','#9c6ade','#d4bf00','#e8760f','#16a085','#e91e8c','#5c6bc0'];
   const makePie = (dataObj, title) => {
@@ -5817,6 +5825,22 @@ function exportTLAPrioPDF() {
     + '<span style="background:#e0f7f0;color:#00a884">🟢 Rendah: ' + rendah + '</span>'
     + '<span style="background:#eee;color:#555">✅ Sudah TLA: ' + terpasang + '</span>'
     + '<span style="background:#eef;color:#333"><b>Total: ' + data.length + ' tower</b></span>'
+    + '</div>'
+
+    + '<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">'
+    + '<div style="flex:1;min-width:110px;padding:10px 14px;background:#2a4a7a;color:#fff;border-radius:6px;text-align:center">'
+    + '<div style="font-size:26px;font-weight:700;line-height:1">' + jmlPenghantar + '</div>'
+    + '<div style="font-size:9px;opacity:0.85;margin-top:2px">PENGHANTAR</div></div>'
+    + '<div style="flex:1;min-width:110px;padding:10px 14px;background:#3b7aff;color:#fff;border-radius:6px;text-align:center">'
+    + '<div style="font-size:26px;font-weight:700;line-height:1">' + jmlUPT + '</div>'
+    + '<div style="font-size:9px;opacity:0.85;margin-top:2px">UPT</div></div>'
+    + '<div style="flex:1;min-width:110px;padding:10px 14px;background:#16a085;color:#fff;border-radius:6px;text-align:center">'
+    + '<div style="font-size:26px;font-weight:700;line-height:1">' + jmlTeg + '</div>'
+    + '<div style="font-size:9px;opacity:0.85;margin-top:2px">LEVEL TEGANGAN</div></div>'
+    + '<div style="flex:2;min-width:180px;padding:8px 14px;background:#fafbfd;border:1px solid #e0e5ee;border-radius:6px">'
+    + '<div style="font-size:9px;font-weight:700;color:#2a4a7a;margin-bottom:4px">Penghantar dengan tower prioritas terbanyak</div>'
+    + topPht.map((p,idx) => '<div style="font-size:9px;color:#333;margin-bottom:2px"><b>' + (idx+1) + '.</b> ' + esc(p[0]) + ' <b style="color:#e84040">(' + p[1] + ' tower)</b></div>').join('')
+    + '</div>'
     + '</div>'
 
     + '<div style="display:flex;gap:30px;flex-wrap:wrap;margin:10px 0;padding:10px 12px;background:#fafbfd;border:1px solid #e0e5ee;border-radius:5px">'
