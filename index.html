@@ -1039,8 +1039,21 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </div>
           </div>
 
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:8px 10px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);font-size:11px;font-family:var(--mono);flex-wrap:wrap">
+            <span style="color:var(--text2)">Logika threshold:</span>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text)">
+              <input type="radio" name="th-logic" id="th-logic-and" value="and" checked onchange="onThresholdChange()" style="accent-color:var(--accent);cursor:pointer">
+              <b>DAN</b> (lolos semua faktor)
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text)">
+              <input type="radio" name="th-logic" id="th-logic-or" value="or" onchange="onThresholdChange()" style="accent-color:var(--accent);cursor:pointer">
+              <b>ATAU</b> (lolos salah satu)
+            </label>
+            <span style="color:var(--text3);font-size:10px;flex-basis:100%;line-height:1.5">DAN = tower harus memenuhi semua ambang aktif. ATAU = cukup memenuhi salah satu (menangkap tower yang ekstrem di satu aspek, mis. tahanan sangat tinggi walau density rendah).</span>
+          </div>
+
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:rgba(232,64,64,0.08);border-radius:var(--radius);font-size:11px;font-family:var(--mono);flex-wrap:wrap">
-            <span style="color:#e84040">⚠ Lolos semua threshold aktif:</span>
+            <span style="color:#e84040" id="th-result-label">⚠ Lolos semua threshold aktif:</span>
             <span style="display:flex;align-items:center;gap:10px">
               <span id="th-result-count" style="color:#e84040;font-weight:500">–</span>
               <span style="color:var(--text3);font-size:10px">Total bobot aktif: <b id="th-weight-sum" style="color:var(--text)">100%</b></span>
@@ -5361,6 +5374,8 @@ function updateThWeightLabel(k) {
 
 function resetThresholds() {
   // Default: density ≥15, tahanan ≥5 (ON); elev ≥100, trend ≥0 (OFF)
+  const andRadio = document.getElementById('th-logic-and');
+  if (andRadio) andRadio.checked = true; // default logika AND
   document.getElementById('th-density-on').checked = true;
   document.getElementById('th-density-val').value = 6;
   document.getElementById('th-ohm-on').checked = false;  // OFF
@@ -5569,36 +5584,49 @@ function renderTLAPriority() {
   })
   .filter(s => {
     if (s.score <= 0) return false;
-    // Threshold filter: AND filter per faktor aktif
+    // Mode logika threshold: AND (semua) atau OR (salah satu)
+    const orMode = document.getElementById('th-logic-or')?.checked || false;
+
+    // Evaluasi tiap faktor threshold aktif → array hasil (true/false)
+    const checks = [];
     if (thDensity !== null) {
-      if (s.density === null || s.density === undefined || s.density < thDensity) return false;
+      checks.push(!(s.density === null || s.density === undefined) && s.density >= thDensity);
     }
     if (thOhm !== null) {
-      if (s.ohm === null || s.ohm === undefined || s.ohm < thOhm) return false;
+      checks.push(!(s.ohm === null || s.ohm === undefined) && s.ohm >= thOhm);
     }
     if (thTinggiOn) {
       const teg = s.row[A_TOWER_INFO]?.teg || 150;
       const thT = tinggiThresholdByVoltage(teg);
-      if (s.tinggi === null || s.tinggi === undefined || s.tinggi < thT) return false;
+      checks.push(!(s.tinggi === null || s.tinggi === undefined) && s.tinggi >= thT);
     }
     if (thSpanOn) {
       const teg = s.row[A_TOWER_INFO]?.teg || 150;
       const thS = spanThresholdByVoltage(teg);
-      if (s.span === null || s.span === undefined || s.span < thS) return false;
+      checks.push(!(s.span === null || s.span === undefined) && s.span >= thS);
     }
     if (thElev !== null) {
-      if (s.elev === null || s.elev === undefined || s.elev < thElev) return false;
+      checks.push(!(s.elev === null || s.elev === undefined) && s.elev >= thElev);
     }
     if (thTrend !== null) {
-      if (s.trend === undefined || s.trend < thTrend) return false;
+      checks.push(!(s.trend === undefined) && s.trend >= thTrend);
     }
-    return true;
+
+    // Tidak ada threshold aktif → lolos semua
+    if (checks.length === 0) return true;
+    // OR: cukup salah satu true. AND: semua harus true.
+    return orMode ? checks.some(Boolean) : checks.every(Boolean);
   })
   .sort((a,b) => b.score - a.score);
 
-  // Update th-result-count (Lolos semua threshold aktif)
+  // Update th-result-count (Lolos threshold aktif) + label mode
   const elResult = document.getElementById('th-result-count');
   if (elResult) elResult.textContent = fmtNum(scored.length) + ' tower';
+  const elResultLabel = document.getElementById('th-result-label');
+  if (elResultLabel) {
+    const orMode = document.getElementById('th-logic-or')?.checked || false;
+    elResultLabel.textContent = orMode ? '⚠ Lolos salah satu threshold aktif:' : '⚠ Lolos semua threshold aktif:';
+  }
 
   // Tambah status berbasis level severity score (4 level)
   scored.forEach(s => {
