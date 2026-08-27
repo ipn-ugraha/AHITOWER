@@ -702,6 +702,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-ohm" checked onchange="renderDensityLine()" style="accent-color:#f5a623"> Tahanan ▐</label>
             <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-tla" checked onchange="renderDensityLine()" style="accent-color:#00d4aa"> TLA ▲</label>
             <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-elev" checked onchange="renderDensityLine()" style="accent-color:#8b6f4d"> Elevasi ⛰</label>
+            <label style="cursor:pointer;color:var(--text2);display:flex;align-items:center;gap:5px"><input type="checkbox" id="dl-show-petir100" checked onchange="renderDensityLine()" style="accent-color:#e91e8c"> Petir &gt;100kA ✦</label>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:12px;padding:6px 10px;font-size:10px;color:var(--text2);font-family:var(--mono)">
             <span>⚡ <span style="color:#e84040">SgtTinggi</span> <span style="color:#f5a623">Tinggi</span> <span style="color:#d4bf00">Sedang</span> <span style="color:#00d4aa">Rendah</span></span>
@@ -751,6 +752,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 
         <!-- Grafik utama -->
         <div class="cw" id="cw-density-line" style="height:340px;display:none"><canvas id="c-density-line"></canvas></div>
+
+        <!-- Grafik profil Petir >100kA per tower (tampil saat penghantar dipilih) -->
+        <div id="petir100-profile" style="display:none;margin-top:14px">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:600;color:#e91e8c;margin-bottom:6px">⚡ Profil Petir &gt;100kA per Tower</div>
+          <div class="cw" style="height:220px"><canvas id="c-petir100-line"></canvas></div>
+          <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:4px">Arus petir maksimum &gt;100kA (magnitudo) per tower, dari tahun mana pun 2021–2026. Sambaran arus tinggi sangat merusak isolasi.</div>
+        </div>
 
         <!-- 3 Action card di bawah -->
         <div id="density-action" style="display:none;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">
@@ -6163,6 +6171,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       case 'span':    va = a.span ?? -1; vb = b.span ?? -1; break;
       case 'elev':    va = a.elev ?? -1; vb = b.elev ?? -1; break;
       case 'trend':   va = a.trend ?? -99; vb = b.trend ?? -99; break;
+      case 'petir100': va = a.petir100 ?? -1; vb = b.petir100 ?? -1; break;
       case 'tla':     va = a.hasTLA ? 1 : 0; vb = b.hasTLA ? 1 : 0; break;
       case 'status':  va = a.status?.key || ''; vb = b.status?.key || ''; break;
       case 'score':
@@ -6211,6 +6220,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('span','Span (m)','right');
   html += th('elev','Elv (m)','right');
   html += th('trend','Tren','right');
+  html += th('petir100','⚡&gt;100kA','right');
   html += th('score','Score','right');
   html += th('tla','TLA');
   html += th('status','Status');
@@ -6231,6 +6241,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.span && s.span >= spanThresholdByVoltage(s.row[A_TOWER_INFO]?.teg||150) ? '#16A085' : 'var(--text)') + '">' + (s.span ? fmt(s.span, 0) : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.petir100 != null && s.petir100 >= 100 ? '#e91e8c' : 'var(--text3)') + ';font-weight:' + (s.petir100 != null && s.petir100 >= 100 ? '600' : '400') + '">' + (s.petir100 != null ? s.petir100.toFixed(0) : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
       + '<td style="font-size:10px;font-family:var(--mono);text-align:center;white-space:nowrap">' + (s.hasTLA ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:3px;font-weight:500">✅ Terpasang</span>' : '<span style="color:var(--text3)">— Belum</span>') + '</td>'
       + '<td style="font-size:10px;font-family:var(--mono);color:' + (s.status?.color || 'var(--text3)') + ';white-space:nowrap">' + (s.status?.label || '–') + '</td>'
@@ -6546,6 +6557,8 @@ function renderDensityLine() {
     if (rankEl) rankEl.style.display = 'block';
     const backBtn = document.getElementById('btn-density-back');
     if (backBtn) backBtn.style.display = 'none';
+    const p100prof = document.getElementById('petir100-profile');
+    if (p100prof) p100prof.style.display = 'none';
     renderDensityRanking();
     return;
   }
@@ -6571,6 +6584,13 @@ function renderDensityLine() {
   const tla1vals = rows.map(r=>r[A_TLA1]);
   const tla2vals = rows.map(r=>r[A_TLA2]);
   const elev     = rows.map(r=>r[A_ELEV]);
+  // Petir >100kA: arus maksimum (magnitudo) per tower dari semua tahun
+  const petir100 = rows.map(r => {
+    const p = r[A_PETIR100] || {};
+    let mx = null;
+    DENS_YEARS.forEach(y => { const v = p[y]; if (typeof v === 'number' && (mx===null || v>mx)) mx = v; });
+    return mx;
+  });
   // Density per tahun (object {2021:.., 2022:..})
   const densAllArr = rows.map(r=>r[A_DENS_ALL]||{});
   // Density per tahun untuk semua tower
@@ -6677,6 +6697,7 @@ function renderDensityLine() {
   const showOhm  = document.getElementById('dl-show-ohm')?.checked ?? true;
   const showTla  = document.getElementById('dl-show-tla')?.checked ?? true;
   const showElev = document.getElementById('dl-show-elev')?.checked ?? true;
+  const showPetir100 = document.getElementById('dl-show-petir100')?.checked ?? true;
 
   // Bangun datasets: bar tahanan + line per tahun aktif + scatter TLA
   const datasets = [];
@@ -6728,9 +6749,19 @@ function renderDensityLine() {
     showLine:false,
     yAxisID:'y1', order:0 });
 
+  // Petir >100kA — scatter magenta (simbol ✦) di titik tower yang punya sambaran >100kA
+  if (showPetir100 && petir100.some(v=>v!==null&&v!==undefined)) datasets.push({
+    type:'scatter', label:'Petir >100kA',
+    data: petir100.map((v,i) => v!=null ? {x:i, y:v} : null).filter(Boolean),
+    parsing:false,
+    pointStyle:'star',
+    pointRadius:6, pointHoverRadius:9,
+    backgroundColor:'#e91e8c', borderColor:'#fff', borderWidth:1,
+    yAxisID:'yP', order:0,
+  });
+
   densityChart = new Chart(densCanvas, {
-    type:'bar',
-    plugins:[DENSITY_LIGHTNING_PLUGIN],
+    type:'bar',    plugins:[DENSITY_LIGHTNING_PLUGIN],
     data:{ labels, datasets },
     options:{
       responsive:true, maintainAspectRatio:false,
@@ -6763,12 +6794,54 @@ function renderDensityLine() {
              ticks:{color:TC,font:{size:10}}, grid:{color:GC}, min:0 },
         y2:{ position:'right', title:{display:true,text:'Tahanan (Ω)',color:TC,font:{size:10}},
              ticks:{color:TC,font:{size:10}}, grid:{display:false}, min:0 },
-        y3:{ position:'right', display:false, min:0, beginAtZero:true }
+        y3:{ position:'right', display:false, min:0, beginAtZero:true },
+        yP:{ position:'right', display:false, min:0, beginAtZero:true }
+      }
+    }
+  });
+
+  // Render grafik profil petir >100kA (bar per tower)
+  renderPetir100Profile(labels, petir100);
+}
+
+let petir100Chart = null;
+function renderPetir100Profile(labels, petir100) {
+  const wrap = document.getElementById('petir100-profile');
+  const canvas = document.getElementById('c-petir100-line');
+  if (!wrap || !canvas) return;
+  const ada = petir100.some(v => v !== null && v !== undefined);
+  wrap.style.display = ada ? 'block' : 'none';
+  if (!ada) { if (petir100Chart) { petir100Chart.destroy(); petir100Chart = null; } return; }
+
+  const TC = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#8892a0';
+  const GC = 'rgba(255,255,255,0.05)';
+  if (petir100Chart) petir100Chart.destroy();
+  petir100Chart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Petir >100kA (kA)',
+        data: petir100.map(v => v ?? null),
+        backgroundColor: petir100.map(v => v==null ? 'rgba(233,30,140,0.15)' : v>=150 ? '#c2185b' : '#e91e8c'),
+        borderRadius: 2,
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (i) => i.parsed.y != null ? 'Arus maks: ' + i.parsed.y.toFixed(0) + ' kA' : 'Tidak ada' } }
+      },
+      scales: {
+        x: { ticks:{color:TC,font:{size:9},maxRotation:0,maxTicksLimit:25}, grid:{color:GC} },
+        y: { position:'left', title:{display:true,text:'Arus petir (kA)',color:TC,font:{size:10}},
+             ticks:{color:TC,font:{size:10}}, grid:{color:GC}, min:0 }
       }
     }
   });
 }
-
 // ─── AHI PAGINATION ───────────────────────────────────────
 let GAP_PAGE = 1;
 const GAP_PER_PAGE = 25;
