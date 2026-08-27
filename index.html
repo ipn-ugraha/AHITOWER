@@ -850,9 +850,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-density-val" value="12" min="0" max="50" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-density-weight" min="0" max="100" value="25" oninput="onThresholdChange();updateThWeightLabel('density')"
+                <input type="range" id="th-density-weight" min="0" max="100" value="30" oninput="onThresholdChange();updateThWeightLabel('density')"
                   style="width:80px;accent-color:#e84040">
-                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">25%</span>
+                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">30%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -983,9 +983,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                   style="width:65px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e91e8c;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3)">kA</span>
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-petir100-weight" min="0" max="100" value="25" oninput="onThresholdChange();updateThWeightLabel('petir100')"
+                <input type="range" id="th-petir100-weight" min="0" max="100" value="20" oninput="onThresholdChange();updateThWeightLabel('petir100')"
                   style="width:80px;accent-color:#e91e8c">
-                <span id="th-petir100-weight-val" style="color:#e91e8c;font-weight:500;min-width:30px;text-align:right">25%</span>
+                <span id="th-petir100-weight-val" style="color:#e91e8c;font-weight:500;min-width:30px;text-align:right">20%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -5456,9 +5456,9 @@ function resetThresholds() {
   document.getElementById('th-trend-val').value = 0;
   const p100on = document.getElementById('th-petir100-on'); if (p100on) p100on.checked = true;
   const p100val = document.getElementById('th-petir100-val'); if (p100val) p100val.value = 100;
-  // Bobot rekomendasi: tahanan 30, petir>100kA 25, density 25, tinggi 20 (span/elev/tren 10)
+  // Bobot: density 30, tahanan 30, petir>100kA 20, tinggi 20 (span/elev/tren 10 nonaktif)
   ['density','ohm','tinggi','span','elev','trend','petir100'].forEach((k,i) => {
-    const def = [25,30,20,10,10,10,25][i];
+    const def = [30,30,20,10,10,10,20][i];
     const inp = document.getElementById('th-'+k+'-weight');
     const lbl = document.getElementById('th-'+k+'-weight-val');
     if (inp) inp.value = def;
