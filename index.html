@@ -5540,11 +5540,13 @@ function showTLADetail(idx) {
   const orMode = document.getElementById('th-logic-or')?.checked || false;
   const wOn = { d:document.getElementById('th-density-on')?.checked, o:document.getElementById('th-ohm-on')?.checked,
                 h:document.getElementById('th-tinggi-on')?.checked, sp:document.getElementById('th-span-on')?.checked,
-                e:document.getElementById('th-elev-on')?.checked, t:document.getElementById('th-trend-on')?.checked };
+                e:document.getElementById('th-elev-on')?.checked, t:document.getElementById('th-trend-on')?.checked,
+                p:document.getElementById('th-petir100-on')?.checked };
   const thD = +document.getElementById('th-density-val')?.value || 0;
   const thO = +document.getElementById('th-ohm-val')?.value || 0;
   const thE = +document.getElementById('th-elev-val')?.value || 0;
   const thT = +document.getElementById('th-trend-val')?.value || 0;
+  const thP = +document.getElementById('th-petir100-val')?.value || 0;
   const thH = tinggiThresholdByVoltage(teg);
   const thSp = spanThresholdByVoltage(teg);
   const gw = (k) => +document.getElementById('th-'+k+'-weight')?.value || 0;
@@ -5563,6 +5565,13 @@ function showTLADetail(idx) {
   if (wOn.sp) faktorDetail.push({ nama:'Span (gawang)', nilai:s.span, unit:'m', th:thSp, lolos:(s.span!=null&&s.span>=thSp), bobot:gw('span'), warna:'#16A085', ket:'ambang '+teg+'kV' });
   if (wOn.e) faktorDetail.push({ nama:'Elevasi', nilai:s.elev, unit:'mdpl', th:thE, lolos:(s.elev!=null&&s.elev>=thE), bobot:gw('elev'), warna:'#9c6ade' });
   if (wOn.t) faktorDetail.push({ nama:'Tren density', nilai:s.trend, unit:'/thn', th:thT, lolos:(s.trend!=null&&s.trend>=thT), bobot:gw('trend'), warna:'#00d4aa' });
+  if (wOn.p) {
+    const pAll = r[A_PETIR100] || {};
+    const pByYear = DENS_YEARS.map(y => ({ year:y, val:(typeof pAll[y]==='number'?pAll[y]:null) }));
+    const pMaxYearVal = Math.max(...pByYear.map(d=>d.val||0), 0.001);
+    const pMaxYear = pByYear.reduce((best,d)=>(d.val!=null&&(best===null||d.val>best.val))?d:best, null);
+    faktorDetail.push({ nama:'Petir >100kA', nilai:s.petir100, unit:' kA', th:thP, lolos:(s.petir100!=null&&s.petir100>=thP), bobot:gw('petir100'), warna:'#e91e8c', densByYear:pByYear, maxYear:pMaxYear, maxYearVal:pMaxYearVal });
+  }
 
   const lolosCount = faktorDetail.filter(f => f.lolos).length;
 
@@ -5962,6 +5971,12 @@ function renderTLAPriority() {
     });
     return mx;
   };
+  const petir100YearOf = (r) => {
+    const p = r[A_PETIR100] || {};
+    let mx = null, yr = null;
+    DENS_YEARS.forEach(y => { const v = p[y]; if (typeof v === 'number' && (mx===null || v>mx)) { mx = v; yr = y; } });
+    return yr;
+  };
 
   // Density untuk kriteria TLA: MAKSIMUM semua tahun (2021-2026), bukan cuma terbaru.
   // Mencerminkan tower paling rawan sepanjang waktu.
@@ -6026,7 +6041,7 @@ function renderTLAPriority() {
     const p100 = maxPetir100(r);
     const pN = (p100 !== null && p100 > 0) ? norm(p100, pMin, pMax) : 0;
     const score = ((dN * wD) + (oN * wO) + (hN * wH) + (spN * wSp) + (eN * wE) + (tN * wT) + (pN * wP100)) / wSum * 100;
-    return { row:r, score, density:d, ohm:o, tinggi:h, tinggiParsed:tInfo?.tinggiParsed, tipe:tInfo?.tipe, span:sp, elev:e, trend, petir100:p100 };
+    return { row:r, score, density:d, ohm:o, tinggi:h, tinggiParsed:tInfo?.tinggiParsed, tipe:tInfo?.tipe, span:sp, elev:e, trend, petir100:p100, petir100Year:petir100YearOf(r) };
   })
   .filter(s => {
     if (s.score <= 0) return false;
@@ -6241,7 +6256,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.span && s.span >= spanThresholdByVoltage(s.row[A_TOWER_INFO]?.teg||150) ? '#16A085' : 'var(--text)') + '">' + (s.span ? fmt(s.span, 0) : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
-      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.petir100 != null && s.petir100 >= 100 ? '#e91e8c' : 'var(--text3)') + ';font-weight:' + (s.petir100 != null && s.petir100 >= 100 ? '600' : '400') + '">' + (s.petir100 != null ? s.petir100.toFixed(0) : '–') + '</td>'
+      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.petir100 != null && s.petir100 >= 100 ? '#e91e8c' : 'var(--text3)') + ';font-weight:' + (s.petir100 != null && s.petir100 >= 100 ? '600' : '400') + '">' + (s.petir100 != null ? s.petir100.toFixed(0) + (s.petir100Year ? '<br><span style="font-size:8px;font-weight:400;color:var(--text3)">\'' + s.petir100Year.slice(2) + '</span>' : '') : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
       + '<td style="font-size:10px;font-family:var(--mono);text-align:center;white-space:nowrap">' + (s.hasTLA ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:3px;font-weight:500">✅ Terpasang</span>' : '<span style="color:var(--text3)">— Belum</span>') + '</td>'
       + '<td style="font-size:10px;font-family:var(--mono);color:' + (s.status?.color || 'var(--text3)') + ';white-space:nowrap">' + (s.status?.label || '–') + '</td>'
@@ -6584,12 +6599,18 @@ function renderDensityLine() {
   const tla1vals = rows.map(r=>r[A_TLA1]);
   const tla2vals = rows.map(r=>r[A_TLA2]);
   const elev     = rows.map(r=>r[A_ELEV]);
-  // Petir >100kA: arus maksimum (magnitudo) per tower dari semua tahun
+  // Petir >100kA: arus maksimum (magnitudo) per tower + tahun tertinggi
   const petir100 = rows.map(r => {
     const p = r[A_PETIR100] || {};
     let mx = null;
     DENS_YEARS.forEach(y => { const v = p[y]; if (typeof v === 'number' && (mx===null || v>mx)) mx = v; });
     return mx;
+  });
+  const petir100Year = rows.map(r => {
+    const p = r[A_PETIR100] || {};
+    let mx = null, yr = null;
+    DENS_YEARS.forEach(y => { const v = p[y]; if (typeof v === 'number' && (mx===null || v>mx)) { mx = v; yr = y; } });
+    return yr;
   });
   // Density per tahun (object {2021:.., 2022:..})
   const densAllArr = rows.map(r=>r[A_DENS_ALL]||{});
@@ -6801,11 +6822,11 @@ function renderDensityLine() {
   });
 
   // Render grafik profil petir >100kA (bar per tower)
-  renderPetir100Profile(labels, petir100);
+  renderPetir100Profile(labels, petir100, petir100Year);
 }
 
 let petir100Chart = null;
-function renderPetir100Profile(labels, petir100) {
+function renderPetir100Profile(labels, petir100, petir100Year) {
   const wrap = document.getElementById('petir100-profile');
   const canvas = document.getElementById('c-petir100-line');
   if (!wrap || !canvas) return;
@@ -6815,9 +6836,27 @@ function renderPetir100Profile(labels, petir100) {
 
   const TC = getComputedStyle(document.documentElement).getPropertyValue('--text3').trim() || '#8892a0';
   const GC = 'rgba(255,255,255,0.05)';
+  // Plugin: tulis tahun di atas bar yang ada nilai
+  const yearLabel = {
+    id: 'p100YearLabel',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      ctx.save();
+      ctx.font = '8px monospace';
+      ctx.fillStyle = '#e91e8c';
+      ctx.textAlign = 'center';
+      meta.data.forEach((bar, i) => {
+        const yr = petir100Year[i];
+        if (yr && petir100[i] != null) ctx.fillText("'" + yr.slice(2), bar.x, bar.y - 3);
+      });
+      ctx.restore();
+    }
+  };
   if (petir100Chart) petir100Chart.destroy();
   petir100Chart = new Chart(canvas, {
     type: 'bar',
+    plugins: [yearLabel],
     data: {
       labels: labels,
       datasets: [{
@@ -6832,7 +6871,10 @@ function renderPetir100Profile(labels, petir100) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: (i) => i.parsed.y != null ? 'Arus maks: ' + i.parsed.y.toFixed(0) + ' kA' : 'Tidak ada' } }
+        tooltip: { callbacks: {
+          label: (i) => i.parsed.y != null ? 'Arus maks: ' + i.parsed.y.toFixed(0) + ' kA' : 'Tidak ada',
+          afterLabel: (i) => petir100Year[i.dataIndex] ? 'Tahun: ' + petir100Year[i.dataIndex] : ''
+        } }
       },
       scales: {
         x: { ticks:{color:TC,font:{size:9},maxRotation:0,maxTicksLimit:25}, grid:{color:GC} },
