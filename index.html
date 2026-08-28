@@ -5484,7 +5484,7 @@ function updateTLAWeight(input) {
 }
 
 // State sort & pagination tabel prioritas TLA
-let TLA_PRIO_SORT = { col: 'score', dir: -1 }; // default: score desc
+let TLA_PRIO_SORT = { col: 'metCount', dir: -1 }; // default: bintang terbanyak dulu
 let TLA_PRIO_PAGE = 1;
 const TLA_PRIO_PER_PAGE = 25;
 
@@ -5499,7 +5499,7 @@ function resetTLAPrioFilters() {
   });
   const s = document.getElementById('f-tla-prio-search'); if (s) s.value = '';
   const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = true;
-  TLA_PRIO_SORT = { col: 'score', dir: -1 };
+  TLA_PRIO_SORT = { col: 'metCount', dir: -1 };
   TLA_PRIO_PAGE = 1;
   renderTLAPriority();
 }
@@ -5632,8 +5632,9 @@ function showTLADetail(idx) {
   }).join('');
 
   // Kesimpulan
+  const bintangModal = lolosCount > 0 ? '<span style="color:#f5c518;letter-spacing:1px">' + '★'.repeat(lolosCount) + '</span> ' : '';
   const alasanMasuk = orMode
-    ? 'Mode <b>ATAU</b>: tower masuk karena memenuhi <b style="color:#00d4aa">' + lolosCount + ' dari ' + faktorDetail.length + '</b> faktor kriteria (cukup salah satu).'
+    ? bintangModal + 'Mode <b>ATAU</b>: tower masuk karena memenuhi <b style="color:#00d4aa">' + lolosCount + ' dari ' + faktorDetail.length + '</b> faktor kriteria (cukup salah satu).'
     : 'Mode <b>DAN</b>: tower masuk karena memenuhi <b style="color:#00d4aa">SEMUA ' + faktorDetail.length + '</b> faktor kriteria aktif.';
 
   const modalHtml = '<div id="tla-detail-modal" onclick="if(event.target===this)closeTLADetail()" style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px">'
@@ -6118,7 +6119,9 @@ function renderTLAPriority() {
       const kontrib = [dN*wD, oN*wO, hN*wH, spN*wSp, eN*wE, tN*wT, pN*wP100];
       score = kontrib.reduce((a,b)=>a+b, 0) / wSum * 100;
     }
-    return { row:r, score, density:d, ohm:o, tinggi:h, tinggiParsed:tInfo?.tinggiParsed, tipe:tInfo?.tipe, span:sp, elev:e, trend, petir100:p100, petir100Year:petir100YearOf(r) };
+    // Jumlah kriteria yang terpenuhi (untuk kolom bintang)
+    const metCount = [met.d, met.o, met.h, met.sp, met.e, met.t, met.p].filter(Boolean).length;
+    return { row:r, score, density:d, ohm:o, tinggi:h, tinggiParsed:tInfo?.tinggiParsed, tipe:tInfo?.tipe, span:sp, elev:e, trend, petir100:p100, petir100Year:petir100YearOf(r), metCount, met };
   })
   .filter(s => {
     if (s.score <= 0) return false;
@@ -6268,12 +6271,15 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       case 'elev':    va = a.elev ?? -1; vb = b.elev ?? -1; break;
       case 'trend':   va = a.trend ?? -99; vb = b.trend ?? -99; break;
       case 'petir100': va = a.petir100 ?? -1; vb = b.petir100 ?? -1; break;
+      case 'metCount': va = a.metCount ?? 0; vb = b.metCount ?? 0; break;
       case 'tla':     va = a.hasTLA ? 1 : 0; vb = b.hasTLA ? 1 : 0; break;
       case 'status':  va = a.status?.key || ''; vb = b.status?.key || ''; break;
       case 'score':
       default:        va = a.score; vb = b.score; break;
     }
     if (typeof va === 'string') return va.localeCompare(vb) * sortDir;
+    // Tie-breaker: saat sort metCount, jika jumlah bintang sama → skor tinggi dulu
+    if (sortKey === 'metCount' && va === vb) return (b.score - a.score);
     return (va - vb) * sortDir;
   });
   _tlaTableSorted = sorted; // simpan untuk modal detail (index = globalIdx)
@@ -6316,6 +6322,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('span','Span (m)','right');
   html += th('elev','Elv (m)','right');
   html += th('trend','Tren','right');
+  html += th('metCount','⭐ Kriteria','center');
   html += th('petir100','⚡&gt;100kA','right');
   html += th('score','Score','right');
   html += th('tla','TLA');
@@ -6337,6 +6344,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.span && s.span >= spanThresholdByVoltage(s.row[A_TOWER_INFO]?.teg||150) ? '#16A085' : 'var(--text)') + '">' + (s.span ? fmt(s.span, 0) : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
+      + '<td style="text-align:center;font-size:11px;white-space:nowrap" title="' + (s.metCount||0) + ' kriteria terpenuhi">' + (s.metCount > 0 ? '<span style="color:#f5c518;letter-spacing:-1px">' + '★'.repeat(s.metCount) + '</span><span style="color:var(--text3);font-family:var(--mono);font-size:10px;margin-left:3px">' + s.metCount + '</span>' : '<span style="color:var(--text3)">–</span>') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.petir100 != null && s.petir100 >= 100 ? '#e91e8c' : 'var(--text3)') + ';font-weight:' + (s.petir100 != null && s.petir100 >= 100 ? '600' : '400') + '">' + (s.petir100 != null ? s.petir100.toFixed(0) + (s.petir100Year ? '<br><span style="font-size:8px;font-weight:400;color:var(--text3)">\'' + s.petir100Year.slice(2) + '</span>' : '') : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
       + '<td style="font-size:10px;font-family:var(--mono);text-align:center;white-space:nowrap">' + (s.hasTLA ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:3px;font-weight:500">✅ Terpasang</span>' : '<span style="color:var(--text3)">— Belum</span>') + '</td>'
