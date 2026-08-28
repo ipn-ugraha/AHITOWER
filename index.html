@@ -5960,6 +5960,19 @@ function exportTLAPrioPDF() {
 
     + '<div style="font-size:9px;color:#666;margin-bottom:4px">💡 Sel dengan <span style="background:#d4f5e0;color:#0a7a4a;font-weight:700;padding:0 4px">latar hijau</span> = nilai memenuhi kriteria threshold terpilih.</div>'
 
+    + '<div style="font-size:11px;font-weight:700;color:#2a4a7a;margin:10px 0 4px">Rincian Tower Prioritas per Penghantar (' + phtDetailSorted.length + ' penghantar)</div>'
+    + '<table class="mini-table" style="width:100%"><thead><tr><th>#</th><th style="text-align:left">Penghantar</th><th>UPT</th><th>kV</th><th>Tower Prioritas</th><th>🔴 Kritis</th></tr></thead><tbody>'
+    + phtDetailSorted.map(([pht,d],i) =>
+        '<tr><td>' + (i+1) + '</td>'
+        + '<td style="text-align:left">' + esc(pht) + '</td>'
+        + '<td>' + esc(d.upt) + '</td>'
+        + '<td>' + esc(d.teg) + '</td>'
+        + '<td><b>' + d.count + '</b></td>'
+        + '<td style="color:' + (d.kritis>0?'#e84040':'#999') + ';font-weight:' + (d.kritis>0?'700':'400') + '">' + (d.kritis||'–') + '</td></tr>'
+      ).join('')
+    + '<tr style="background:#eef;font-weight:700"><td></td><td style="text-align:left">TOTAL ' + phtDetailSorted.length + ' PENGHANTAR</td><td></td><td></td><td>' + data.length + '</td><td style="color:#e84040">' + kritis + '</td></tr>'
+    + '</tbody></table>'
+
     + '<table><thead><tr>'
     + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>★ Kriteria</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Span (m)</th><th>Elevasi</th><th>⚡&gt;100kA</th><th>Score</th><th>Severity</th><th>TLA</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table>'
