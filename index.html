@@ -850,9 +850,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-density-val" value="12" min="0" max="50" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e84040;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-density-weight" min="0" max="100" value="30" oninput="onThresholdChange();updateThWeightLabel('density')"
+                <input type="range" id="th-density-weight" min="0" max="100" value="25" oninput="onThresholdChange();updateThWeightLabel('density')"
                   style="width:80px;accent-color:#e84040">
-                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">30%</span>
+                <span id="th-density-weight-val" style="color:#e84040;font-weight:500;min-width:30px;text-align:right">25%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -876,9 +876,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-ohm-val" value="10" min="0" max="100" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-ohm-weight" min="0" max="100" value="30" oninput="onThresholdChange();updateThWeightLabel('ohm')"
+                <input type="range" id="th-ohm-weight" min="0" max="100" value="20" oninput="onThresholdChange();updateThWeightLabel('ohm')"
                   style="width:80px;accent-color:#f5a623">
-                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">30%</span>
+                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">20%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -892,7 +892,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #16A085;opacity:.45" id="th-row-span">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
               <div style="display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="th-span-on" onchange="onThresholdChange()" style="accent-color:#16A085;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-span-on" checked onchange="onThresholdChange()" style="accent-color:#16A085;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500;color:var(--text)">📐 Span (Gawang)</span>
                 <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">span terpanjang per tegangan (m)</span>
               </div>
@@ -950,7 +950,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #9c6ade;opacity:.45" id="th-row-elev">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
               <div style="display:flex;align-items:center;gap:8px">
-                <input type="checkbox" id="th-elev-on" onchange="onThresholdChange()" style="accent-color:#9c6ade;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-elev-on" checked onchange="onThresholdChange()" style="accent-color:#9c6ade;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500">⛰ Elevasi</span>
                 <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">mdpl</span>
               </div>
@@ -983,9 +983,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                   style="width:65px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#e91e8c;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3)">kA</span>
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-petir100-weight" min="0" max="100" value="20" oninput="onThresholdChange();updateThWeightLabel('petir100')"
+                <input type="range" id="th-petir100-weight" min="0" max="100" value="10" oninput="onThresholdChange();updateThWeightLabel('petir100')"
                   style="width:80px;accent-color:#e91e8c">
-                <span id="th-petir100-weight-val" style="color:#e91e8c;font-weight:500;min-width:30px;text-align:right">20%</span>
+                <span id="th-petir100-weight-val" style="color:#e91e8c;font-weight:500;min-width:30px;text-align:right">10%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -1100,13 +1100,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
               <label style="display:flex;align-items:center;gap:4px;color:#e84040">🔴 Kritis ≥
-                <input type="number" id="sev-kritis" value="65" min="0" max="100" step="1" oninput="onThresholdChange()"
+                <input type="number" id="sev-kritis" value="80" min="0" max="100" step="1" oninput="onThresholdChange()"
                   style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#e84040;font-family:var(--mono);font-weight:600;text-align:right"></label>
               <label style="display:flex;align-items:center;gap:4px;color:#f5a623">🟠 Tinggi ≥
-                <input type="number" id="sev-tinggi" value="50" min="0" max="100" step="1" oninput="onThresholdChange()"
+                <input type="number" id="sev-tinggi" value="60" min="0" max="100" step="1" oninput="onThresholdChange()"
                   style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#f5a623;font-family:var(--mono);font-weight:600;text-align:right"></label>
               <label style="display:flex;align-items:center;gap:4px;color:#d4bf00">🟡 Sedang ≥
-                <input type="number" id="sev-sedang" value="35" min="0" max="100" step="1" oninput="onThresholdChange()"
+                <input type="number" id="sev-sedang" value="58" min="0" max="100" step="1" oninput="onThresholdChange()"
                   style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#d4bf00;font-family:var(--mono);font-weight:600;text-align:right"></label>
               <span style="color:#00d4aa">🟢 Rendah di bawahnya</span>
             </div>
@@ -5424,9 +5424,9 @@ function updateThWeightLabel(k) {
 }
 
 function resetSeverityThresholds() {
-  const k = document.getElementById('sev-kritis'); if (k) k.value = 65;
-  const t = document.getElementById('sev-tinggi'); if (t) t.value = 50;
-  const s = document.getElementById('sev-sedang'); if (s) s.value = 35;
+  const k = document.getElementById('sev-kritis'); if (k) k.value = 80;
+  const t = document.getElementById('sev-tinggi'); if (t) t.value = 60;
+  const s = document.getElementById('sev-sedang'); if (s) s.value = 58;
   onThresholdChange();
 }
 
@@ -5444,26 +5444,30 @@ function resetThresholds() {
   Object.entries(tinggiDefaults).forEach(([v,def]) => {
     const e = document.getElementById('th-tinggi-'+v); if (e) e.value = def;
   });
-  // Span OFF + reset 4 threshold per tegangan
-  document.getElementById('th-span-on').checked = false;
+  // Span ON + reset 4 threshold per tegangan
+  document.getElementById('th-span-on').checked = true;
   const spanDefaults = { '70':300, '150':400, '275':450, '500':500 };
   Object.entries(spanDefaults).forEach(([v,def]) => {
     const e = document.getElementById('th-span-'+v); if (e) e.value = def;
   });
-  document.getElementById('th-elev-on').checked = false;
+  document.getElementById('th-elev-on').checked = true;
   document.getElementById('th-elev-val').value = 50;
   document.getElementById('th-trend-on').checked = false;
   document.getElementById('th-trend-val').value = 0;
   const p100on = document.getElementById('th-petir100-on'); if (p100on) p100on.checked = true;
   const p100val = document.getElementById('th-petir100-val'); if (p100val) p100val.value = 100;
-  // Bobot: density 30, tahanan 30, petir>100kA 20, tinggi 20 (span/elev/tren 10 nonaktif)
+  // Bobot: density 25, tahanan 20, span 10, elev 10, petir>100kA 10, tinggi 20 (tren 10 nonaktif)
   ['density','ohm','tinggi','span','elev','trend','petir100'].forEach((k,i) => {
-    const def = [30,30,20,10,10,10,20][i];
+    const def = [25,20,20,10,10,10,10][i];
     const inp = document.getElementById('th-'+k+'-weight');
     const lbl = document.getElementById('th-'+k+'-weight-val');
     if (inp) inp.value = def;
     if (lbl) lbl.textContent = def + '%';
   });
+  // Severity default
+  const sk = document.getElementById('sev-kritis'); if (sk) sk.value = 80;
+  const st = document.getElementById('sev-tinggi'); if (st) st.value = 60;
+  const ss = document.getElementById('sev-sedang'); if (ss) ss.value = 58;
   TLA_PRIO_PAGE = 1;
   onThresholdChange();
 }
