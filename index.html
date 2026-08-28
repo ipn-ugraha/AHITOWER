@@ -5660,7 +5660,7 @@ function showTLADetail(idx) {
     + '<div style="padding:10px 12px;background:rgba(59,122,255,0.08);border:1px solid rgba(59,122,255,0.2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:14px">' + alasanMasuk + '</div>'
     + '<div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Rincian Faktor Kriteria</div>'
     + faktorHtml
-    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:10px;line-height:1.5">💡 ' + (orMode ? 'Mode ATAU: skor = faktor tertinggi + bonus 0.7 dari faktor lain (tower banyak faktor tinggi diprioritaskan, tower ekstrem 1 faktor tetap terhitung).' : 'Mode DAN: skor = jumlah faktor tertimbang sesuai bobot.') + ' Faktor ✓ hijau = nilai tower melewati ambang batas.</div>'
+    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:10px;line-height:1.5">💡 ' + (orMode ? 'Mode ATAU: skor dihitung HANYA dari faktor yang memenuhi kriteria (✓ hijau). Faktor di bawah ambang tidak menyumbang skor — tower yang memenuhi kriteria diprioritaskan.' : 'Mode DAN: skor = jumlah semua faktor tertimbang sesuai bobot.') + ' Faktor ✓ hijau = nilai tower melewati ambang batas.</div>'
     + '</div>'
     + '</div></div>';
 
@@ -5874,7 +5874,7 @@ function exportTLAPrioPDF() {
     + '<div class="t">⚙ Kriteria Terpilih</div>'
     + '<div class="crit-grid">'
     + '<div><b>Logika threshold:</b> ' + esc(logikaStr) + '</div>'
-    + '<div><b>Metode:</b> ' + (orMode ? 'Hybrid MAX + bonus 0.7 (mode ATAU)' : 'Pembobotan (weighted, mode DAN)') + '</div>'
+    + '<div><b>Metode:</b> ' + (orMode ? 'Skor dari faktor yang memenuhi kriteria (mode ATAU)' : 'Pembobotan semua faktor (mode DAN)') + '</div>'
     + '<div><b>Urutan tabel:</b> ' + esc(sortLabel) + '</div>'
     + '<div><b>Filter:</b> ' + filterAktif.join(' · ') + '</div>'
     + '</div>'
@@ -6082,25 +6082,41 @@ function renderTLAPriority() {
     const p100 = maxPetir100(r);
     const pN = normVsTh(p100, thPetir100 !== null ? thPetir100 : 100);
 
-    // Kontribusi tiap faktor (ternormalisasi × bobot)
-    const kontrib = [dN*wD, oN*wO, hN*wH, spN*wSp, eN*wE, tN*wT, pN*wP100];
-    const sumKontrib = kontrib.reduce((a,b)=>a+b, 0);
+    // Cek tiap faktor: apakah MEMENUHI kriteria threshold (untuk mode OR)
+    const thHval = tinggiThresholdByVoltage(teg);
+    const thSval = spanThresholdByVoltage(teg);
+    const met = {
+      d: thDensity !== null && d !== null && d !== undefined && d >= thDensity,
+      o: thOhm !== null && o !== null && o !== undefined && o >= thOhm,
+      h: thTinggiOn && h !== null && h !== undefined && h >= thHval,
+      sp: thSpanOn && sp !== null && sp !== undefined && sp >= thSval,
+      e: thElev !== null && e !== null && e !== undefined && e >= thElev,
+      t: thTrend !== null && trend !== undefined && trend !== null && trend >= thTrend,
+      p: thPetir100 !== null && p100 !== null && p100 !== undefined && p100 >= thPetir100,
+    };
 
     let score;
     if (orModeGlobal) {
-      // HYBRID (mode OR): faktor tertinggi + bonus 0.7 dari faktor lain.
-      // Tower ekstrem 1 faktor tidak tenggelam; tower banyak faktor tinggi tetap teratas.
-      const maxKontrib = Math.max(...kontrib, 0);
-      const sumLain = sumKontrib - maxKontrib;
+      // Mode OR: skor HANYA dari faktor yang MEMENUHI kriteria (melewati threshold).
+      // Faktor di bawah threshold = 0 kontribusi. Tower yang memenuhi kriteria kuat
+      // dapat skor tinggi; tower yang cuma mendekati tidak "mencuri" prioritas.
+      const kontribMet = [
+        met.d ? dN*wD : 0, met.o ? oN*wO : 0, met.h ? hN*wH : 0,
+        met.sp ? spN*wSp : 0, met.e ? eN*wE : 0, met.t ? tN*wT : 0,
+        met.p ? pN*wP100 : 0
+      ];
+      const sumMet = kontribMet.reduce((a,b)=>a+b, 0);
+      const maxMet = Math.max(...kontribMet, 0);
+      const sumLain = sumMet - maxMet;
       const BONUS = 0.7;
-      const rawHybrid = maxKontrib + (sumLain * BONUS);
-      // Normalisasi: skor maksimum teoretis = wMax + (wSum - wMax) × BONUS
+      const rawHybrid = maxMet + (sumLain * BONUS);
       const wMax = Math.max(wD, wO, wH, wSp, wE, wT, wP100, 0.0001);
       const maxTheoretical = wMax + (wSum - wMax) * BONUS;
       score = maxTheoretical > 0 ? (rawHybrid / maxTheoretical) * 100 : 0;
     } else {
-      // PEMBOBOTAN murni (mode AND): jumlah tertimbang / total bobot
-      score = sumKontrib / wSum * 100;
+      // PEMBOBOTAN murni (mode AND): jumlah tertimbang / total bobot (semua faktor)
+      const kontrib = [dN*wD, oN*wO, hN*wH, spN*wSp, eN*wE, tN*wT, pN*wP100];
+      score = kontrib.reduce((a,b)=>a+b, 0) / wSum * 100;
     }
     return { row:r, score, density:d, ohm:o, tinggi:h, tinggiParsed:tInfo?.tinggiParsed, tipe:tInfo?.tipe, span:sp, elev:e, trend, petir100:p100, petir100Year:petir100YearOf(r) };
   })
