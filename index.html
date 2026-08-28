@@ -1165,9 +1165,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <div style="font-size:9px;color:var(--text3);font-family:var(--mono)" id="card-tla-terpasang-sub">dari tabel lolos</div>
             </div>
           </div>
-        </div>
 
-        <!-- Filter Bar (spesifik — UPT/PHT/Tegangan ikut filter global) -->
+          <!-- Distribusi bintang (jumlah kriteria terpenuhi) -->
+          <div id="star-dist-row" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Distribusi kriteria:</span>
+            <span id="star-dist" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+          </div>
+        </div>
         <div style="display:flex;flex-wrap:wrap;gap:8px;padding:.6rem 1rem;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border)">
           <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">Filter:</span>
           <select id="f-tla-prio-ultg" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:120px">
