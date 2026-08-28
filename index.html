@@ -5764,6 +5764,15 @@ function exportTLAPrioPDF() {
   const jmlTeg = Object.keys(byTeg).length;
   // Penghantar dengan tower prioritas terbanyak
   const topPht = Object.entries(byPht).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  // Rincian lengkap per penghantar: jumlah tower prioritas + UPT + tegangan
+  const phtDetail = {};
+  data.forEach(s => {
+    const pht = s.row[A_PHT] || 'Lainnya';
+    if (!phtDetail[pht]) phtDetail[pht] = { count:0, upt:(s.row[A_UPT]||'–').replace('UPT ',''), teg:s.row[A_TOWER_INFO]?.teg||'–', kritis:0 };
+    phtDetail[pht].count++;
+    if (s.status.key === 'kritis') phtDetail[pht].kritis++;
+  });
+  const phtDetailSorted = Object.entries(phtDetail).sort((a,b)=>b[1].count-a[1].count);
   // Distribusi bintang (kriteria terpenuhi)
   const starDist = {};
   data.forEach(s => { const n = s.metCount||0; starDist[n] = (starDist[n]||0)+1; });
