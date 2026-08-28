@@ -821,6 +821,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <ul style="margin:0 0 0 16px;padding:0;font-size:10px;color:var(--text2);font-family:var(--mono);line-height:1.7">
               <li><b style="color:#e84040">Density Petir</b> — sesuai IEEE 1243 § Lightning activity / CIGRE TB 549 (threshold &gt;15 kA)</li>
               <li><b style="color:#f5a623">Tahanan Pentanahan</b> — sesuai IEEE 1243 § Soil characteristics / rekomendasi NEMA (&lt;5Ω = aman)</li>
+              <li><b style="color:#e91e8c">Petir &gt;100kA</b> — arus puncak ekstrem; dasar distribusi arus Berger/CIGRE, <b style="color:#e84040">penerapan sebagai faktor prioritas = pragmatis, bukan formula baku IEEE</b></li>
+              <li><b style="color:#16A085">Span (Gawang)</b> <em>(opsional)</em> — sesuai IEEE 1243 § shielding/area tangkapan (span panjang = area tangkap lebih besar)</li>
               <li><b style="color:#3b7aff">Tinggi Tower</b> <em>(opsional)</em> — sesuai IEEE 1243 § Tower geometry. Estimasi dari kode TIPE_TOWER + kV</li>
               <li><b style="color:#9c6ade">Elevasi</b> <em>(opsional)</em> — pendekatan empirik NEMA "mountain top", <b style="color:#e84040">bukan dari IEEE/CIGRE</b></li>
               <li><b style="color:#00d4aa">Tren Naik</b> <em>(opsional)</em> — pendekatan analitik historis 6 tahun, <b style="color:#e84040">bukan dari IEEE/CIGRE</b></li>
@@ -829,7 +831,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
               <b style="color:var(--text2)">Referensi threshold yang dipakai:</b><br>
               • <b style="color:#e84040">Density ≥6</b> flash/km²/thn — CIGRE TB 549: batas bawah kategori "Tinggi" (6–15 flash/km²/thn). Threshold kolom >15 kA merujuk arus puncak petir (median distribusi CIGRE/Berger)<br>
               • <b style="color:#f5a623">Tahanan ≥5Ω</b> — IEEE Std 1243 §5 + NEMA: di bawah 5Ω dianggap aman (tidak perlu TLA), 5–10Ω perlu perhatian, &gt;10Ω prioritas. Backflashover rate naik seiring tahanan kaki tower<br>
-              • <b style="color:#3b7aff">Tinggi relatif per kV</b> — IEEE Std 1243 §4 (Tower geometry): frekuensi sambaran N_L ∝ tinggi tower. Threshold: 70kV≥20m · 150kV≥30m · 275kV≥38m · 500kV≥55m (di atas median tinggi per kelas tegangan)
+              • <b style="color:#3b7aff">Tinggi relatif per kV</b> — IEEE Std 1243 §4 (Tower geometry): frekuensi sambaran N_L ∝ tinggi tower. Threshold: 70kV≥20m · 150kV≥30m · 275kV≥38m · 500kV≥55m (di atas median tinggi per kelas tegangan)<br>
+              • <b style="color:#e91e8c">Petir &gt;100kA</b> — arus puncak &gt;100 kA berada di ekor atas distribusi Berger/CIGRE (hanya ~5% sambaran melebihi ~90–100 kA; median ~30 kA). Arus setinggi ini menghasilkan tegangan tower jauh lebih besar (V ≈ I × Z), memperbesar risiko backflashover walau grounding baik. Threshold ≥100 kA menandai kejadian ekstrem. <b style="color:#e84040">Catatan: penggunaan sebagai faktor prioritas TLA adalah pendekatan pragmatis berbasis data yang tersedia, bukan prosedur baku IEEE 1243/CIGRE</b>
             </div>
           </div>
           <div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:8px">
@@ -5939,6 +5942,17 @@ function exportTLAPrioPDF() {
         ? 'Mode ATAU — skor dihitung HANYA dari faktor yang memenuhi kriteria (nilai ≥ threshold). Faktor yang tidak memenuhi tidak menyumbang skor. Formula: skor = [faktor tertinggi + (0,7 × jumlah faktor lain yang memenuhi)] ÷ maksimum teoretis × 100. Normalisasi tiap faktor: nilai di threshold = 0,6 dan di 2× threshold = 1,0.'
         : 'Mode DAN — skor = jumlah semua faktor (ternormalisasi × bobot) ÷ total bobot × 100. Normalisasi: nilai di threshold = 0,6 dan di 2× threshold = 1,0.')
     + '<br><b>Severity:</b> Kritis ≥ ' + (document.getElementById('sev-kritis')?.value||'80') + ', Tinggi ≥ ' + (document.getElementById('sev-tinggi')?.value||'60') + ', Sedang ≥ ' + (document.getElementById('sev-sedang')?.value||'40') + ', Rendah di bawahnya.'
+    + '</div>'
+    + '<div style="font-size:8px;color:#555;margin-top:6px;line-height:1.5;padding:6px 8px;background:#fafbfd;border:1px solid #e0e5ee;border-radius:4px">'
+    + '<b style="color:#2a4a7a">ℹ Dasar & Referensi Kriteria</b><br>'
+    + 'Implementasi pragmatis berbasis data yang tersedia. Faktor utama IEEE 1243-1997 yang belum tercakup: BIL/CFO insulator, geometri shielding angle, efektivitas ground wire (tidak tersedia di dataset).<br>'
+    + '• <b>Density Petir</b> — IEEE 1243 § Lightning activity / CIGRE TB 549 (arus puncak &gt;15 kA, median distribusi Berger).<br>'
+    + '• <b>Tahanan Pentanahan</b> — IEEE 1243 §5 + NEMA: &lt;5Ω aman, 5–10Ω perhatian, &gt;10Ω prioritas. Backflashover naik seiring tahanan kaki tower.<br>'
+    + '• <b>Petir &gt;100kA</b> — arus puncak di ekor atas distribusi Berger/CIGRE (~5% sambaran &gt;90–100 kA; median ~30 kA). Arus tinggi → tegangan tower besar (V ≈ I × Z) → risiko backflashover naik walau grounding baik. <i>Penerapan sebagai faktor prioritas = pragmatis, bukan prosedur baku IEEE/CIGRE.</i><br>'
+    + '• <b>Tinggi Tower</b> — IEEE 1243 §4 (Tower geometry): frekuensi sambaran N_L ∝ tinggi. Threshold per kV: 70≥20m · 150≥30m · 275≥38m · 500≥55m. Estimasi dari kode TIPE_TOWER.<br>'
+    + '• <b>Span (Gawang)</b> — IEEE 1243 § area tangkapan (span panjang = area tangkap lebih besar). <i>Opsional.</i><br>'
+    + '• <b>Elevasi</b> — pendekatan empirik NEMA "mountain top", bukan IEEE/CIGRE. <i>Opsional.</i><br>'
+    + '• <b>Tren Naik</b> — analitik historis 6 tahun, bukan IEEE/CIGRE. <i>Opsional.</i>'
     + '</div>'
     + '</div>'
 
