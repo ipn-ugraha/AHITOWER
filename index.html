@@ -876,9 +876,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <input type="number" id="th-ohm-val" value="10" min="0" max="100" step="0.5" oninput="onThresholdChange()"
                   style="width:60px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;color:#f5a623;font-family:var(--mono);font-weight:500;text-align:right">
                 <span style="color:var(--text3);margin-left:8px">bobot</span>
-                <input type="range" id="th-ohm-weight" min="0" max="100" value="20" oninput="onThresholdChange();updateThWeightLabel('ohm')"
+                <input type="range" id="th-ohm-weight" min="0" max="100" value="25" oninput="onThresholdChange();updateThWeightLabel('ohm')"
                   style="width:80px;accent-color:#f5a623">
-                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">20%</span>
+                <span id="th-ohm-weight-val" style="color:#f5a623;font-weight:500;min-width:30px;text-align:right">25%</span>
               </div>
             </div>
             <div style="display:flex;gap:8px;font-size:9px;font-family:var(--mono);color:var(--text3);margin-top:4px">
@@ -1100,13 +1100,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
               <label style="display:flex;align-items:center;gap:4px;color:#e84040">🔴 Kritis ≥
-                <input type="number" id="sev-kritis" value="80" min="0" max="100" step="1" oninput="onThresholdChange()"
+                <input type="number" id="sev-kritis" value="70" min="0" max="100" step="1" oninput="onThresholdChange()"
                   style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#e84040;font-family:var(--mono);font-weight:600;text-align:right"></label>
               <label style="display:flex;align-items:center;gap:4px;color:#f5a623">🟠 Tinggi ≥
                 <input type="number" id="sev-tinggi" value="60" min="0" max="100" step="1" oninput="onThresholdChange()"
                   style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#f5a623;font-family:var(--mono);font-weight:600;text-align:right"></label>
               <label style="display:flex;align-items:center;gap:4px;color:#d4bf00">🟡 Sedang ≥
-                <input type="number" id="sev-sedang" value="58" min="0" max="100" step="1" oninput="onThresholdChange()"
+                <input type="number" id="sev-sedang" value="50" min="0" max="100" step="1" oninput="onThresholdChange()"
                   style="width:52px;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:2px 5px;color:#d4bf00;font-family:var(--mono);font-weight:600;text-align:right"></label>
               <span style="color:#00d4aa">🟢 Rendah di bawahnya</span>
             </div>
@@ -1129,6 +1129,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </div>
             <div style="display:flex;align-items:center;gap:10px">
               <select id="tla-pdf-sort" style="background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--text2);padding:4px 8px;font-size:10px;font-family:var(--mono)" title="Urutan tabel di PDF">
+                <option value="metCount">Urut PDF: Kriteria ★</option>
                 <option value="score">Urut PDF: Score</option>
                 <option value="upt">Urut PDF: UPT</option>
                 <option value="pht">Urut PDF: Penghantar</option>
@@ -5428,9 +5429,9 @@ function updateThWeightLabel(k) {
 }
 
 function resetSeverityThresholds() {
-  const k = document.getElementById('sev-kritis'); if (k) k.value = 80;
+  const k = document.getElementById('sev-kritis'); if (k) k.value = 70;
   const t = document.getElementById('sev-tinggi'); if (t) t.value = 60;
-  const s = document.getElementById('sev-sedang'); if (s) s.value = 58;
+  const s = document.getElementById('sev-sedang'); if (s) s.value = 50;
   onThresholdChange();
 }
 
@@ -5460,18 +5461,18 @@ function resetThresholds() {
   document.getElementById('th-trend-val').value = 0;
   const p100on = document.getElementById('th-petir100-on'); if (p100on) p100on.checked = true;
   const p100val = document.getElementById('th-petir100-val'); if (p100val) p100val.value = 100;
-  // Bobot: density 25, tahanan 20, span 10, elev 10, petir>100kA 10, tinggi 20 (tren 10 nonaktif)
+  // Bobot: density 25, tahanan 25, span 10, elev 10, petir>100kA 10, tinggi 20 (tren 10 nonaktif)
   ['density','ohm','tinggi','span','elev','trend','petir100'].forEach((k,i) => {
-    const def = [25,20,20,10,10,10,10][i];
+    const def = [25,25,20,10,10,10,10][i];
     const inp = document.getElementById('th-'+k+'-weight');
     const lbl = document.getElementById('th-'+k+'-weight-val');
     if (inp) inp.value = def;
     if (lbl) lbl.textContent = def + '%';
   });
   // Severity default
-  const sk = document.getElementById('sev-kritis'); if (sk) sk.value = 80;
+  const sk = document.getElementById('sev-kritis'); if (sk) sk.value = 70;
   const st = document.getElementById('sev-tinggi'); if (st) st.value = 60;
-  const ss = document.getElementById('sev-sedang'); if (ss) ss.value = 58;
+  const ss = document.getElementById('sev-sedang'); if (ss) ss.value = 50;
   TLA_PRIO_PAGE = 1;
   onThresholdChange();
 }
@@ -5687,13 +5688,16 @@ function exportTLAPrioPDF() {
   const sortBy = document.getElementById('tla-pdf-sort')?.value || 'score';
   const data = [...dataRaw];
   if (sortBy === 'upt') {
-    data.sort((a,b) => String(a.row[A_UPT]||'').localeCompare(String(b.row[A_UPT]||'')) || b.score - a.score);
+    data.sort((a,b) => String(a.row[A_UPT]||'').localeCompare(String(b.row[A_UPT]||'')) || (b.metCount||0)-(a.metCount||0) || b.score - a.score);
   } else if (sortBy === 'pht') {
-    data.sort((a,b) => String(a.row[A_PHT]||'').localeCompare(String(b.row[A_PHT]||'')) || b.score - a.score);
-  } else {
+    data.sort((a,b) => String(a.row[A_PHT]||'').localeCompare(String(b.row[A_PHT]||'')) || (b.metCount||0)-(a.metCount||0) || b.score - a.score);
+  } else if (sortBy === 'score') {
     data.sort((a,b) => b.score - a.score); // score desc
+  } else {
+    // default: bintang (kriteria) terbanyak dulu, skor sebagai tie-breaker
+    data.sort((a,b) => (b.metCount||0)-(a.metCount||0) || b.score - a.score);
   }
-  const sortLabel = { score:'Score (kritis dulu)', upt:'UPT', pht:'Penghantar' }[sortBy] || 'Score';
+  const sortLabel = { score:'Score', upt:'UPT', pht:'Penghantar', metCount:'Kriteria (bintang)' }[sortBy] || 'Kriteria (bintang) lalu score';
 
   // ── Kumpulkan kriteria terpilih ──
   const orMode = document.getElementById('th-logic-or')?.checked || false;
@@ -5758,6 +5762,15 @@ function exportTLAPrioPDF() {
   const jmlTeg = Object.keys(byTeg).length;
   // Penghantar dengan tower prioritas terbanyak
   const topPht = Object.entries(byPht).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  // Distribusi bintang (kriteria terpenuhi)
+  const starDist = {};
+  data.forEach(s => { const n = s.metCount||0; starDist[n] = (starDist[n]||0)+1; });
+  const maxStarsPdf = Math.max(0, ...Object.keys(starDist).map(Number));
+  let starDistHtml = '';
+  for (let n = maxStarsPdf; n >= 1; n--) {
+    if (!starDist[n]) continue;
+    starDistHtml += '<span style="margin-right:12px"><b style="color:#c47f16">' + '★'.repeat(n) + '</b> ' + starDist[n] + ' twr</span>';
+  }
   // Generator SVG pie chart + legenda
   const palette = ['#3b7aff','#e84040','#f5a623','#00d4aa','#9c6ade','#d4bf00','#e8760f','#16a085','#e91e8c','#5c6bc0'];
   const makePie = (dataObj, title) => {
@@ -5796,6 +5809,7 @@ function exportTLAPrioPDF() {
   const thD = wD ? (+document.getElementById('th-density-val')?.value || 0) : null;
   const thO = wO ? (+document.getElementById('th-ohm-val')?.value || 0) : null;
   const thE = wE ? (+document.getElementById('th-elev-val')?.value || 0) : null;
+  const thP = document.getElementById('th-petir100-on')?.checked ? (+document.getElementById('th-petir100-val')?.value || 0) : null;
   const tinggiTh = (teg) => { const t=parseInt(teg)||150; return t>=500?+t500:t>=275?+t275:t>=150?+t150:+t70; };
   // Warna highlight sel yang memenuhi kriteria (hijau muda)
   const HL = 'background:#d4f5e0;font-weight:700;color:#0a7a4a';
@@ -5822,6 +5836,7 @@ function exportTLAPrioPDF() {
     const oMet = thO !== null && s.ohm != null && s.ohm >= thO;
     const hMet = wH && s.tinggi != null && s.tinggi >= tinggiTh(tegV);
     const eMet = thE !== null && s.elev != null && s.elev >= thE;
+    const pMet = thP !== null && s.petir100 != null && s.petir100 >= thP;
     // Tahun density tertinggi (tampil kecil jika sel density memenuhi kriteria)
     const dYear = dMet ? maxDensYear(r) : null;
     const densCell = (s.density!=null?Number(s.density).toFixed(1):'–')
@@ -5831,10 +5846,12 @@ function exportTLAPrioPDF() {
       + '<td style="text-align:left">' + esc(bay) + '</td>'
       + '<td style="text-align:left">' + esc(pht) + '</td>'
       + '<td>' + esc(tegV) + '</td>'
+      + '<td style="color:#c47f16;font-weight:700">' + (s.metCount > 0 ? '★'.repeat(s.metCount) + ' ' + s.metCount : '–') + '</td>'
       + '<td style="' + (dMet?HL:'') + '">' + densCell + '</td>'
       + '<td style="' + (oMet?HL:'') + '">' + (s.ohm!=null?Number(s.ohm).toFixed(1):'–') + '</td>'
       + '<td style="' + (hMet?HL:'') + '">' + (s.tinggi!=null?s.tinggi:'–') + '</td>'
       + '<td style="' + (eMet?HL:'') + '">' + (s.elev!=null?s.elev:'–') + '</td>'
+      + '<td style="' + (pMet?HL:'') + '">' + (s.petir100!=null?Number(s.petir100).toFixed(0) + (s.petir100Year?'<br><span style="font-size:7px;font-weight:400;color:#0a7a4a">thn '+s.petir100Year+'</span>':''):'–') + '</td>'
       + '<td><b>' + Math.round(s.score) + '</b></td>'
       + '<td>' + s.status.label + '</td>'
       + '<td>' + (s.hasTLA?'✅':'—') + '</td>'
@@ -5897,6 +5914,8 @@ function exportTLAPrioPDF() {
     + '<span style="background:#eef;color:#333"><b>Total: ' + data.length + ' tower</b></span>'
     + '</div>'
 
+    + (starDistHtml ? '<div style="font-size:10px;color:#555;margin:6px 0;padding:6px 10px;background:#fdfaf0;border:1px solid #f0e5c5;border-radius:5px"><b>Distribusi kriteria terpenuhi:</b> ' + starDistHtml + '</div>' : '')
+
     + '<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">'
     + '<div style="flex:1;min-width:110px;padding:10px 14px;background:#2a4a7a;color:#fff;border-radius:6px;text-align:center">'
     + '<div style="font-size:26px;font-weight:700;line-height:1">' + jmlPenghantar + '</div>'
@@ -5921,7 +5940,7 @@ function exportTLAPrioPDF() {
     + '<div style="font-size:9px;color:#666;margin-bottom:4px">💡 Sel dengan <span style="background:#d4f5e0;color:#0a7a4a;font-weight:700;padding:0 4px">latar hijau</span> = nilai memenuhi kriteria threshold terpilih.</div>'
 
     + '<table><thead><tr>'
-    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Elevasi</th><th>Score</th><th>Severity</th><th>TLA</th>'
+    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>★ Kriteria</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Elevasi</th><th>⚡&gt;100kA</th><th>Score</th><th>Severity</th><th>TLA</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table>'
 
     + '<div class="footer"><span>Prioritas TLA · metode pembobotan</span><span>' + data.length + ' tower · ' + faktor.length + ' faktor aktif</span></div>'
