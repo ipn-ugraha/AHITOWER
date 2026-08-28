@@ -5753,8 +5753,17 @@ function exportTLAPrioPDF() {
   data.forEach(s => {
     const upt = (s.row[A_UPT] || 'Lainnya').replace('UPT ','');
     byUPT[upt] = (byUPT[upt] || 0) + 1;
-    const teg = String(s.row[A_TOWER_INFO]?.teg || 'Lain') + (s.row[A_TOWER_INFO]?.teg ? ' kV' : '');
-    byTeg[teg] = (byTeg[teg] || 0) + 1;
+    // Tegangan: dari tower_info, fallback ekstrak dari nama penghantar/BAY
+    const tegRaw = s.row[A_TOWER_INFO]?.teg;
+    let tegVal;
+    if (tegRaw && !isNaN(tegRaw)) {
+      tegVal = tegRaw + ' kV';
+    } else {
+      // Fallback: ekstrak dari nama penghantar atau BAY (mengandung "150kV" dll)
+      const lvl = getTegLevel(s.row[A_PHT]) !== 'lain' ? getTegLevel(s.row[A_PHT]) : getTegLevel(s.row[A_BAY]);
+      tegVal = lvl !== 'lain' ? (lvl + ' kV') : 'Tidak diketahui';
+    }
+    byTeg[tegVal] = (byTeg[tegVal] || 0) + 1;
     const pht = s.row[A_PHT] || 'Lainnya';
     byPht[pht] = (byPht[pht] || 0) + 1;
   });
@@ -5768,7 +5777,14 @@ function exportTLAPrioPDF() {
   const phtDetail = {};
   data.forEach(s => {
     const pht = s.row[A_PHT] || 'Lainnya';
-    if (!phtDetail[pht]) phtDetail[pht] = { count:0, upt:(s.row[A_UPT]||'–').replace('UPT ',''), teg:s.row[A_TOWER_INFO]?.teg||'–', kritis:0 };
+    if (!phtDetail[pht]) {
+      // Tegangan: dari tower_info, fallback ekstrak dari nama
+      const tRaw = s.row[A_TOWER_INFO]?.teg;
+      let tShow;
+      if (tRaw && !isNaN(tRaw)) tShow = tRaw;
+      else { const lvl = getTegLevel(pht) !== 'lain' ? getTegLevel(pht) : getTegLevel(s.row[A_BAY]); tShow = lvl !== 'lain' ? lvl : '–'; }
+      phtDetail[pht] = { count:0, upt:(s.row[A_UPT]||'–').replace('UPT ',''), teg:tShow, kritis:0 };
+    }
     phtDetail[pht].count++;
     if (s.status.key === 'kritis') phtDetail[pht].kritis++;
   });
