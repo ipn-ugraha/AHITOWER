@@ -5723,11 +5723,13 @@ function exportTLAPrioPDF() {
   const sp275 = document.getElementById('th-span-275')?.value || '450';
   const sp500 = document.getElementById('th-span-500')?.value || '500';
   const spanDetailStr = '≥ ' + sp70 + 'm (70kV), ≥ ' + sp150 + 'm (150kV), ≥ ' + sp275 + 'm (275kV), ≥ ' + sp500 + 'm (500kV)';
+  const wP100 = document.getElementById('th-petir100-on')?.checked;
   if (wD) faktor.push({ nama:'Density petir (maks 2021–2026)', threshold:'≥ ' + (document.getElementById('th-density-val')?.value||'–'), bobot:gw('density') });
   if (wO) faktor.push({ nama:'Tahanan pentanahan', threshold:'≥ ' + (document.getElementById('th-ohm-val')?.value||'–') + ' Ω', bobot:gw('ohm') });
   if (wH) faktor.push({ nama:'Tinggi tower', threshold:tinggiDetailStr, bobot:gw('tinggi') });
   if (wSp) faktor.push({ nama:'Span (gawang)', threshold:spanDetailStr, bobot:gw('span') });
   if (wE) faktor.push({ nama:'Elevasi', threshold:'≥ ' + (document.getElementById('th-elev-val')?.value||'–') + ' mdpl', bobot:gw('elev') });
+  if (wP100) faktor.push({ nama:'Petir >100kA (maks 2021–2026)', threshold:'≥ ' + (document.getElementById('th-petir100-val')?.value||'–') + ' kA', bobot:gw('petir100') });
   if (wT) faktor.push({ nama:'Tren density', threshold:'≥ ' + (document.getElementById('th-trend-val')?.value||'–'), bobot:gw('trend') });
 
   // Filter global aktif
@@ -5811,6 +5813,7 @@ function exportTLAPrioPDF() {
   const thE = wE ? (+document.getElementById('th-elev-val')?.value || 0) : null;
   const thP = document.getElementById('th-petir100-on')?.checked ? (+document.getElementById('th-petir100-val')?.value || 0) : null;
   const tinggiTh = (teg) => { const t=parseInt(teg)||150; return t>=500?+t500:t>=275?+t275:t>=150?+t150:+t70; };
+  const spanTh = (teg) => { const t=parseInt(teg)||150; return t>=500?+sp500:t>=275?+sp275:t>=150?+sp150:+sp70; };
   // Warna highlight sel yang memenuhi kriteria (hijau muda)
   const HL = 'background:#d4f5e0;font-weight:700;color:#0a7a4a';
   // Cari tahun density tertinggi per tower
@@ -5837,6 +5840,7 @@ function exportTLAPrioPDF() {
     const hMet = wH && s.tinggi != null && s.tinggi >= tinggiTh(tegV);
     const eMet = thE !== null && s.elev != null && s.elev >= thE;
     const pMet = thP !== null && s.petir100 != null && s.petir100 >= thP;
+    const spMet = wSp && s.span != null && s.span >= spanTh(tegV);
     // Tahun density tertinggi (tampil kecil jika sel density memenuhi kriteria)
     const dYear = dMet ? maxDensYear(r) : null;
     const densCell = (s.density!=null?Number(s.density).toFixed(1):'–')
@@ -5850,6 +5854,7 @@ function exportTLAPrioPDF() {
       + '<td style="' + (dMet?HL:'') + '">' + densCell + '</td>'
       + '<td style="' + (oMet?HL:'') + '">' + (s.ohm!=null?Number(s.ohm).toFixed(1):'–') + '</td>'
       + '<td style="' + (hMet?HL:'') + '">' + (s.tinggi!=null?s.tinggi:'–') + '</td>'
+      + '<td style="' + (spMet?HL:'') + '">' + (s.span!=null?Number(s.span).toFixed(0):'–') + '</td>'
       + '<td style="' + (eMet?HL:'') + '">' + (s.elev!=null?s.elev:'–') + '</td>'
       + '<td style="' + (pMet?HL:'') + '">' + (s.petir100!=null?Number(s.petir100).toFixed(0) + (s.petir100Year?'<br><span style="font-size:7px;font-weight:400;color:#0a7a4a">thn '+s.petir100Year+'</span>':''):'–') + '</td>'
       + '<td><b>' + Math.round(s.score) + '</b></td>'
@@ -5903,6 +5908,13 @@ function exportTLAPrioPDF() {
     + '<table class="mini-table"><thead><tr><th>Faktor Aktif</th><th>Threshold</th><th>Bobot</th></tr></thead><tbody>'
     + (faktorRows || '<tr><td colspan="3">Tidak ada faktor aktif</td></tr>')
     + '</tbody></table>'
+    + '<div style="font-size:9px;color:#444;margin-top:6px;line-height:1.5;padding:6px 8px;background:#fff;border:1px solid #e0e5ee;border-radius:4px">'
+    + '<b>⭐ Kolom Kriteria:</b> jumlah bintang = berapa faktor yang nilainya melewati ambang batas (threshold). Tabel diurutkan dari bintang terbanyak.<br>'
+    + '<b>Rumus Score:</b> ' + (orMode
+        ? 'Mode ATAU — skor dihitung HANYA dari faktor yang memenuhi kriteria (nilai ≥ threshold). Faktor yang tidak memenuhi tidak menyumbang skor. Formula: skor = [faktor tertinggi + (0,7 × jumlah faktor lain yang memenuhi)] ÷ maksimum teoretis × 100. Normalisasi tiap faktor: nilai di threshold = 0,6 dan di 2× threshold = 1,0.'
+        : 'Mode DAN — skor = jumlah semua faktor (ternormalisasi × bobot) ÷ total bobot × 100. Normalisasi: nilai di threshold = 0,6 dan di 2× threshold = 1,0.')
+    + '<br><b>Severity:</b> Kritis ≥ ' + (document.getElementById('sev-kritis')?.value||'80') + ', Tinggi ≥ ' + (document.getElementById('sev-tinggi')?.value||'60') + ', Sedang ≥ ' + (document.getElementById('sev-sedang')?.value||'40') + ', Rendah di bawahnya.'
+    + '</div>'
     + '</div>'
 
     + '<div class="sev-row">'
@@ -5940,7 +5952,7 @@ function exportTLAPrioPDF() {
     + '<div style="font-size:9px;color:#666;margin-bottom:4px">💡 Sel dengan <span style="background:#d4f5e0;color:#0a7a4a;font-weight:700;padding:0 4px">latar hijau</span> = nilai memenuhi kriteria threshold terpilih.</div>'
 
     + '<table><thead><tr>'
-    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>★ Kriteria</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Elevasi</th><th>⚡&gt;100kA</th><th>Score</th><th>Severity</th><th>TLA</th>'
+    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>★ Kriteria</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Span (m)</th><th>Elevasi</th><th>⚡&gt;100kA</th><th>Score</th><th>Severity</th><th>TLA</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table>'
 
     + '<div class="footer"><span>Prioritas TLA · metode pembobotan</span><span>' + data.length + ' tower · ' + faktor.length + ' faktor aktif</span></div>'
