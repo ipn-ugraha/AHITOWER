@@ -1183,13 +1183,13 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <select id="f-tla-prio-ultg" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none;min-width:120px">
             <option value="">Semua ULTG</option>
           </select>
-          <select id="f-tla-prio-severity" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
-            <option value="">Semua Severity</option>
-            <option value="kritis">🔴 Kritis</option>
-            <option value="tinggi">🟠 Tinggi (60–79)</option>
-            <option value="sedang">🟡 Sedang (40–59)</option>
-            <option value="rendah">🟢 Rendah (&lt;40)</option>
-          </select>
+          <div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:3px 8px;font-size:10px;font-family:var(--mono)">
+            <span style="color:var(--text3)">Severity:</span>
+            <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:#e84040"><input type="checkbox" class="f-sev-cb" value="kritis" checked onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#e84040">Kritis</label>
+            <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:#f5a623"><input type="checkbox" class="f-sev-cb" value="tinggi" checked onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#f5a623">Tinggi</label>
+            <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:#d4bf00"><input type="checkbox" class="f-sev-cb" value="sedang" checked onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#d4bf00">Sedang</label>
+            <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:#00d4aa"><input type="checkbox" class="f-sev-cb" value="rendah" checked onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#00d4aa">Rendah</label>
+          </div>
           <select id="f-tla-prio-rencana" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
             <option value="">Semua (rencana/tidak)</option>
             <option value="ada">✅ Masuk rencana</option>
@@ -5622,12 +5622,13 @@ function setTLAPrioPage(p) {
 }
 
 function resetTLAPrioFilters() {
-  ['f-tla-prio-ultg','f-tla-prio-severity'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  const el = document.getElementById('f-tla-prio-ultg'); if (el) el.value = '';
+  // Reset severity checkbox: semua tercentang
+  document.querySelectorAll('.f-sev-cb').forEach(c => c.checked = true);
   const s = document.getElementById('f-tla-prio-search'); if (s) s.value = '';
   const fr = document.getElementById('f-tla-prio-rencana'); if (fr) fr.value = '';
   const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = true;
+  const g = document.getElementById('f-tla-prio-gap'); if (g) g.checked = false;
   TLA_PRIO_SORT = { col: 'metCount', dir: -1 };
   TLA_PRIO_PAGE = 1;
   renderTLAPriority();
@@ -6674,14 +6675,17 @@ function populateTLAPrioFilters(candidates) {
 
 function applyTLAPrioFilters(scored) {
   const fUltg  = document.getElementById('f-tla-prio-ultg')?.value || '';
-  const fSev   = document.getElementById('f-tla-prio-severity')?.value || '';
+  // Severity dari checkbox (multi-select)
+  const sevChecked = Array.from(document.querySelectorAll('.f-sev-cb:checked')).map(c => c.value);
+  const sevAll = document.querySelectorAll('.f-sev-cb').length;
   const fSearch = (document.getElementById('f-tla-prio-search')?.value || '').toLowerCase();
   const fRencana = document.getElementById('f-tla-prio-rencana')?.value || '';
   return scored.filter(s => {
     const r = s.row;
     if (fUltg && r[A_ULTG] !== fUltg) return false;
-    if (fSev) {
-      if (fSev !== s.status?.key) return false;
+    // Filter severity: kalau tidak semua tercentang, tower harus termasuk yang dicentang
+    if (sevChecked.length < sevAll) {
+      if (!sevChecked.includes(s.status?.key)) return false;
     }
     if (fRencana) {
       const tahaps = tahapRencanaTower(r);
