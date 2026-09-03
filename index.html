@@ -10,7 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 :root {
   --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
@@ -6154,40 +6154,68 @@ function exportTLAPrioPDF() {
   cetakViaIframe(html);
 }
 
-// Export tabel prioritas TLA ke Excel (.xlsx)
-function exportTLAPrioExcel() {
+// Export tabel prioritas TLA ke Excel (.xlsx) dengan ExcelJS + pewarnaan sel kriteria
+async function exportTLAPrioExcel() {
   const data = _lastTLAScored || [];
   if (!data.length) { alert('Tidak ada data untuk diekspor.'); return; }
-  if (typeof XLSX === 'undefined') { alert('Library Excel belum termuat, coba lagi sebentar.'); return; }
+  if (typeof ExcelJS === 'undefined') { alert('Library Excel belum termuat, coba lagi sebentar.'); return; }
   const gapMode = document.getElementById('f-tla-prio-gap')?.checked || false;
 
-  // Header kolom
-  const header = ['No','UPT','Penghantar','BAY','Tegangan (kV)'];
-  if (gapMode) header.push('Kategori');
-  header.push('Jml Kriteria','Rencana TLA','Density maks','Tahun Density','Tahanan (Ω)','Tinggi (m)','Span (m)','Elevasi (mdpl)','Petir >100kA','Tahun Petir','Score','Severity','Status TLA');
+  // Ambang threshold untuk cek kriteria terpenuhi (warna hijau)
+  const thD = document.getElementById('th-density-on')?.checked ? (+document.getElementById('th-density-val')?.value||0) : null;
+  const thO = document.getElementById('th-ohm-on')?.checked ? (+document.getElementById('th-ohm-val')?.value||0) : null;
+  const thE = document.getElementById('th-elev-on')?.checked ? (+document.getElementById('th-elev-val')?.value||0) : null;
+  const thP = document.getElementById('th-petir100-on')?.checked ? (+document.getElementById('th-petir100-val')?.value||0) : null;
+  const wH = document.getElementById('th-tinggi-on')?.checked;
+  const wSp = document.getElementById('th-span-on')?.checked;
+  const tinggiTh = (teg)=>tinggiThresholdByVoltage(teg);
+  const spanTh = (teg)=>spanThresholdByVoltage(teg);
 
-  // Baris data
   const maxDensY = (r) => {
-    const dAll = r[A_DENS_ALL]||{}; let best=null;
+    const dAll=r[A_DENS_ALL]||{}; let best=null;
     DENS_YEARS.forEach(y=>{const v=dAll[y]; if(typeof v==='number'&&(best===null||v>best.val))best={year:y,val:v};});
     return best;
   };
   const katLabel = { selaras:'Selaras', gap:'Gap Prioritas', overplan:'Over-plan' };
-  const rows = data.map((s, i) => {
+
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet('Prioritas TLA');
+
+  // Header
+  const header = ['No','UPT','Penghantar','BAY','kV'];
+  if (gapMode) header.push('Kategori');
+  header.push('Kriteria','Rencana TLA','Density maks','Thn Density','Tahanan (Ω)','Tinggi (m)','Span (m)','Elevasi','Petir >100kA','Thn Petir','Score','Severity','Status TLA');
+  ws.addRow(header);
+  // Style header
+  const hdrRow = ws.getRow(1);
+  hdrRow.eachCell(c => {
+    c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF2A4A7A'} };
+    c.font = { bold:true, color:{argb:'FFFFFFFF'}, size:10, name:'Arial' };
+    c.alignment = { horizontal:'center', vertical:'middle' };
+    c.border = { bottom:{style:'thin',color:{argb:'FFCCCCCC'}} };
+  });
+
+  const GREEN = 'FFD4F5E0'; // hijau muda (memenuhi kriteria)
+  const GREENFONT = 'FF0A7A4A';
+
+  data.forEach((s, i) => {
     const r = s.row;
+    const teg = r[A_TOWER_INFO]?.teg || 150;
     const tahaps = s._tahaps || tahapRencanaTower(r);
     const dY = maxDensY(r);
-    const row = [
-      i+1,
-      r[A_UPT]||'',
-      r[A_PHT]||'',
-      r[A_BAY]||'',
-      r[A_TOWER_INFO]?.teg || '',
-    ];
+    // Cek memenuhi kriteria
+    const dMet = thD!==null && s.density!=null && s.density>=thD;
+    const oMet = thO!==null && s.ohm!=null && s.ohm>=thO;
+    const hMet = wH && s.tinggi!=null && s.tinggi>=tinggiTh(teg);
+    const spMet = wSp && s.span!=null && s.span>=spanTh(teg);
+    const eMet = thE!==null && s.elev!=null && s.elev>=thE;
+    const pMet = thP!==null && s.petir100!=null && s.petir100>=thP;
+
+    const row = [i+1, r[A_UPT]||'', r[A_PHT]||'', r[A_BAY]||'', teg];
     if (gapMode) row.push(s._gapCat ? (katLabel[s._gapCat]||s._gapCat) : '');
     row.push(
       s.metCount||0,
-      tahaps && tahaps.length ? tahaps.map(t=>labelTahap(t)).join(', ') : '',
+      tahaps&&tahaps.length ? tahaps.map(t=>labelTahap(t)).join(', ') : '',
       s.density!=null ? +Number(s.density).toFixed(1) : '',
       dY ? dY.year : '',
       s.ohm!=null ? +Number(s.ohm).toFixed(1) : '',
@@ -6198,41 +6226,75 @@ function exportTLAPrioExcel() {
       s.petir100Year || '',
       Math.round(s.score),
       (s.status?.label||'').replace(/[^\w\s]/g,'').trim(),
-      s.hasTLA ? 'Terpasang' : 'Belum',
+      s.hasTLA ? 'Terpasang' : 'Belum'
     );
-    return row;
+    const xlRow = ws.addRow(row);
+    xlRow.font = { size:9, name:'Arial' };
+
+    // Kolom index (1-based), sesuaikan offset gap
+    const off = gapMode ? 1 : 0;
+    const colDensity = 8 + off, colTahanan = 10 + off, colTinggi = 11 + off,
+          colSpan = 12 + off, colElev = 13 + off, colPetir = 14 + off;
+    const paint = (col, met) => {
+      if (!met) return;
+      const cell = xlRow.getCell(col);
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:GREEN} };
+      cell.font = { size:9, name:'Arial', bold:true, color:{argb:GREENFONT} };
+    };
+    paint(colDensity, dMet);
+    paint(colTahanan, oMet);
+    paint(colTinggi, hMet);
+    paint(colSpan, spMet);
+    paint(colElev, eMet);
+    paint(colPetir, pMet);
+
+    // Warna kategori (kolom 6 saat gap)
+    if (gapMode && s._gapCat) {
+      const kc = xlRow.getCell(6);
+      const col = s._gapCat==='selaras'?'FF00A884':s._gapCat==='gap'?'FFE84040':'FF9C6ADE';
+      kc.font = { size:9, name:'Arial', bold:true, color:{argb:col} };
+    }
   });
 
-  // Buat worksheet
-  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
   // Lebar kolom
-  ws['!cols'] = header.map((h,i) => ({ wch: i===2||i===3 ? 32 : i===7 ? 18 : 12 }));
+  const widths = [5,14,34,34,6];
+  if (gapMode) widths.push(14);
+  widths.push(9,22,12,10,12,10,9,10,12,9,8,12,12);
+  ws.columns.forEach((c,i) => { c.width = widths[i] || 12; });
+  ws.views = [{ state:'frozen', ySplit:1 }]; // freeze header
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Prioritas TLA');
-
-  // Sheet statistik gap (kalau mode gap)
+  // Sheet statistik gap
   if (gapMode) {
-    const cSelaras = data.filter(s=>s._gapCat==='selaras').length;
+    const cSel = data.filter(s=>s._gapCat==='selaras').length;
     const cGap = data.filter(s=>s._gapCat==='gap').length;
     const cOver = data.filter(s=>s._gapCat==='overplan').length;
-    const statWs = XLSX.utils.aoa_to_sheet([
-      ['Gap Analysis — Prioritas vs Rencana'],
-      [],
-      ['Kategori','Jumlah','Keterangan'],
-      ['Selaras', cSelaras, 'Prioritas & sudah direncanakan'],
-      ['Gap Prioritas', cGap, 'Prioritas tapi BELUM direncanakan'],
-      ['Over-plan', cOver, 'Direncanakan tapi tidak prioritas'],
-      ['Total', cSelaras+cGap+cOver, ''],
-    ]);
-    statWs['!cols'] = [{wch:18},{wch:10},{wch:40}];
-    XLSX.utils.book_append_sheet(wb, statWs, 'Statistik Gap');
+    const sw = wb.addWorksheet('Statistik Gap');
+    sw.addRow(['Gap Analysis — Prioritas vs Rencana']);
+    sw.getRow(1).font = { bold:true, size:12 };
+    sw.addRow([]);
+    sw.addRow(['Kategori','Jumlah','Keterangan']);
+    sw.getRow(3).font = { bold:true };
+    sw.getRow(3).eachCell(c=>{ c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF2A4A7A'}}; c.font={bold:true,color:{argb:'FFFFFFFF'}}; });
+    const addStat = (nama,n,ket,warna) => {
+      const rr = sw.addRow([nama,n,ket]);
+      rr.getCell(1).font = { bold:true, color:{argb:warna} };
+    };
+    addStat('Selaras', cSel, 'Prioritas & sudah direncanakan', 'FF00A884');
+    addStat('Gap Prioritas', cGap, 'Prioritas tapi BELUM direncanakan', 'FFE84040');
+    addStat('Over-plan', cOver, 'Direncanakan tapi tidak prioritas', 'FF9C6ADE');
+    sw.addRow(['Total', cSel+cGap+cOver, '']).font = { bold:true };
+    sw.columns = [{width:18},{width:10},{width:42}];
   }
 
-  // Nama file dengan tanggal
+  // Download
   const tgl = new Date().toISOString().slice(0,10);
   const fname = (gapMode ? 'Gap_Analysis_TLA_' : 'Prioritas_TLA_') + tgl + '.xlsx';
-  XLSX.writeFile(wb, fname);
+  const buf = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fname; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
 }
 
 function renderTLAPriority() {
