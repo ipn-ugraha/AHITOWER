@@ -1210,6 +1210,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <input type="checkbox" id="f-tla-prio-gap" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#f5a623">
             🔀 Mode Gap Analysis
           </label>
+          <div id="f-kat-wrap" style="display:none;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:3px 8px;font-size:10px;font-family:var(--mono)">
+            <span style="color:var(--text3)">Kategori:</span>
+            <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:#00d4aa"><input type="checkbox" class="f-kat-cb" value="selaras" checked onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#00d4aa">Selaras</label>
+            <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:#e84040"><input type="checkbox" class="f-kat-cb" value="gap" checked onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#e84040">Gap</label>
+            <label style="display:flex;align-items:center;gap:3px;cursor:pointer;color:#9c6ade"><input type="checkbox" class="f-kat-cb" value="overplan" checked onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#9c6ade">Over-plan</label>
+          </div>
           <button onclick="resetTLAPrioFilters()" title="Reset filter"
             style="background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer">↻</button>
         </div>
@@ -5629,6 +5635,7 @@ function resetTLAPrioFilters() {
   const fr = document.getElementById('f-tla-prio-rencana'); if (fr) fr.value = '';
   const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = true;
   const g = document.getElementById('f-tla-prio-gap'); if (g) g.checked = false;
+  document.querySelectorAll('.f-kat-cb').forEach(c => c.checked = true);
   TLA_PRIO_SORT = { col: 'metCount', dir: -1 };
   TLA_PRIO_PAGE = 1;
   renderTLAPriority();
@@ -6597,6 +6604,9 @@ function renderTLAPriority() {
   const gapOverplan = overplanList.length;
   // Render statistik gap
   renderGapStats(gapMode, gapSelaras, gapPrioritas, gapOverplan);
+  // Tampilkan/sembunyikan filter kategori sesuai mode gap
+  const katWrap = document.getElementById('f-kat-wrap');
+  if (katWrap) katWrap.style.display = gapMode ? 'flex' : 'none';
 
   // Daftar tabel: gabung prioritas + overplan (kalau mode gap), lalu terapkan filter rencana lagi
   let tableData = gapMode ? filteredScored.concat(overplanList) : filteredScored;
@@ -6609,6 +6619,14 @@ function renderTLAPriority() {
       if (fRencanaGap === 'belum') return t.length === 0;
       return t.includes(fRencanaGap);
     });
+  }
+  // Filter kategori (mode gap) — checkbox selaras/gap/overplan
+  if (gapMode) {
+    const katChecked = Array.from(document.querySelectorAll('.f-kat-cb:checked')).map(c => c.value);
+    const katAll = document.querySelectorAll('.f-kat-cb').length;
+    if (katChecked.length < katAll) {
+      tableData = tableData.filter(s => katChecked.includes(s._gapCat));
+    }
   }
   _lastTLAScored = tableData; // simpan untuk export PDF (termasuk overplan di mode gap)
   const kritis   = filteredScored.filter(s => s.status.key === 'kritis').length;
@@ -6723,6 +6741,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       case 'trend':   va = a.trend ?? -99; vb = b.trend ?? -99; break;
       case 'petir100': va = a.petir100 ?? -1; vb = b.petir100 ?? -1; break;
       case 'metCount': va = a.metCount ?? 0; vb = b.metCount ?? 0; break;
+      case 'gapCat': { const ord={selaras:0,gap:1,overplan:2}; va = ord[a._gapCat] ?? 9; vb = ord[b._gapCat] ?? 9; break; }
       case 'tla':     va = a.hasTLA ? 1 : 0; vb = b.hasTLA ? 1 : 0; break;
       case 'status':  va = a.status?.key || ''; vb = b.status?.key || ''; break;
       case 'score':
@@ -6775,7 +6794,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('trend','Tren','right');
   html += th('metCount','⭐ Kriteria','center');
   const gapModeH = document.getElementById('f-tla-prio-gap')?.checked || false;
-  if (gapModeH) html += '<th style="text-align:center">Kategori</th>';
+  if (gapModeH) html += th('gapCat','Kategori','center');
   html += '<th style="text-align:center">Rencana TLA</th>';
   html += th('petir100','⚡&gt;100kA','right');
   html += th('score','Score','right');
