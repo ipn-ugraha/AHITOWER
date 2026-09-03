@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg:#0d0f14;--bg2:#13161e;--bg3:#1a1e28;
@@ -1138,6 +1139,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
                 <option value="pht">Urut PDF: Penghantar</option>
               </select>
               <button onclick="exportTLAPrioPDF()" style="padding:4px 12px;font-size:11px;font-family:var(--mono);background:var(--accent);border:none;border-radius:6px;color:#0d0f14;cursor:pointer;font-weight:600">📄 Export PDF</button>
+              <button onclick="exportTLAPrioExcel()" style="padding:4px 12px;font-size:11px;font-family:var(--mono);background:#1d6f42;border:none;border-radius:6px;color:#fff;cursor:pointer;font-weight:600">📊 Export Excel</button>
               <div style="font-size:11px;color:var(--text3);font-family:var(--mono)" id="tla-prio-count">–</div>
             </div>
           </div>
@@ -5805,6 +5807,19 @@ function closeTLADetail() {
 function exportTLAPrioPDF() {
   const dataRaw = _lastTLAScored || [];
   if (!dataRaw.length) { alert('Tidak ada data prioritas TLA untuk diekspor. Pastikan ada tower yang lolos kriteria.'); return; }
+  const gapModePdf = document.getElementById('f-tla-prio-gap')?.checked || false;
+  // Statistik gap (kalau mode gap)
+  let gapStatHtml = '';
+  if (gapModePdf) {
+    const cSelaras = dataRaw.filter(s => s._gapCat === 'selaras').length;
+    const cGap = dataRaw.filter(s => s._gapCat === 'gap').length;
+    const cOver = dataRaw.filter(s => s._gapCat === 'overplan').length;
+    gapStatHtml = '<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">'
+      + '<div style="flex:1;min-width:140px;padding:8px 12px;background:#e0f7f0;border-left:3px solid #00a884;border-radius:5px"><b style="color:#00a884">✅ Selaras: ' + cSelaras + '</b><br><span style="font-size:9px;color:#555">Prioritas & direncanakan</span></div>'
+      + '<div style="flex:1;min-width:140px;padding:8px 12px;background:#fde8e8;border-left:3px solid #e84040;border-radius:5px"><b style="color:#e84040">⚠️ Gap Prioritas: ' + cGap + '</b><br><span style="font-size:9px;color:#555">Prioritas, BELUM direncanakan</span></div>'
+      + '<div style="flex:1;min-width:140px;padding:8px 12px;background:#f0e8f7;border-left:3px solid #9c6ade;border-radius:5px"><b style="color:#9c6ade">📋 Over-plan: ' + cOver + '</b><br><span style="font-size:9px;color:#555">Direncanakan, tidak prioritas</span></div>'
+      + '</div>';
+  }
 
   // Sort sesuai pilihan dropdown (default score desc)
   const sortBy = document.getElementById('tla-pdf-sort')?.value || 'score';
@@ -5992,12 +6007,18 @@ function exportTLAPrioPDF() {
     const dYear = dMet ? maxDensYear(r) : null;
     const densCell = (s.density!=null?Number(s.density).toFixed(1):'–')
       + (dYear ? '<br><span style="font-size:7px;font-weight:400;color:#0a7a4a">thn ' + dYear.year + '</span>' : '');
+    // Kategori gap + rencana
+    const tahaps = s._tahaps || (typeof tahapRencanaTower === 'function' ? tahapRencanaTower(r) : []);
+    const katCell = gapModePdf ? '<td style="font-size:8px">' + (s._gapCat && GAP_CAT[s._gapCat] ? GAP_CAT[s._gapCat].label : '–') + '</td>' : '';
+    const rencanaCell = tahaps && tahaps.length ? tahaps.map(t => TAHAP_SHORT[t]||t).join(' ') : '–';
     return '<tr>'
       + '<td>' + (i+1) + '</td>'
       + '<td style="text-align:left">' + esc(bay) + '</td>'
       + '<td style="text-align:left">' + esc(pht) + '</td>'
       + '<td>' + esc(tegV) + '</td>'
+      + katCell
       + '<td style="color:#c47f16;font-weight:700">' + (s.metCount > 0 ? '★'.repeat(s.metCount) + ' ' + s.metCount : '–') + '</td>'
+      + '<td style="font-size:8px">' + rencanaCell + '</td>'
       + '<td style="' + (dMet?HL:'') + '">' + densCell + '</td>'
       + '<td style="' + (oMet?HL:'') + '">' + (s.ohm!=null?Number(s.ohm).toFixed(1):'–') + '</td>'
       + '<td style="' + (hMet?HL:'') + '">' + (s.tinggi!=null?s.tinggi:'–') + '</td>'
@@ -6085,6 +6106,7 @@ function exportTLAPrioPDF() {
     + '</div>'
 
     + (starDistHtml ? '<div style="font-size:10px;color:#555;margin:6px 0;padding:6px 10px;background:#fdfaf0;border:1px solid #f0e5c5;border-radius:5px"><b>Distribusi kriteria terpenuhi:</b> ' + starDistHtml + '</div>' : '')
+    + gapStatHtml
 
     + '<div style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">'
     + '<div style="flex:1;min-width:110px;padding:10px 14px;background:#2a4a7a;color:#fff;border-radius:6px;text-align:center">'
@@ -6123,13 +6145,94 @@ function exportTLAPrioPDF() {
     + '</tbody></table>'
 
     + '<table><thead><tr>'
-    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th><th>★ Kriteria</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Span (m)</th><th>Elevasi</th><th>⚡&gt;100kA</th><th>Score</th><th>Severity</th><th>TLA</th>'
+    + '<th>#</th><th>Tower (BAY)</th><th>Penghantar</th><th>kV</th>' + (gapModePdf ? '<th>Kategori</th>' : '') + '<th>★ Kriteria</th><th>Rencana</th><th>Density maks</th><th>Tahanan (Ω)</th><th>Tinggi (m)</th><th>Span (m)</th><th>Elevasi</th><th>⚡&gt;100kA</th><th>Score</th><th>Severity</th><th>TLA</th>'
     + '</tr></thead><tbody>' + rows + '</tbody></table>'
 
     + '<div class="footer"><span>Prioritas TLA · metode pembobotan</span><span>' + data.length + ' tower · ' + faktor.length + ' faktor aktif</span></div>'
     + '</body></html>';
 
   cetakViaIframe(html);
+}
+
+// Export tabel prioritas TLA ke Excel (.xlsx)
+function exportTLAPrioExcel() {
+  const data = _lastTLAScored || [];
+  if (!data.length) { alert('Tidak ada data untuk diekspor.'); return; }
+  if (typeof XLSX === 'undefined') { alert('Library Excel belum termuat, coba lagi sebentar.'); return; }
+  const gapMode = document.getElementById('f-tla-prio-gap')?.checked || false;
+
+  // Header kolom
+  const header = ['No','UPT','Penghantar','BAY','Tegangan (kV)'];
+  if (gapMode) header.push('Kategori');
+  header.push('Jml Kriteria','Rencana TLA','Density maks','Tahun Density','Tahanan (Ω)','Tinggi (m)','Span (m)','Elevasi (mdpl)','Petir >100kA','Tahun Petir','Score','Severity','Status TLA');
+
+  // Baris data
+  const maxDensY = (r) => {
+    const dAll = r[A_DENS_ALL]||{}; let best=null;
+    DENS_YEARS.forEach(y=>{const v=dAll[y]; if(typeof v==='number'&&(best===null||v>best.val))best={year:y,val:v};});
+    return best;
+  };
+  const katLabel = { selaras:'Selaras', gap:'Gap Prioritas', overplan:'Over-plan' };
+  const rows = data.map((s, i) => {
+    const r = s.row;
+    const tahaps = s._tahaps || tahapRencanaTower(r);
+    const dY = maxDensY(r);
+    const row = [
+      i+1,
+      r[A_UPT]||'',
+      r[A_PHT]||'',
+      r[A_BAY]||'',
+      r[A_TOWER_INFO]?.teg || '',
+    ];
+    if (gapMode) row.push(s._gapCat ? (katLabel[s._gapCat]||s._gapCat) : '');
+    row.push(
+      s.metCount||0,
+      tahaps && tahaps.length ? tahaps.map(t=>labelTahap(t)).join(', ') : '',
+      s.density!=null ? +Number(s.density).toFixed(1) : '',
+      dY ? dY.year : '',
+      s.ohm!=null ? +Number(s.ohm).toFixed(1) : '',
+      s.tinggi!=null ? s.tinggi : '',
+      s.span!=null ? +Number(s.span).toFixed(0) : '',
+      s.elev!=null ? s.elev : '',
+      s.petir100!=null ? +Number(s.petir100).toFixed(0) : '',
+      s.petir100Year || '',
+      Math.round(s.score),
+      (s.status?.label||'').replace(/[^\w\s]/g,'').trim(),
+      s.hasTLA ? 'Terpasang' : 'Belum',
+    );
+    return row;
+  });
+
+  // Buat worksheet
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  // Lebar kolom
+  ws['!cols'] = header.map((h,i) => ({ wch: i===2||i===3 ? 32 : i===7 ? 18 : 12 }));
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Prioritas TLA');
+
+  // Sheet statistik gap (kalau mode gap)
+  if (gapMode) {
+    const cSelaras = data.filter(s=>s._gapCat==='selaras').length;
+    const cGap = data.filter(s=>s._gapCat==='gap').length;
+    const cOver = data.filter(s=>s._gapCat==='overplan').length;
+    const statWs = XLSX.utils.aoa_to_sheet([
+      ['Gap Analysis — Prioritas vs Rencana'],
+      [],
+      ['Kategori','Jumlah','Keterangan'],
+      ['Selaras', cSelaras, 'Prioritas & sudah direncanakan'],
+      ['Gap Prioritas', cGap, 'Prioritas tapi BELUM direncanakan'],
+      ['Over-plan', cOver, 'Direncanakan tapi tidak prioritas'],
+      ['Total', cSelaras+cGap+cOver, ''],
+    ]);
+    statWs['!cols'] = [{wch:18},{wch:10},{wch:40}];
+    XLSX.utils.book_append_sheet(wb, statWs, 'Statistik Gap');
+  }
+
+  // Nama file dengan tanggal
+  const tgl = new Date().toISOString().slice(0,10);
+  const fname = (gapMode ? 'Gap_Analysis_TLA_' : 'Prioritas_TLA_') + tgl + '.xlsx';
+  XLSX.writeFile(wb, fname);
 }
 
 function renderTLAPriority() {
