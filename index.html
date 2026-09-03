@@ -1188,6 +1188,16 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <option value="sedang">🟡 Sedang (40–59)</option>
             <option value="rendah">🟢 Rendah (&lt;40)</option>
           </select>
+          <select id="f-tla-prio-rencana" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 7px;font-size:10px;font-family:var(--mono);outline:none">
+            <option value="">Semua (rencana/tidak)</option>
+            <option value="ada">✅ Masuk rencana</option>
+            <option value="belum">⬜ Belum direncanakan</option>
+            <option value="Eksisting">🟢 Terpasang Eksisting</option>
+            <option value="AI25">🔵 AI 2025</option>
+            <option value="AI26">🟣 AI 2026</option>
+            <option value="FGD26">🟠 AI FGD 2026</option>
+            <option value="KKP27">🔴 KKP 2027</option>
+          </select>
           <input id="f-tla-prio-search" type="text" placeholder="🔍 cari BAY..." oninput="TLA_PRIO_PAGE=1;renderTLAPriority()"
             style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text);padding:3px 8px;font-size:10px;font-family:var(--mono);outline:none;flex:1;min-width:140px"/>
           <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2);font-family:var(--mono);cursor:pointer">
@@ -5552,6 +5562,7 @@ function resetTLAPrioFilters() {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const s = document.getElementById('f-tla-prio-search'); if (s) s.value = '';
+  const fr = document.getElementById('f-tla-prio-rencana'); if (fr) fr.value = '';
   const c = document.getElementById('f-tla-prio-include-installed'); if (c) c.checked = true;
   TLA_PRIO_SORT = { col: 'metCount', dir: -1 };
   TLA_PRIO_PAGE = 1;
@@ -6388,11 +6399,18 @@ function applyTLAPrioFilters(scored) {
   const fUltg  = document.getElementById('f-tla-prio-ultg')?.value || '';
   const fSev   = document.getElementById('f-tla-prio-severity')?.value || '';
   const fSearch = (document.getElementById('f-tla-prio-search')?.value || '').toLowerCase();
+  const fRencana = document.getElementById('f-tla-prio-rencana')?.value || '';
   return scored.filter(s => {
     const r = s.row;
     if (fUltg && r[A_ULTG] !== fUltg) return false;
     if (fSev) {
       if (fSev !== s.status?.key) return false;
+    }
+    if (fRencana) {
+      const tahaps = tahapRencanaTower(r);
+      if (fRencana === 'ada' && tahaps.length === 0) return false;
+      else if (fRencana === 'belum' && tahaps.length > 0) return false;
+      else if (fRencana !== 'ada' && fRencana !== 'belum' && !tahaps.includes(fRencana)) return false;
     }
     if (fSearch) {
       const hay = ((r[A_BAY]||'')+' '+(r[A_PHT]||'')+' '+(r[A_ULTG]||'')).toLowerCase();
