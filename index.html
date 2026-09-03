@@ -1947,8 +1947,54 @@ async function loadDashboard() {
   RAW=res;
   const ts=new Date(res.generatedAt).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'});
   document.getElementById('last-updated').textContent='Data diperbarui: '+ts;
+  await loadRencanaTLA();  // muat data rencana TLA (AI25/AI26/FGD26/KKP27)
   buildFilterOptions();
   applyFilter();
+}
+
+// ─── DATA RENCANA TLA (per tahap) ─────────────────────────
+let RENCANA_TLA = null;       // { data:{pht:{nomor:[tahap]}}, _meta:{...} }
+const RENCANA_TLA_URL = 'https://ipn-ugraha.github.io/AHITOWER/tla_rencana.json';
+async function loadRencanaTLA() {
+  try {
+    const r = await fetch(RENCANA_TLA_URL + '?v=' + Date.now(), { cache:'no-store' });
+    if (!r.ok) { console.warn('[rencana TLA] gagal fetch:', r.status); return; }
+    RENCANA_TLA = await r.json();
+    console.log('[rencana TLA] dimuat:', RENCANA_TLA._meta?.jumlah_tower, 'tower,', RENCANA_TLA._meta?.jumlah_penghantar, 'penghantar');
+  } catch(e) {
+    console.warn('[rencana TLA] error:', e.message);
+    RENCANA_TLA = null;
+  }
+}
+// Ekstrak nomor tower ternormalisasi dari BAY (mis. "...#0053" → "53", "...#17A" → "17A")
+function nomorFromBay(bay) {
+  const m = String(bay||'').match(/#0*(\d+[A-Za-z]*)/);
+  return m ? m[1].toUpperCase() : null;
+}
+// Cari tahap rencana untuk 1 tower (r = ahiRow). Return array tahap atau [].
+function tahapRencanaTower(r) {
+  if (!RENCANA_TLA || !RENCANA_TLA.data) return [];
+  const pht = r[A_PHT];
+  if (!pht) return [];
+  const byPht = RENCANA_TLA.data[pht];
+  if (!byPht) return [];
+  const nom = nomorFromBay(r[A_BAY]);
+  if (!nom) return [];
+  return byPht[nom] || [];
+}
+// Label tahap untuk tampilan
+function labelTahap(kode) {
+  return (RENCANA_TLA?._meta?.label?.[kode]) || kode;
+}
+// Warna per tahap
+const TAHAP_COLOR = { Eksisting:'#00d4aa', AI25:'#3b7aff', AI26:'#9c6ade', FGD26:'#f5a623', KKP27:'#e91e8c' };
+const TAHAP_SHORT = { Eksisting:'EKS', AI25:'AI25', AI26:'AI26', FGD26:'FGD', KKP27:'KKP' };
+// Render badge tahap rencana (array tahap → HTML)
+function badgeRencana(tahaps) {
+  if (!tahaps || !tahaps.length) return '<span style="color:var(--text3);font-size:11px">–</span>';
+  return tahaps.map(t =>
+    '<span title="' + labelTahap(t) + '" style="display:inline-block;background:' + (TAHAP_COLOR[t]||'#888') + ';color:#0d0f14;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin:1px;font-family:var(--mono)">' + (TAHAP_SHORT[t]||t) + '</span>'
+  ).join('');
 }
 
 // ─── LOAD CSV REFERENSI ───────────────────────────────────
@@ -6429,6 +6475,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('elev','Elv (m)','right');
   html += th('trend','Tren','right');
   html += th('metCount','⭐ Kriteria','center');
+  html += '<th style="text-align:center">Rencana TLA</th>';
   html += th('petir100','⚡&gt;100kA','right');
   html += th('score','Score','right');
   html += th('tla','TLA');
@@ -6451,6 +6498,7 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
       + '<td style="text-align:center;font-size:11px;white-space:nowrap" title="' + (s.metCount||0) + ' kriteria terpenuhi">' + (s.metCount > 0 ? '<span style="color:#f5c518;letter-spacing:-1px">' + '★'.repeat(s.metCount) + '</span><span style="color:var(--text3);font-family:var(--mono);font-size:10px;margin-left:3px">' + s.metCount + '</span>' : '<span style="color:var(--text3)">–</span>') + '</td>'
+      + '<td style="text-align:center;white-space:nowrap">' + badgeRencana(tahapRencanaTower(s.row)) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.petir100 != null && s.petir100 >= 100 ? '#e91e8c' : 'var(--text3)') + ';font-weight:' + (s.petir100 != null && s.petir100 >= 100 ? '600' : '400') + '">' + (s.petir100 != null ? s.petir100.toFixed(0) + (s.petir100Year ? '<br><span style="font-size:8px;font-weight:400;color:var(--text3)">\'' + s.petir100Year.slice(2) + '</span>' : '') : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
       + '<td style="font-size:10px;font-family:var(--mono);text-align:center;white-space:nowrap">' + (s.hasTLA ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:3px;font-weight:500">✅ Terpasang</span>' : '<span style="color:var(--text3)">— Belum</span>') + '</td>'
