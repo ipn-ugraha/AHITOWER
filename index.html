@@ -895,7 +895,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #16A085;opacity:.45" id="th-row-span">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
               <div style="display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="th-span-on" checked onchange="onThresholdChange()" style="accent-color:#16A085;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-span-on" onchange="onThresholdChange()" style="accent-color:#16A085;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500;color:var(--text)">📐 Span (Gawang)</span>
                 <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">span terpanjang per tegangan (m)</span>
               </div>
@@ -953,7 +953,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #9c6ade;opacity:.45" id="th-row-elev">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
               <div style="display:flex;align-items:center;gap:8px">
-                <input type="checkbox" id="th-elev-on" checked onchange="onThresholdChange()" style="accent-color:#9c6ade;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-elev-on" onchange="onThresholdChange()" style="accent-color:#9c6ade;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500">⛰ Elevasi</span>
                 <span style="font-size:9px;color:var(--text3);font-family:var(--mono)">mdpl</span>
               </div>
@@ -1001,7 +1001,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div style="background:var(--bg2);border-radius:var(--radius);padding:8px 10px;margin-bottom:6px;border-left:3px solid #3b7aff" id="th-row-tinggi">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:8px">
               <div style="display:flex;align-items:center;gap:6px">
-                <input type="checkbox" id="th-tinggi-on" checked onchange="onThresholdChange()" style="accent-color:#3b7aff;width:14px;height:14px;cursor:pointer">
+                <input type="checkbox" id="th-tinggi-on" onchange="onThresholdChange()" style="accent-color:#3b7aff;width:14px;height:14px;cursor:pointer">
                 <span style="font-size:12px;font-weight:500;color:var(--text)">📏 Tinggi Tower</span>
                 <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">threshold min per tegangan (m)</span>
               </div>
@@ -5502,19 +5502,19 @@ function resetThresholds() {
   document.getElementById('th-density-val').value = 12;
   document.getElementById('th-ohm-on').checked = true;  // ON
   document.getElementById('th-ohm-val').value = 10;
-  document.getElementById('th-tinggi-on').checked = true;  // ON
+  document.getElementById('th-tinggi-on').checked = false; // OFF (default 3 faktor)
   // Reset 4 threshold tinggi per tegangan
   const tinggiDefaults = { '70':20, '150':30, '275':38, '500':55 };
   Object.entries(tinggiDefaults).forEach(([v,def]) => {
     const e = document.getElementById('th-tinggi-'+v); if (e) e.value = def;
   });
   // Span ON + reset 4 threshold per tegangan
-  document.getElementById('th-span-on').checked = true;
+  document.getElementById('th-span-on').checked = false;
   const spanDefaults = { '70':300, '150':400, '275':450, '500':500 };
   Object.entries(spanDefaults).forEach(([v,def]) => {
     const e = document.getElementById('th-span-'+v); if (e) e.value = def;
   });
-  document.getElementById('th-elev-on').checked = true;
+  document.getElementById('th-elev-on').checked = false;
   document.getElementById('th-elev-val').value = 50;
   document.getElementById('th-trend-on').checked = false;
   document.getElementById('th-trend-val').value = 0;
