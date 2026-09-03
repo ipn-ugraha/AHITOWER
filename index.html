@@ -1204,10 +1204,15 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <input type="checkbox" id="f-tla-prio-include-installed" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#9c6ade" checked>
             Termasuk sudah TLA
           </label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:#f5a623;font-family:var(--mono);cursor:pointer;font-weight:600">
+            <input type="checkbox" id="f-tla-prio-gap" onchange="TLA_PRIO_PAGE=1;renderTLAPriority()" style="accent-color:#f5a623">
+            🔀 Mode Gap Analysis
+          </label>
           <button onclick="resetTLAPrioFilters()" title="Reset filter"
             style="background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:3px 8px;font-size:10px;font-family:var(--mono);cursor:pointer">↻</button>
         </div>
 
+        <div id="gap-stats" style="display:none;margin-bottom:10px"></div>
         <div id="tla-prio-wrap" style="max-height:500px;overflow:auto"></div>
 
         <div style="display:flex;flex-wrap:wrap;gap:10px;padding:.6rem 1rem;border-top:1px solid var(--border);font-size:11px;font-family:var(--mono)">
@@ -2005,6 +2010,63 @@ function badgeRencana(tahaps) {
   return tahaps.map(t =>
     '<span title="' + labelTahap(t) + '" style="display:inline-block;background:' + (TAHAP_COLOR[t]||'#888') + ';color:#0d0f14;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;margin:1px;font-family:var(--mono)">' + (TAHAP_SHORT[t]||t) + '</span>'
   ).join('');
+}
+
+// ─── GAP ANALYSIS: prioritas vs rencana ───────────────────
+// Kategori: selaras (prioritas & rencana), gap (prioritas tanpa rencana), overplan (rencana tanpa prioritas)
+const GAP_CAT = {
+  selaras:  { label:'✅ Selaras', color:'#00d4aa', desc:'Prioritas & sudah direncanakan' },
+  gap:      { label:'⚠️ Gap Prioritas', color:'#e84040', desc:'Prioritas tapi BELUM direncanakan' },
+  overplan: { label:'📋 Over-plan', color:'#9c6ade', desc:'Direncanakan tapi tidak masuk prioritas' },
+};
+// Tentukan kategori gap untuk 1 tower (isPrioritas: apakah lolos threshold)
+function gapCategory(isPrioritas, tahaps) {
+  const adaRencana = tahaps && tahaps.length > 0;
+  if (isPrioritas && adaRencana) return 'selaras';
+  if (isPrioritas && !adaRencana) return 'gap';
+  if (!isPrioritas && adaRencana) return 'overplan';
+  return null;
+}
+// Badge kategori gap
+function badgeKategori(cat) {
+  if (!cat || !GAP_CAT[cat]) return '<span style="color:var(--text3)">–</span>';
+  const c = GAP_CAT[cat];
+  return '<span style="display:inline-block;background:' + c.color + '22;color:' + c.color + ';border:1px solid ' + c.color + '55;font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;white-space:nowrap">' + c.label + '</span>';
+}
+// Cari semua tower rencana (dari F_AHI global rows) yang TIDAK ada di daftar prioritas
+function towerRencanaNonPrioritas(prioritasBaySet, globalRows) {
+  const hasil = [];
+  if (!RENCANA_TLA) return hasil;
+  globalRows.forEach(r => {
+    const bay = r[A_BAY];
+    if (prioritasBaySet.has(bay)) return; // sudah di daftar prioritas
+    const tahaps = tahapRencanaTower(r);
+    if (tahaps.length > 0) hasil.push({ row:r, tahaps }); // rencana tapi bukan prioritas
+  });
+  return hasil;
+}
+// Render kartu statistik gap analysis
+function renderGapStats(gapMode, selaras, gap, overplan) {
+  const el = document.getElementById('gap-stats');
+  if (!el) return;
+  if (!gapMode) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  const total = selaras + gap + overplan;
+  const card = (cat, n) => {
+    const c = GAP_CAT[cat];
+    const pct = total > 0 ? Math.round(n/total*100) : 0;
+    return '<div style="flex:1;min-width:150px;background:var(--bg2);border:1px solid ' + c.color + '55;border-left:3px solid ' + c.color + ';border-radius:8px;padding:10px 12px">'
+      + '<div style="font-size:12px;font-weight:600;color:' + c.color + '">' + c.label + '</div>'
+      + '<div style="font-size:22px;font-weight:700;color:var(--text);font-family:var(--mono)">' + fmtNum(n) + ' <span style="font-size:11px;color:var(--text3)">(' + pct + '%)</span></div>'
+      + '<div style="font-size:9px;color:var(--text3);margin-top:2px">' + c.desc + '</div>'
+      + '</div>';
+  };
+  el.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    + card('selaras', selaras)
+    + card('gap', gap)
+    + card('overplan', overplan)
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:6px">🔀 Mode Gap Analysis aktif — tabel menampilkan tower prioritas + tower rencana (walau tidak prioritas). Kolom "Kategori" menandai jenisnya.</div>';
 }
 
 // ─── LOAD CSV REFERENSI ───────────────────────────────────
@@ -6332,7 +6394,57 @@ function renderTLAPriority() {
 
   // SEMUA card dihitung dari filteredScored agar SINKRON dengan tabel
   const filteredScored = applyTLAPrioFilters(scored);
-  _lastTLAScored = filteredScored; // simpan untuk export PDF
+
+  // ── GAP ANALYSIS ──
+  const gapMode = document.getElementById('f-tla-prio-gap')?.checked || false;
+  // Set BAY yang masuk prioritas (untuk cari rencana non-prioritas)
+  const prioBaySet = new Set(filteredScored.map(s => s.row[A_BAY]));
+  // Tandai kategori tiap tower prioritas (selaras/gap)
+  filteredScored.forEach(s => {
+    s._tahaps = tahapRencanaTower(s.row);
+    s._gapCat = gapCategory(true, s._tahaps);
+  });
+  // Kumpulkan tower rencana yang TIDAK prioritas (overplan)
+  let overplanList = [];
+  if (RENCANA_TLA) {
+    overplanList = towerRencanaNonPrioritas(prioBaySet, globalRows).map(o => ({
+      row: o.row,
+      _tahaps: o.tahaps,
+      _gapCat: 'overplan',
+      score: 0,
+      density: maxDensityAll(o.row),
+      ohm: o.row[A_OHM],
+      tinggi: o.row[A_TOWER_INFO]?.tinggi ?? null,
+      span: o.row[A_TOWER_INFO]?.span ?? null,
+      elev: o.row[A_ELEV],
+      trend: 0,
+      petir100: maxPetir100(o.row),
+      petir100Year: petir100YearOf(o.row),
+      metCount: 0,
+      hasTLA: o.row[A_TLA] === 1,
+      status: { key:'rendah', label:'—', color:'#9c6ade' },
+    }));
+  }
+  // Statistik gap
+  const gapSelaras = filteredScored.filter(s => s._gapCat === 'selaras').length;
+  const gapPrioritas = filteredScored.filter(s => s._gapCat === 'gap').length;
+  const gapOverplan = overplanList.length;
+  // Render statistik gap
+  renderGapStats(gapMode, gapSelaras, gapPrioritas, gapOverplan);
+
+  // Daftar tabel: gabung prioritas + overplan (kalau mode gap), lalu terapkan filter rencana lagi
+  let tableData = gapMode ? filteredScored.concat(overplanList) : filteredScored;
+  // Filter rencana juga berlaku ke overplan (agar konsisten)
+  const fRencanaGap = document.getElementById('f-tla-prio-rencana')?.value || '';
+  if (gapMode && fRencanaGap && overplanList.length) {
+    tableData = tableData.filter(s => {
+      const t = s._tahaps || [];
+      if (fRencanaGap === 'ada') return t.length > 0;
+      if (fRencanaGap === 'belum') return t.length === 0;
+      return t.includes(fRencanaGap);
+    });
+  }
+  _lastTLAScored = tableData; // simpan untuk export PDF (termasuk overplan di mode gap)
   const kritis   = filteredScored.filter(s => s.status.key === 'kritis').length;
   const tinggi   = filteredScored.filter(s => s.status.key === 'tinggi').length;
   const sedang   = filteredScored.filter(s => s.status.key === 'sedang').length;
@@ -6381,7 +6493,7 @@ function renderTLAPriority() {
   if (wE > 0) parts.push('elevasi×' + (wE*100).toFixed(0) + '%');
   if (wT > 0) parts.push('tren×' + (wT*100).toFixed(0) + '%');
   const infoText = parts.join(' + ');
-  drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText);
+  drawTLAPriorityTable(tableData, wrap, cntEl, infoEl, infoText);
 }
 
 function populateTLAPrioFilters(candidates) {
@@ -6421,8 +6533,8 @@ function applyTLAPrioFilters(scored) {
 }
 
 function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
-  // Apply filter
-  const filtered = applyTLAPrioFilters(scored);
+  // scored sudah difilter (termasuk gap mode) di renderTLAPriority
+  const filtered = scored;
 
   // Apply sort
   const sortKey = TLA_PRIO_SORT.col;
@@ -6493,12 +6605,15 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
   html += th('elev','Elv (m)','right');
   html += th('trend','Tren','right');
   html += th('metCount','⭐ Kriteria','center');
+  const gapModeH = document.getElementById('f-tla-prio-gap')?.checked || false;
+  if (gapModeH) html += '<th style="text-align:center">Kategori</th>';
   html += '<th style="text-align:center">Rencana TLA</th>';
   html += th('petir100','⚡&gt;100kA','right');
   html += th('score','Score','right');
   html += th('tla','TLA');
   html += th('status','Status');
   html += '</tr></thead><tbody>';
+  const gapModeRow = document.getElementById('f-tla-prio-gap')?.checked || false;
   pageRows.forEach((s,i) => {
     const globalIdx = startIdx + i;
     const r = s.row;
@@ -6516,8 +6631,8 @@ function drawTLAPriorityTable(scored, wrap, cntEl, infoEl, infoText) {
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:var(--text)">' + fmt(s.elev, 0) + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + cTrend(s.trend||0) + '">' + ((s.trend||0) > 0 ? '+' : '') + (s.trend !== undefined ? s.trend.toFixed(1) : '–') + '</td>'
       + '<td style="text-align:center;font-size:11px;white-space:nowrap" title="' + (s.metCount||0) + ' kriteria terpenuhi">' + (s.metCount > 0 ? '<span style="color:#f5c518;letter-spacing:-1px">' + '★'.repeat(s.metCount) + '</span><span style="color:var(--text3);font-family:var(--mono);font-size:10px;margin-left:3px">' + s.metCount + '</span>' : '<span style="color:var(--text3)">–</span>') + '</td>'
-      + '<td style="text-align:center;white-space:nowrap">' + badgeRencana(tahapRencanaTower(s.row)) + '</td>'
-      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.petir100 != null && s.petir100 >= 100 ? '#e91e8c' : 'var(--text3)') + ';font-weight:' + (s.petir100 != null && s.petir100 >= 100 ? '600' : '400') + '">' + (s.petir100 != null ? s.petir100.toFixed(0) + (s.petir100Year ? '<br><span style="font-size:8px;font-weight:400;color:var(--text3)">\'' + s.petir100Year.slice(2) + '</span>' : '') : '–') + '</td>'
+      + (gapModeRow ? '<td style="text-align:center;white-space:nowrap">' + badgeKategori(s._gapCat) + '</td>' : '')
+      + '<td style="text-align:center;white-space:nowrap">' + badgeRencana(s._tahaps || tahapRencanaTower(s.row)) + '</td>'      + '<td style="text-align:right;font-size:11px;font-family:var(--mono);color:' + (s.petir100 != null && s.petir100 >= 100 ? '#e91e8c' : 'var(--text3)') + ';font-weight:' + (s.petir100 != null && s.petir100 >= 100 ? '600' : '400') + '">' + (s.petir100 != null ? s.petir100.toFixed(0) + (s.petir100Year ? '<br><span style="font-size:8px;font-weight:400;color:var(--text3)">\'' + s.petir100Year.slice(2) + '</span>' : '') : '–') + '</td>'
       + '<td style="text-align:right;font-size:11px;font-family:var(--mono);"><span style="background:' + sc.bg + ';color:' + sc.fg + ';padding:2px 8px;border-radius:3px;font-weight:500">' + s.score.toFixed(0) + '</span></td>'
       + '<td style="font-size:10px;font-family:var(--mono);text-align:center;white-space:nowrap">' + (s.hasTLA ? '<span style="background:rgba(0,212,170,0.15);color:#00d4aa;padding:2px 8px;border-radius:3px;font-weight:500">✅ Terpasang</span>' : '<span style="color:var(--text3)">— Belum</span>') + '</td>'
       + '<td style="font-size:10px;font-family:var(--mono);color:' + (s.status?.color || 'var(--text3)') + ';white-space:nowrap">' + (s.status?.label || '–') + '</td>'
