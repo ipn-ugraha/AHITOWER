@@ -5753,9 +5753,11 @@ function flHitung() {
   h += '</div>';
 
   // Peta mini: titik gangguan + tower sekitar
-  h += '<div class="cc"><div class="cc-title">Peta lokasi & tower sekitar</div>'
+  h += '<div class="cc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem">'
+     + '<div class="cc-title" style="margin:0">Peta lokasi & tower sekitar</div>'
+     + '<button class="btn-sm" onclick="flSaveMapImage()" style="border-color:rgba(0,212,170,.4);color:var(--accent)">💾 Simpan gambar</button></div>'
      + '<div id="fl-map" style="height:380px;border-radius:8px;overflow:hidden;border:1px solid var(--border)"></div>'
-     + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px">🔴 titik estimasi gangguan · 🟠 tower terdekat · 🔵 tower sekitar · garis biru = jalur saluran</div></div>';
+     + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px">🔴 titik estimasi gangguan · 🟠 tower terdekat · 🔵 tower sekitar · garis biru = jalur saluran · toggle Satelit/Jalan di pojok kanan atas peta</div></div>';
 
   // Tabel kandidat tower di sekitar lokasi (±3 tower)
   const center = idx===-1 ? (outRange==='kurang'?0:T.length-1) : idx;
@@ -5829,7 +5831,12 @@ function flRenderMap(T, lo, hi, estLat, estLng, nearest) {
   if (!el || typeof L === 'undefined') return;
   if (_flMap) { try { _flMap.remove(); } catch(e){} _flMap = null; }
   _flMap = L.map('fl-map', { scrollWheelZoom: true, attributionControl: true });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(_flMap);
+  const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '© Esri World Imagery', crossOrigin: true });
+  const satLabel = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, crossOrigin: true });
+  const streetLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap', crossOrigin: true });
+  const satGroup = L.layerGroup([satLayer, satLabel]);
+  satGroup.addTo(_flMap); // default: satelit + label
+  L.control.layers({ 'Satelit': satGroup, 'Jalan': streetLayer }, null, { position:'topright', collapsed:false }).addTo(_flMap);
 
   const pts = [];
   // Jalur saluran (semua tower dalam jendela) — polyline biru
@@ -5860,6 +5867,27 @@ function flRenderMap(T, lo, hi, estLat, estLng, nearest) {
   else _flMap.setView([estLat,estLng], 14);
   // invalidateSize berulang agar tile termuat penuh meski container baru muncul/animasi
   [60, 250, 600].forEach(ms => setTimeout(()=>{ try{ _flMap && _flMap.invalidateSize(); }catch(e){} }, ms));
+}
+
+// Simpan peta mini sebagai PNG (html2canvas)
+function flSaveMapImage() {
+  const el = document.getElementById('fl-map');
+  if (!el) { alert('Peta belum tersedia.'); return; }
+  if (typeof html2canvas === 'undefined') { alert('html2canvas tidak tersedia.'); return; }
+  const pht = (document.getElementById('fl-pht').value || 'saluran').replace(/[^A-Za-z0-9]+/g,'_');
+  const jr = (document.getElementById('fl-jarak').value || '').replace(/[^0-9.]/g,'');
+  // Pastikan tile termuat penuh sebelum capture
+  if (_flMap) { try { _flMap.invalidateSize(); } catch(e){} }
+  setTimeout(() => {
+    html2canvas(el, { useCORS: true, allowTaint: false, backgroundColor: '#0d0f14', logging: false, scale: 2 })
+      .then(cv => {
+        const a = document.createElement('a');
+        a.download = 'fault_locator_' + pht + (jr?('_'+jr+'km'):'') + '.png';
+        a.href = cv.toDataURL('image/png');
+        a.click();
+      })
+      .catch(e => alert('Gagal menyimpan gambar: ' + e.message + '\n(Jika tile satelit gagal ter-capture, coba ganti ke basemap Jalan lalu simpan lagi.)'));
+  }, 400);
 }
 
 let densityChart = null;
