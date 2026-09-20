@@ -1573,6 +1573,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
           <div class="fg" style="min-width:280px"><span class="fl">Penghantar</span>
             <select class="fs" id="fl-pht" onchange="flOnPenghantarChange()"><option value="">— pilih penghantar —</option></select>
           </div>
+          <div class="fg" id="fl-ckt-wrap" style="display:none"><span class="fl">Sirkuit / jalur</span>
+            <select class="fs" id="fl-ckt" onchange="flHitung()"></select>
+          </div>
           <div class="fg" style="min-width:230px"><span class="fl">Sisi relai (arah pengukuran FL)</span>
             <select class="fs" id="fl-arah" onchange="flHitung()">
               <option value="awal">Dari GI sisi tower nomor KECIL (#1)</option>
@@ -5554,7 +5557,18 @@ function flPopulatePenghantar() {
 }
 
 function flOnPenghantarChange() {
-  // Reset input jarak saat ganti penghantar biar tidak salah tafsir
+  // Isi pilihan sirkuit sesuai penghantar
+  const pht = document.getElementById('fl-pht').value;
+  const wrap = document.getElementById('fl-ckt-wrap');
+  const sel = document.getElementById('fl-ckt');
+  const cs = pht ? flCircuitsOf(pht) : [];
+  if (cs.length > 1) {
+    sel.innerHTML = cs.map(c => '<option value="'+c.ckt+'">Sirkuit '+c.ckt+' ('+c.n+' tower)</option>').join('');
+    wrap.style.display = '';
+  } else {
+    sel.innerHTML = '';
+    wrap.style.display = 'none';
+  }
   flHitung();
 }
 
@@ -5565,41 +5579,73 @@ function flReset() {
   flHitung();
 }
 
-// Ekstrak nomor tower — dukung "...#0053", "SANUR-GIANYAR/1/53", dll.
+// Parse BAY → {circuit, num}. Dukung "...#0053", "SANUR-GIANYAR/1/53", dll.
 // Tegangan di depan (mis. "150kV ...") dibuang dulu agar tidak salah tangkap.
-function flTowerNum(bay, twr) {
-  let b = String(bay || '').replace(/^\s*\d+\s*kv/i, ''); // buang "150kV" di depan
-  let m = b.match(/#\s*0*(\d+)/);                          // format #0053
-  if (m) return parseInt(m[1]);
-  const segs = b.split('/');                               // format .../sirkuit/nomor
-  if (segs.length >= 2) {
-    const last = segs[segs.length - 1].match(/(\d+)/);
-    if (last) return parseInt(last[1]);
-  }
-  const all = b.match(/(\d+)/g);                           // angka terakhir tersisa
-  if (all && all.length) return parseInt(all[all.length - 1]);
+function flTowerParse(bay, twr) {
+  let b = String(bay || '').replace(/^\s*\d+\s*kv/i, '');   // buang "150kV" di depan
+  // format .../<sirkuit>/<nomor>  (mis. SANUR-GIANYAR/1/53)
+  let ms = b.match(/\/\s*(\d+)\s*\/\s*0*(\d+)/);
+  if (ms) return { circuit: parseInt(ms[1]), num: parseInt(ms[2]) };
+  // format #0053 (nomor tower, tanpa sirkuit)
+  let mh = b.match(/#\s*0*(\d+)/);
+  if (mh) return { circuit: null, num: parseInt(mh[1]) };
+  // format .../<sirkuit> di akhir (mis. SANUR-GIANYAR/1) — tanpa nomor tower
+  let mc = b.match(/\/\s*(\d+)\s*$/);
+  if (mc) return { circuit: parseInt(mc[1]), num: null };
+  // angka terakhir tersisa
+  const all = b.match(/(\d+)/g);
+  if (all && all.length) return { circuit: null, num: parseInt(all[all.length - 1]) };
   const n = parseInt(twr);
-  return isNaN(n) ? null : n;
+  return { circuit: null, num: isNaN(n) ? null : n };
 }
+function flTowerNum(bay, twr) { return flTowerParse(bay, twr).num; }
 function flPad(n) { return n < 10 ? '00' + n : n < 100 ? '0' + n : String(n); }
 
+// Daftar sirkuit yang ada pada sebuah penghantar (mis. ['1','2'])
+function flCircuitsOf(pht) {
+  const ckt = {};
+  RAW.ahiRows.forEach(r => {
+    if (r[A_PHT] !== pht) return;
+    const p = flTowerParse(r[A_BAY], r[A_TWR]);
+    if (p.circuit != null) ckt[p.circuit] = (ckt[p.circuit]||0)+1;
+  });
+  return Object.keys(ckt).sort((a,b)=>(+a)-(+b)).map(k=>({ ckt:k, n:ckt[k] }));
+}
+
 // Bangun profil tower berurut + jarak kumulatif (km) sepanjang saluran
-function flBuildProfil(pht, arah, offsetKm) {
+function flBuildProfil(pht, arah, offsetKm, circuitSel) {
   const rows = RAW.ahiRows.filter(r => r[A_PHT] === pht);
   const total = rows.length;
   const withCoord = [];
   let noCoord = 0;
-  const seenCoord = {};
+  // Kumpulkan dulu semua tower berkoordinat (belum dedup) + info sirkuit
+  const raw = [];
   rows.forEach(r => {
     const t = r[A_TOWER_INFO];
     if (t && typeof t.lat === 'number' && typeof t.lng === 'number' && !isNaN(t.lat) && !isNaN(t.lng)) {
-      const key = t.lat.toFixed(5) + ',' + t.lng.toFixed(5);
-      if (seenCoord[key]) return;          // dedup HANYA titik koordinat identik (sirkuit paralel)
-      seenCoord[key] = 1;
-      const num = flTowerNum(r[A_BAY], r[A_TWR]);
+      const p = flTowerParse(r[A_BAY], r[A_TWR]);
       let seq = parseInt(String(r[A_NO]||'').replace(/[^0-9]/g,''));
-      withCoord.push({ num, seq: isNaN(seq)?null:seq, lat: t.lat, lng: t.lng, teg: t.teg, bay: r[A_BAY], r: r });
+      raw.push({ num: p.num, circuit: p.circuit, seq: isNaN(seq)?null:seq, lat: t.lat, lng: t.lng, teg: t.teg, bay: r[A_BAY], r: r });
     } else noCoord++;
+  });
+  // Sirkuit 1 & 2 = jalur fisik BERBEDA. Kalau digabung, cum jarak melompat
+  // (mis. 15 km) saat pindah sirkuit. Jadi pilih SATU sirkuit saja.
+  const ckt = {};
+  raw.forEach(o => { if (o.circuit != null) ckt[o.circuit] = (ckt[o.circuit]||0)+1; });
+  const cktKeys = Object.keys(ckt).sort((a,b)=>(+a)-(+b));
+  let usedCircuit = null;
+  let filtered = raw;
+  if (cktKeys.length >= 1) {
+    usedCircuit = (circuitSel != null && ckt[circuitSel]) ? String(circuitSel) : cktKeys[0]; // default sirkuit terkecil
+    filtered = raw.filter(o => String(o.circuit) === usedCircuit);
+  }
+  // Dedup koordinat identik (jaga-jaga)
+  const seenCoord = {};
+  filtered.forEach(o => {
+    const key = o.lat.toFixed(5) + ',' + o.lng.toFixed(5);
+    if (seenCoord[key]) return;
+    seenCoord[key] = 1;
+    withCoord.push(o);
   });
   // Tentukan basis urutan: pakai nomor tower bila mayoritas unik & valid,
   // kalau tidak (BAY tanpa nomor) pakai NO urut, kalau tidak ada juga pakai urutan asli.
@@ -5623,7 +5669,7 @@ function flBuildProfil(pht, arah, offsetKm) {
       t.cumGeo = cum;
     }
   });
-  return { towers: withCoord, total, noCoord, panjangGeo: withCoord.length ? withCoord[withCoord.length-1].cumGeo : 0 };
+  return { towers: withCoord, total, noCoord, panjangGeo: withCoord.length ? withCoord[withCoord.length-1].cumGeo : 0, circuits: cktKeys, usedCircuit: usedCircuit };
 }
 
 // Status SEMUA kategori kerawanan 1 tower → array {cat, label, ok, sev, color}
@@ -5699,7 +5745,8 @@ function flHitung() {
 
   if (!pht) { meta.innerHTML = 'Pilih penghantar untuk memuat profil tower.'; hasil.innerHTML=''; return; }
 
-  const prof = flBuildProfil(pht, arah, offset);
+  const circuitSel = document.getElementById('fl-ckt')?.value || null;
+  const prof = flBuildProfil(pht, arah, offset, circuitSel);
   if (prof.towers.length < 2) {
     meta.innerHTML = '⚠️ Penghantar ini hanya punya '+prof.towers.length+' tower berkoordinat — tidak cukup untuk menghitung jarak.';
     hasil.innerHTML=''; return;
@@ -5719,8 +5766,10 @@ function flHitung() {
   const panjangPakai = prof.towers[prof.towers.length-1].cum;
 
   meta.innerHTML =
-    '<b style="color:var(--text2)">'+pht+'</b> · '+prof.total+' tower ('+prof.towers.length+' berkoordinat'
-    + (prof.noCoord? ', <span style="color:var(--warn)">'+prof.noCoord+' tanpa koordinat dilewati</span>':'')+')'
+    '<b style="color:var(--text2)">'+pht+'</b>'
+    + (prof.usedCircuit ? ' · <b style="color:var(--accent2)">Sirkuit '+prof.usedCircuit+'</b>'+(prof.circuits.length>1?' (dari '+prof.circuits.length+' sirkuit)':'') : '')
+    + ' · '+prof.towers.length+' tower berkoordinat'
+    + (prof.noCoord? ', <span style="color:var(--warn)">'+prof.noCoord+' tanpa koordinat dilewati</span>':'')
     + ' · panjang saluran (geometris): <b>'+prof.panjangGeo.toFixed(2)+' km</b>'
     + (scale!==1 ? ' → dikalibrasi ke <b style="color:var(--accent)">'+panjangResmi.toFixed(2)+' km</b> (faktor '+scale.toFixed(3)+')' : '')
     + '<br>Referensi FL: '+(arah==='awal'?'GI sisi tower nomor KECIL':'GI sisi tower nomor BESAR')
