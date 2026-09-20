@@ -1568,7 +1568,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-pane" id="tab-fl">
       <div class="sl sl-info">🎯 Fault Locator — Estimasi Lokasi Gangguan (Trip)</div>
       <div class="cc">
-        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v8</span></div>
+        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v9</span></div>
         <div class="filter-bar" style="margin-bottom:12px;align-items:flex-end">
           <div class="fg" style="min-width:280px"><span class="fl">Penghantar</span>
             <select class="fs" id="fl-pht" onchange="flOnPenghantarChange()"><option value="">— pilih penghantar —</option></select>
@@ -5921,6 +5921,34 @@ function flHitung() {
      + rowsKer
      + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px;line-height:1.5">💡 Kerawanan dinilai dari ambang panel Kriteria Prioritas TLA (density, pentanahan, petir &gt;100kA) + status layangan &amp; hotspot. Gunakan untuk memperkirakan penyebab gangguan (mis. sambaran petir bila density/petir&gt;100kA tinggi, atau layang-layang).</div></div>';
 
+  // ── Rekap kerawanan SELURUH saluran (muncul saat mode "Semua tower") ──
+  const catAgg = {};       // kategori → daftar label tower
+  let nihilAll = 0;
+  T.forEach(t => {
+    const cs = flRisks(t.r);
+    const bad = cs.filter(c=>!c.ok);
+    if (bad.length === 0) nihilAll++;
+    bad.forEach(c => { if (!catAgg[c.cat]) catAgg[c.cat] = { list:[], color:c.color }; catAgg[c.cat].list.push(t.label); });
+  });
+  const catOrder = ['Density petir','Pentanahan','Petir >100kA','Struktur','Anti-binatang','TLA','Layang-layang','Hotspot'];
+  let rekapRows = '';
+  catOrder.forEach(cat => {
+    const a = catAgg[cat];
+    if (!a || !a.list.length) return;
+    const towersStr = a.list.map(l=>'#'+l).join(', ');
+    rekapRows += '<div style="padding:7px 10px;border:1px solid '+a.color+'44;border-left:3px solid '+a.color+';border-radius:6px;margin-bottom:6px;background:'+a.color+'0d">'
+      + '<div style="font-family:var(--mono);font-size:12px;color:var(--text)"><b style="color:'+a.color+'">'+cat+'</b> — '+a.list.length+' tower</div>'
+      + '<div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:3px;line-height:1.6">'+towersStr+'</div></div>';
+  });
+  if (!rekapRows) rekapRows = '<div style="color:var(--accent);font-family:var(--mono);font-size:12px">✓ Tidak ada kerawanan tercatat di sepanjang saluran ini.</div>';
+  const rekapHead = '<div class="status-strip" style="margin-bottom:10px">'
+    + '<div class="stat-card" style="border-left-color:var(--danger)"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+(T.length-nihilAll)+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:3px">Tower dgn kerawanan</div></div>'
+    + '<div class="stat-card" style="border-left-color:var(--accent)"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+nihilAll+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:3px">Tower nihil</div></div>'
+    + '<div class="stat-card" style="border-left-color:var(--accent2)"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+T.length+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:3px">Total tower</div></div>'
+    + '</div>';
+  h += '<div class="cc" id="fl-rekap-all" style="display:'+(_flMapShowAll?'block':'none')+'"><div class="cc-title">📋 Rekap kerawanan seluruh saluran'+(prof.usedCircuit?' — Sirkuit '+prof.usedCircuit:'')+' ('+T.length+' tower)</div>'
+     + rekapHead + rekapRows + '</div>';
+
   hasil.innerHTML = h;
   // Simpan konteks utk render/toggle peta
   _flCtx = { T, lo, hi, estLat, estLng, nearest };
@@ -5936,6 +5964,8 @@ function flToggleMapAll() {
   _flMapShowAll = !_flMapShowAll;
   const btn = document.getElementById('fl-toggle-all');
   if (btn) btn.textContent = _flMapShowAll ? '🎯 Sekitar lokasi' : '🗺️ Semua tower';
+  const rekap = document.getElementById('fl-rekap-all');
+  if (rekap) rekap.style.display = _flMapShowAll ? 'block' : 'none';
   flScheduleMap(0);
 }
 
