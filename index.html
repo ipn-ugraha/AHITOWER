@@ -5565,17 +5565,42 @@ function flReset() {
   flHitung();
 }
 
+// Ekstrak nomor tower — dukung format "...#0053" DAN "SANUR-GIANYAR/1/53"
+function flTowerNum(bay, twr) {
+  const b = String(bay || '');
+  let m = b.match(/#\s*0*(\d+)/);            // format #0053
+  if (m) return parseInt(m[1]);
+  const segs = b.split('/');                 // format PENGHANTAR/sirkuit/nomor
+  if (segs.length >= 2) {
+    const last = segs[segs.length - 1].match(/(\d+)/);
+    if (last) return parseInt(last[1]);
+  }
+  const all = b.match(/(\d+)/g);             // angka terakhir di BAY
+  if (all && all.length) return parseInt(all[all.length - 1]);
+  const n = parseInt(twr);
+  return isNaN(n) ? null : n;
+}
+// Label nomor tower (zero-pad minimal 2 digit)
+function flTowerLabel(bay, twr) {
+  const n = flTowerNum(bay, twr);
+  if (n == null) return String(bay || '?').trim();
+  return n < 10 ? '00' + n : n < 100 ? '0' + n : String(n);
+}
+
 // Bangun profil tower berurut + jarak kumulatif (km) sepanjang saluran
 function flBuildProfil(pht, arah, offsetKm) {
   const rows = RAW.ahiRows.filter(r => r[A_PHT] === pht);
   const total = rows.length;
   const withCoord = [];
   let noCoord = 0;
+  const seen = {};
   rows.forEach(r => {
     const t = r[A_TOWER_INFO];
-    const num = extractTowerNum(r[A_BAY], r[A_TWR]);
+    const num = flTowerNum(r[A_BAY], r[A_TWR]);
     if (t && typeof t.lat === 'number' && typeof t.lng === 'number' && !isNaN(t.lat) && !isNaN(t.lng) && num != null) {
-      withCoord.push({ num, label: bayLabel(r[A_BAY], r[A_TWR]), lat: t.lat, lng: t.lng, teg: t.teg, bay: r[A_BAY], r: r });
+      if (seen[num]) return; // dedup sirkuit ganda (nomor tower sama)
+      seen[num] = 1;
+      withCoord.push({ num, label: flTowerLabel(r[A_BAY], r[A_TWR]), lat: t.lat, lng: t.lng, teg: t.teg, bay: r[A_BAY], r: r });
     } else noCoord++;
   });
   // Urut naik by nomor tower, lalu balik jika relai di sisi nomor besar
