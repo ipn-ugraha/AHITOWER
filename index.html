@@ -242,6 +242,11 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .gi-row{display:flex;justify-content:space-between;padding:5px 10px;border-radius:4px;font-size:12px;font-family:var(--mono);}
 .gi-row:nth-child(odd){background:var(--bg3);}
 .gi-row:nth-child(even){background:var(--bg2);}
+.fl-tip{background:rgba(19,22,30,.9);color:#e8eaf0;border:1px solid var(--border2);border-radius:4px;font-family:var(--mono);font-size:10px;padding:1px 5px;box-shadow:none;}
+.fl-tip::before{display:none;}
+.fl-tip-fault{background:#e84040;color:#fff;border:none;border-radius:4px;font-family:var(--mono);font-size:10px;font-weight:600;padding:2px 6px;box-shadow:none;}
+.fl-tip-fault::before{display:none;}
+#fl-map .leaflet-popup-content{font-family:var(--mono);font-size:12px;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -5804,6 +5809,57 @@ function flHitung() {
      + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px;line-height:1.5">💡 Kerawanan dinilai dari ambang panel Kriteria Prioritas TLA (density, pentanahan, petir &gt;100kA) + status layangan &amp; hotspot. Gunakan untuk memperkirakan penyebab gangguan (mis. sambaran petir bila density/petir&gt;100kA tinggi, atau layang-layang).</div></div>';
 
   hasil.innerHTML = h;
+  // Render peta setelah DOM siap (tunggu container punya tinggi)
+  flScheduleMap(T, lo, hi, estLat, estLng, nearest, 0);
+}
+
+let _flMap = null;
+function flScheduleMap(T, lo, hi, estLat, estLng, nearest, tries) {
+  const el = document.getElementById('fl-map');
+  if (!el) return;
+  // Tunggu sampai container benar-benar punya tinggi (tab/animasi selesai)
+  if (el.clientHeight < 40 && tries < 20) {
+    setTimeout(() => flScheduleMap(T, lo, hi, estLat, estLng, nearest, tries+1), 80);
+    return;
+  }
+  flRenderMap(T, lo, hi, estLat, estLng, nearest);
+}
+function flRenderMap(T, lo, hi, estLat, estLng, nearest) {
+  const el = document.getElementById('fl-map');
+  if (!el || typeof L === 'undefined') return;
+  if (_flMap) { try { _flMap.remove(); } catch(e){} _flMap = null; }
+  _flMap = L.map('fl-map', { scrollWheelZoom: true, attributionControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(_flMap);
+
+  const pts = [];
+  // Jalur saluran (semua tower dalam jendela) — polyline biru
+  const line = [];
+  for (let i = lo; i <= hi; i++) { line.push([T[i].lat, T[i].lng]); }
+  if (line.length >= 2) L.polyline(line, { color:'#3b7aff', weight:3, opacity:0.7 }).addTo(_flMap);
+
+  // Marker tiap tower kandidat
+  for (let i = lo; i <= hi; i++) {
+    const t = T[i];
+    const isNear = (t.num === nearest.num);
+    const risks = flRisks(t.r).filter(c=>!c.ok).length;
+    const col = isNear ? '#f5a623' : (risks>0 ? '#e84040' : '#3b7aff');
+    const rad = isNear ? 9 : 6;
+    const m = L.circleMarker([t.lat, t.lng], { radius:rad, color:'#fff', weight:1.5, fillColor:col, fillOpacity:0.9 }).addTo(_flMap);
+    m.bindTooltip('#'+t.label, { permanent:true, direction:'top', className:'fl-tip', offset:[0,-4] });
+    m.bindPopup('<b>Tower #'+t.label+'</b><br>km-FL: '+t.cum.toFixed(3)+' km<br>'+(risks>0? risks+' kerawanan':'✓ nihil kerawanan')+'<br>'+t.lat.toFixed(5)+', '+t.lng.toFixed(5));
+    pts.push([t.lat, t.lng]);
+  }
+
+  // Titik estimasi gangguan — marker merah menonjol
+  const fault = L.circleMarker([estLat, estLng], { radius:11, color:'#fff', weight:2, fillColor:'#e84040', fillOpacity:1 }).addTo(_flMap);
+  fault.bindPopup('<b>🔴 Estimasi lokasi gangguan</b><br>'+estLat.toFixed(6)+', '+estLng.toFixed(6));
+  fault.bindTooltip('GANGGUAN', { permanent:true, direction:'bottom', className:'fl-tip-fault', offset:[0,6] });
+  pts.push([estLat, estLng]);
+
+  if (pts.length) { try { _flMap.fitBounds(L.latLngBounds(pts), { padding:[40,40], maxZoom:16 }); } catch(e){ _flMap.setView([estLat,estLng], 14); } }
+  else _flMap.setView([estLat,estLng], 14);
+  // invalidateSize berulang agar tile termuat penuh meski container baru muncul/animasi
+  [60, 250, 600].forEach(ms => setTimeout(()=>{ try{ _flMap && _flMap.invalidateSize(); }catch(e){} }, ms));
 }
 
 let densityChart = null;
