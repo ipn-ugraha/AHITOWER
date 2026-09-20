@@ -1568,7 +1568,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-pane" id="tab-fl">
       <div class="sl sl-info">🎯 Fault Locator — Estimasi Lokasi Gangguan (Trip)</div>
       <div class="cc">
-        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL)</div>
+        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v7</span></div>
         <div class="filter-bar" style="margin-bottom:12px;align-items:flex-end">
           <div class="fg" style="min-width:280px"><span class="fl">Penghantar</span>
             <select class="fs" id="fl-pht" onchange="flOnPenghantarChange()"><option value="">— pilih penghantar —</option></select>
@@ -5660,6 +5660,7 @@ function flBuildProfil(pht, arah, offsetKm, circuitSel) {
     usedCircuit = (circuitSel != null && ckt[circuitSel]) ? String(circuitSel) : cktKeys[0]; // default sirkuit terkecil
     filtered = raw.filter(o => String(o.circuit) === usedCircuit);
   }
+  if (filtered.length === 0) { filtered = raw; usedCircuit = null; } // pengaman: jangan sampai kosong
   // Dedup koordinat identik (jaga-jaga)
   const seenCoord = {};
   filtered.forEach(o => {
