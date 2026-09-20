@@ -476,6 +476,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="tab-btn" onclick="switchTab('petir')">Petir &amp; TLA</button>
       <button class="tab-btn" onclick="switchTab('layangan')">Layangan</button>
       <button class="tab-btn" onclick="switchTab('hotspot')">Hotspot</button>
+      <button class="tab-btn" onclick="switchTab('fl')">🎯 Fault Locator</button>
     </div>
 
     <!-- TAB OVERVIEW -->
@@ -1558,6 +1559,37 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
     </div>
 
+    <!-- TAB FAULT LOCATOR -->
+    <div class="tab-pane" id="tab-fl">
+      <div class="sl sl-info">🎯 Fault Locator — Estimasi Lokasi Gangguan (Trip)</div>
+      <div class="cc">
+        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL)</div>
+        <div class="filter-bar" style="margin-bottom:12px;align-items:flex-end">
+          <div class="fg" style="min-width:280px"><span class="fl">Penghantar</span>
+            <select class="fs" id="fl-pht" onchange="flOnPenghantarChange()"><option value="">— pilih penghantar —</option></select>
+          </div>
+          <div class="fg" style="min-width:230px"><span class="fl">Sisi relai (arah pengukuran FL)</span>
+            <select class="fs" id="fl-arah" onchange="flHitung()">
+              <option value="awal">Dari GI sisi tower nomor KECIL (#1)</option>
+              <option value="akhir">Dari GI sisi tower nomor BESAR</option>
+            </select>
+          </div>
+          <div class="fg"><span class="fl">Jarak FL (km)</span>
+            <input class="fs" id="fl-jarak" type="number" step="0.001" min="0" placeholder="mis. 12.4" oninput="flHitung()">
+          </div>
+          <div class="fg"><span class="fl">Offset GI→tower awal (km)</span>
+            <input class="fs" id="fl-offset" type="number" step="0.01" min="0" value="0" oninput="flHitung()">
+          </div>
+          <div class="fg"><span class="fl">Panjang saluran resmi (km)</span>
+            <input class="fs" id="fl-panjang" type="number" step="0.01" min="0" placeholder="opsional (kalibrasi)" oninput="flHitung()">
+          </div>
+          <button class="btn-reset" onclick="flReset()">Reset</button>
+        </div>
+        <div id="fl-meta" style="font-size:11px;color:var(--text3);font-family:var(--mono);line-height:1.7"></div>
+      </div>
+      <div id="fl-hasil" style="margin-top:14px"></div>
+    </div>
+
     <!-- TAB AHI -->
     <div class="tab-pane" id="tab-ahi">
       <!-- Filter Penghantar -->
@@ -1941,9 +1973,10 @@ function switchPage(page) {
 }
 
 function switchTab(name) {
-  const tabs=['overview','tower','ahi','petir','layangan','hotspot'];
+  const tabs=['overview','tower','ahi','petir','layangan','hotspot','fl'];
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tabs[i]===name));
   document.querySelectorAll('.tab-pane').forEach(p=>p.classList.toggle('active',p.id==='tab-'+name));
+  if (name==='fl' && RAW) flPopulatePenghantar();
   if (name==='petir' && F_AHI) { populatePetirGlobalFilter(); onPetirGlobalFilter(); }
   if ((name==='layangan' || name==='hotspot') && F_AHI) renderFisikTab();
   if (name==='hotspot') muatLaporan(); // muat laporan lapangan
@@ -5492,6 +5525,174 @@ function bayLabel(bay, twr) {
   }
   const n = parseInt(twr);
   return !isNaN(n) ? String(n) : String(bay||'?').trim();
+}
+
+// ═══════════════════════════════════════════════════════════
+// FAULT LOCATOR — estimasi lokasi gangguan dari jarak FL relai
+// ═══════════════════════════════════════════════════════════
+function flHaversineKm(la1, lo1, la2, lo2) {
+  const R = 6371, toR = Math.PI / 180;
+  const dLa = (la2 - la1) * toR, dLo = (lo2 - lo1) * toR;
+  const a = Math.sin(dLa/2)**2 + Math.cos(la1*toR)*Math.cos(la2*toR)*Math.sin(dLo/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Isi dropdown penghantar dari SEMUA data (bukan hanya yang terfilter)
+function flPopulatePenghantar() {
+  const sel = document.getElementById('fl-pht');
+  if (!sel || !RAW || !RAW.ahiRows) return;
+  const cur = sel.value;
+  const phts = [...new Set(RAW.ahiRows.map(r => r[A_PHT]).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b)));
+  sel.innerHTML = '<option value="">— pilih penghantar —</option>' +
+    phts.map(p => '<option value="'+String(p).replace(/"/g,'&quot;')+'">'+p+'</option>').join('');
+  if (cur && phts.includes(cur)) sel.value = cur;
+}
+
+function flOnPenghantarChange() {
+  // Reset input jarak saat ganti penghantar biar tidak salah tafsir
+  flHitung();
+}
+
+function flReset() {
+  ['fl-jarak','fl-panjang'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  const off=document.getElementById('fl-offset'); if(off) off.value='0';
+  document.getElementById('fl-hasil').innerHTML='';
+  flHitung();
+}
+
+// Bangun profil tower berurut + jarak kumulatif (km) sepanjang saluran
+function flBuildProfil(pht, arah, offsetKm) {
+  const rows = RAW.ahiRows.filter(r => r[A_PHT] === pht);
+  const total = rows.length;
+  const withCoord = [];
+  let noCoord = 0;
+  rows.forEach(r => {
+    const t = r[A_TOWER_INFO];
+    const num = extractTowerNum(r[A_BAY], r[A_TWR]);
+    if (t && typeof t.lat === 'number' && typeof t.lng === 'number' && !isNaN(t.lat) && !isNaN(t.lng) && num != null) {
+      withCoord.push({ num, label: bayLabel(r[A_BAY], r[A_TWR]), lat: t.lat, lng: t.lng, teg: t.teg, bay: r[A_BAY] });
+    } else noCoord++;
+  });
+  // Urut naik by nomor tower, lalu balik jika relai di sisi nomor besar
+  withCoord.sort((a,b)=>a.num-b.num);
+  if (arah === 'akhir') withCoord.reverse();
+
+  // Jarak kumulatif geometris (haversine antar tower berurutan)
+  let cum = offsetKm || 0;
+  withCoord.forEach((t, i) => {
+    if (i === 0) { t.span = 0; t.cumGeo = cum; }
+    else {
+      const p = withCoord[i-1];
+      t.span = flHaversineKm(p.lat, p.lng, t.lat, t.lng);
+      cum += t.span;
+      t.cumGeo = cum;
+    }
+  });
+  return { towers: withCoord, total, noCoord, panjangGeo: withCoord.length ? withCoord[withCoord.length-1].cumGeo : 0 };
+}
+
+function flHitung() {
+  const pht    = document.getElementById('fl-pht').value;
+  const arah   = document.getElementById('fl-arah').value;
+  const jarak  = parseFloat(document.getElementById('fl-jarak').value);
+  const offset = parseFloat(document.getElementById('fl-offset').value) || 0;
+  const panjangResmi = parseFloat(document.getElementById('fl-panjang').value);
+  const meta = document.getElementById('fl-meta');
+  const hasil = document.getElementById('fl-hasil');
+
+  if (!pht) { meta.innerHTML = 'Pilih penghantar untuk memuat profil tower.'; hasil.innerHTML=''; return; }
+
+  const prof = flBuildProfil(pht, arah, offset);
+  if (prof.towers.length < 2) {
+    meta.innerHTML = '⚠️ Penghantar ini hanya punya '+prof.towers.length+' tower berkoordinat — tidak cukup untuk menghitung jarak.';
+    hasil.innerHTML=''; return;
+  }
+
+  // Kalibrasi ke panjang saluran resmi (opsional): regangkan profil geometris
+  let scale = 1, cumKey = 'cumGeo';
+  const cumLast = prof.towers[prof.towers.length-1].cumGeo;
+  if (!isNaN(panjangResmi) && panjangResmi > 0 && cumLast > 0) {
+    scale = panjangResmi / cumLast;
+    prof.towers.forEach(t => t.cum = t.cumGeo * scale);
+    cumKey = 'cum';
+  } else {
+    prof.towers.forEach(t => t.cum = t.cumGeo);
+    cumKey = 'cum';
+  }
+  const panjangPakai = prof.towers[prof.towers.length-1].cum;
+
+  meta.innerHTML =
+    '<b style="color:var(--text2)">'+pht+'</b> · '+prof.total+' tower ('+prof.towers.length+' berkoordinat'
+    + (prof.noCoord? ', <span style="color:var(--warn)">'+prof.noCoord+' tanpa koordinat dilewati</span>':'')+')'
+    + ' · panjang saluran (geometris): <b>'+prof.panjangGeo.toFixed(2)+' km</b>'
+    + (scale!==1 ? ' → dikalibrasi ke <b style="color:var(--accent)">'+panjangResmi.toFixed(2)+' km</b> (faktor '+scale.toFixed(3)+')' : '')
+    + '<br>Referensi FL: '+(arah==='awal'?'GI sisi tower nomor KECIL':'GI sisi tower nomor BESAR')
+    + ' — tower awal <b>#'+prof.towers[0].label+'</b> ('+ (offset>0? offset.toFixed(2)+' km dari GI':'0 km / di GI')+'), tower ujung <b>#'+prof.towers[prof.towers.length-1].label+'</b> ('+panjangPakai.toFixed(2)+' km).';
+
+  if (isNaN(jarak)) { hasil.innerHTML='<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:14px">Masukkan jarak FL (km) untuk menghitung lokasi.</div>'; return; }
+
+  const T = prof.towers;
+  // Cari bracket [i, i+1] dimana cum_i <= jarak <= cum_{i+1}
+  let idx = -1;
+  for (let i = 0; i < T.length-1; i++) {
+    if (jarak >= T[i].cum && jarak <= T[i+1].cum) { idx = i; break; }
+  }
+
+  let outRange = '';
+  let a, b, frac, estLat, estLng, nearest, jarakDariNearest;
+  if (idx === -1) {
+    // Di luar rentang: sebelum tower awal atau sesudah tower ujung
+    if (jarak < T[0].cum) { a=T[0]; b=T[0]; nearest=T[0]; frac=0; outRange='kurang'; }
+    else { a=T[T.length-1]; b=a; nearest=a; frac=0; outRange='lebih'; }
+    estLat=nearest.lat; estLng=nearest.lng; jarakDariNearest=Math.abs(jarak-nearest.cum);
+  } else {
+    a = T[idx]; b = T[idx+1];
+    const seg = b.cum - a.cum;
+    frac = seg > 0 ? (jarak - a.cum) / seg : 0;
+    estLat = a.lat + frac*(b.lat-a.lat);
+    estLng = a.lng + frac*(b.lng-a.lng);
+    nearest = (jarak - a.cum) <= (b.cum - jarak) ? a : b;
+    jarakDariNearest = Math.abs(jarak - nearest.cum);
+  }
+
+  const maps = (la,ln)=>'https://www.google.com/maps?q='+la.toFixed(6)+','+ln.toFixed(6);
+  const card = (val,lbl,color)=>'<div class="stat-card" style="border-left-color:'+(color||'var(--accent)')+'"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+val+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-top:3px">'+lbl+'</div></div>';
+
+  let h = '';
+  if (outRange) {
+    h += '<div class="cc" style="border-left:3px solid var(--warn)"><div style="color:var(--warn);font-family:var(--mono);font-size:12px">⚠️ Jarak FL '+jarak.toFixed(2)+' km berada di '+(outRange==='kurang'?'SEBELUM tower awal':'LUAR ujung saluran')+' (0–'+panjangPakai.toFixed(2)+' km). Ditampilkan tower terdekat di ujung. Cek arah/sisi relai & offset GI.</div></div>';
+  }
+
+  h += '<div class="cc"><div class="cc-title">Perkiraan lokasi gangguan — FL '+jarak.toFixed(2)+' km</div>';
+  h += '<div class="status-strip" style="margin-bottom:0">';
+  h += card('#'+nearest.label, 'Tower terdekat', 'var(--danger)');
+  if (!outRange && a.num!==b.num) h += card('#'+a.label+' – #'+b.label, 'Berada di antara', 'var(--accent2)');
+  h += card('±'+(jarakDariNearest*1000).toFixed(0)+' m', 'Selisih dari tower terdekat', 'var(--warn)');
+  h += card('<a href="'+maps(estLat,estLng)+'" target="_blank" style="color:var(--accent);text-decoration:none;font-size:14px">📍 buka peta</a>', 'Titik estimasi', 'var(--accent)');
+  h += '</div>';
+  h += '<div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:10px">Koordinat estimasi: '+estLat.toFixed(6)+', '+estLng.toFixed(6)+' · interpolasi '+(frac*100).toFixed(0)+'% dari #'+a.label+' menuju #'+b.label+'</div>';
+  h += '</div>';
+
+  // Tabel kandidat tower di sekitar lokasi (±3 tower)
+  const center = idx===-1 ? (outRange==='kurang'?0:T.length-1) : idx;
+  const lo = Math.max(0, center-3), hi = Math.min(T.length-1, center+4);
+  h += '<div class="cc"><div class="cc-title">Tower kandidat di sekitar lokasi</div><table class="bay-table"><thead><tr>'
+     + '<th>Tower</th><th>km-FL</th><th>Selisih FL (m)</th><th>Span dari sebelumnya (m)</th><th>Koordinat</th><th>Peta</th></tr></thead><tbody>';
+  for (let i = lo; i <= hi; i++) {
+    const t = T[i];
+    const sel = (t.num === nearest.num);
+    const d = Math.abs(jarak - t.cum);
+    h += '<tr style="'+(sel?'background:rgba(232,64,64,0.12)':'')+'">'
+       + '<td style="font-family:var(--mono);'+(sel?'color:var(--danger);font-weight:600':'')+'">#'+t.label+'</td>'
+       + '<td style="font-family:var(--mono)">'+t.cum.toFixed(3)+'</td>'
+       + '<td style="font-family:var(--mono);'+(sel?'color:var(--danger)':'color:var(--text3)')+'">'+(d*1000).toFixed(0)+'</td>'
+       + '<td style="font-family:var(--mono);color:var(--text3)">'+(i>lo||i>0? (t.span*1000).toFixed(0):'—')+'</td>'
+       + '<td style="font-family:var(--mono);font-size:11px;color:var(--text3)">'+t.lat.toFixed(5)+', '+t.lng.toFixed(5)+'</td>'
+       + '<td><a href="'+maps(t.lat,t.lng)+'" target="_blank" style="color:var(--accent2);text-decoration:none">📍</a></td>'
+       + '</tr>';
+  }
+  h += '</tbody></table></div>';
+  hasil.innerHTML = h;
 }
 
 let densityChart = null;
