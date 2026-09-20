@@ -5611,6 +5611,12 @@ function flRisks(r) {
   let pMax = 0, pYear = '';
   Object.keys(pAll).forEach(y => { const v = +pAll[y]; if (!isNaN(v) && v > pMax) { pMax = v; pYear = y; } });
   if (pMax > thP) out.push({ label:'Petir >100kA '+pMax.toFixed(0)+'kA'+(pYear?' ('+pYear+')':''), sev:2, color:'#e91e8c' });
+  // Kondisi struktur (1 = perlu tindak lanjut)
+  if (r[A_STRUKT] === 1) out.push({ label:'Struktur perlu tindak lanjut', sev:2, color:'#f5a623' });
+  // Anti binatang (1 = terpasang/baik; kerawanan bila BELUM terpasang)
+  if (r[A_ANTIB] === 0) out.push({ label:'Anti-binatang belum terpasang', sev:1, color:'#c9a227' });
+  // TLA / arrester (1 = terpasang; kerawanan bila BELUM terpasang)
+  if (r[A_TLA] === 0) out.push({ label:'TLA belum terpasang', sev:1, color:'#3b7aff' });
   // Rawan layangan
   if (r[A_LAYANGAN] === 1) out.push({ label:'Rawan layang-layang', sev:1, color:'#9c6ade' });
   // Hotspot (aktif / riwayat)
