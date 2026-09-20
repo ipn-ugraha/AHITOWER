@@ -5619,7 +5619,9 @@ function pruneToLongestSegment(list) {
   for (let i = 1; i < list.length; i++) spans.push(flHaversineKm(list[i-1].lat, list[i-1].lng, list[i].lat, list[i].lng));
   const sorted = [...spans].sort((a,b)=>a-b);
   const median = sorted[Math.floor(sorted.length/2)] || 0.1;
-  const threshold = Math.max(1.5, median * 8); // gap dianggap "putus" bila > 8x median atau > 1.5 km
+  // Hanya potong lompatan EKSTREM (antar-sirkuit), bukan span panjang wajar
+  // (mis. crossing sungai/lembah). Ambang: > 5 km DAN > 20x median.
+  const threshold = Math.max(5, median * 20);
   // Bagi jadi segmen kontinu
   const segs = [[list[0]]];
   for (let i = 1; i < list.length; i++) {
