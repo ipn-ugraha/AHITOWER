@@ -5570,7 +5570,7 @@ function flBuildProfil(pht, arah, offsetKm) {
     const t = r[A_TOWER_INFO];
     const num = extractTowerNum(r[A_BAY], r[A_TWR]);
     if (t && typeof t.lat === 'number' && typeof t.lng === 'number' && !isNaN(t.lat) && !isNaN(t.lng) && num != null) {
-      withCoord.push({ num, label: bayLabel(r[A_BAY], r[A_TWR]), lat: t.lat, lng: t.lng, teg: t.teg, bay: r[A_BAY] });
+      withCoord.push({ num, label: bayLabel(r[A_BAY], r[A_TWR]), lat: t.lat, lng: t.lng, teg: t.teg, bay: r[A_BAY], r: r });
     } else noCoord++;
   });
   // Urut naik by nomor tower, lalu balik jika relai di sisi nomor besar
@@ -5589,6 +5589,38 @@ function flBuildProfil(pht, arah, offsetKm) {
     }
   });
   return { towers: withCoord, total, noCoord, panjangGeo: withCoord.length ? withCoord[withCoord.length-1].cumGeo : 0 };
+}
+
+// Ambil kerawanan aktif 1 tower dari ahiRow → array {label, sev, color}
+function flRisks(r) {
+  const out = [];
+  if (!r) return out;
+  const thD = +document.getElementById('th-density-val')?.value || 12;
+  const thO = +document.getElementById('th-ohm-val')?.value || 10;
+  const thP = +document.getElementById('th-petir100-val')?.value || 0;
+  // Density petir (maks semua tahun)
+  let d = r[A_DENSITY];
+  if (typeof d === 'string') d = parseFloat(d.replace(',', '.'));
+  if (d != null && !isNaN(d) && d >= thD) out.push({ label:'Density petir '+Number(d).toFixed(1), sev:2, color:'#e84040' });
+  // Tahanan pentanahan
+  let ohm = r[A_OHM];
+  if (typeof ohm === 'string') ohm = parseFloat(ohm.replace(',', '.'));
+  if (ohm != null && !isNaN(ohm) && ohm >= thO) out.push({ label:'Pentanahan '+Number(ohm).toFixed(1)+'Ω', sev:2, color:'#f5a623' });
+  // Petir >100kA (maks over tahun + tahun puncak)
+  const pAll = r[A_PETIR100] || {};
+  let pMax = 0, pYear = '';
+  Object.keys(pAll).forEach(y => { const v = +pAll[y]; if (!isNaN(v) && v > pMax) { pMax = v; pYear = y; } });
+  if (pMax > thP) out.push({ label:'Petir >100kA '+pMax.toFixed(0)+'kA'+(pYear?' ('+pYear+')':''), sev:2, color:'#e91e8c' });
+  // Rawan layangan
+  if (r[A_LAYANGAN] === 1) out.push({ label:'Rawan layang-layang', sev:1, color:'#9c6ade' });
+  // Hotspot (aktif / riwayat)
+  const hs = r[A_HOTSPOT];
+  if (hs) {
+    const aktif = String(hs.hotspot||'').trim().toUpperCase() === 'ADA';
+    if (aktif) out.push({ label:'🔥 Hotspot AKTIF'+(hs.jarak!=null?' '+hs.jarak+'km':''), sev:3, color:'#e84040' });
+    else if (hs.histDays && hs.histDays > 0) out.push({ label:'Riwayat hotspot '+hs.histDays+' hari', sev:1, color:'#f5a623' });
+  }
+  return out;
 }
 
 function flHitung() {
@@ -5629,7 +5661,19 @@ function flHitung() {
     + '<br>Referensi FL: '+(arah==='awal'?'GI sisi tower nomor KECIL':'GI sisi tower nomor BESAR')
     + ' — tower awal <b>#'+prof.towers[0].label+'</b> ('+ (offset>0? offset.toFixed(2)+' km dari GI':'0 km / di GI')+'), tower ujung <b>#'+prof.towers[prof.towers.length-1].label+'</b> ('+panjangPakai.toFixed(2)+' km).';
 
-  if (isNaN(jarak)) { hasil.innerHTML='<div style="color:var(--text3);font-family:var(--mono);font-size:12px;padding:14px">Masukkan jarak FL (km) untuk menghitung lokasi.</div>'; return; }
+  const cardMini = (val,lbl,color)=>'<div class="stat-card" style="border-left-color:'+(color||'var(--accent)')+'"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+val+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-top:3px">'+lbl+'</div></div>';
+
+  if (isNaN(jarak)) {
+    // Belum ada jarak FL → tampilkan ringkasan panjang saluran terpilih
+    let hh = '<div class="cc"><div class="cc-title">Panjang saluran terpilih — '+pht+'</div><div class="status-strip" style="margin-bottom:0">';
+    hh += cardMini(panjangPakai.toFixed(2)+' km', scale!==1?'Panjang (kalibrasi)':'Panjang saluran', 'var(--accent)');
+    hh += cardMini(prof.towers.length, 'Tower berkoordinat', 'var(--accent2)');
+    hh += cardMini('#'+prof.towers[0].label+' → #'+prof.towers[prof.towers.length-1].label, 'Rentang tower', 'var(--text3)');
+    hh += cardMini((prof.panjangGeo/Math.max(1,prof.towers.length-1)*1000).toFixed(0)+' m', 'Rata-rata span', 'var(--warn)');
+    hh += '</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:10px">Masukkan <b>jarak FL (km)</b> di atas untuk menghitung perkiraan lokasi gangguan.</div></div>';
+    hasil.innerHTML = hh;
+    return;
+  }
 
   const T = prof.towers;
   // Cari bracket [i, i+1] dimana cum_i <= jarak <= cum_{i+1}
@@ -5692,6 +5736,30 @@ function flHitung() {
        + '</tr>';
   }
   h += '</tbody></table></div>';
+
+  // ── Kerawanan di sekitar tower kandidat ──────────────────
+  const agg = {};   // label-kategori → jumlah tower
+  let rowsKer = '';
+  for (let i = lo; i <= hi; i++) {
+    const t = T[i];
+    const risks = flRisks(t.r);
+    const sel = (t.num === nearest.num);
+    const chips = risks.length
+      ? risks.sort((a,b)=>b.sev-a.sev).map(rk => '<span style="display:inline-block;background:'+rk.color+'22;color:'+rk.color+';border:1px solid '+rk.color+'55;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);margin:2px 3px 2px 0">'+rk.label+'</span>').join('')
+      : '<span style="color:var(--text3);font-family:var(--mono);font-size:11px">— tidak ada kerawanan tercatat</span>';
+    risks.forEach(rk => { const key = rk.label.replace(/[\d.,]+.*$/,'').trim() || rk.label; agg[key] = (agg[key]||0)+1; });
+    rowsKer += '<div style="padding:8px 10px;border:1px solid '+(sel?'var(--danger)':'var(--border)')+';border-radius:6px;margin-bottom:6px;'+(sel?'background:rgba(232,64,64,0.06)':'background:var(--bg2)')+'">'
+      + '<div style="font-family:var(--mono);font-size:12px;font-weight:600;color:'+(sel?'var(--danger)':'var(--text)')+';margin-bottom:4px">#'+t.label+(sel?' — tower terdekat':'')+'</div>'
+      + '<div>'+chips+'</div></div>';
+  }
+  const aggChips = Object.keys(agg).length
+    ? Object.keys(agg).map(k => '<span style="display:inline-block;background:var(--bg3);border:1px solid var(--border2);color:var(--text2);padding:3px 9px;border-radius:5px;font-size:11px;font-family:var(--mono);margin:2px 4px 2px 0">'+k+': <b style="color:var(--warn)">'+agg[k]+'</b></span>').join('')
+    : '<span style="color:var(--text3);font-family:var(--mono);font-size:11px">Tidak ada kerawanan tercatat di area ini.</span>';
+  h += '<div class="cc"><div class="cc-title">⚠️ Kerawanan di sekitar lokasi gangguan (tower kandidat)</div>'
+     + '<div style="margin-bottom:10px">'+aggChips+'</div>'
+     + rowsKer
+     + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px;line-height:1.5">💡 Kerawanan dinilai dari ambang panel Kriteria Prioritas TLA (density, pentanahan, petir &gt;100kA) + status layangan &amp; hotspot. Gunakan untuk memperkirakan penyebab gangguan (mis. sambaran petir bila density/petir&gt;100kA tinggi, atau layang-layang).</div></div>';
+
   hasil.innerHTML = h;
 }
 
