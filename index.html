@@ -5747,6 +5747,11 @@ function flHitung() {
   h += '<div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:10px">Koordinat estimasi: '+estLat.toFixed(6)+', '+estLng.toFixed(6)+' · interpolasi '+(frac*100).toFixed(0)+'% dari #'+a.label+' menuju #'+b.label+'</div>';
   h += '</div>';
 
+  // Peta mini: titik gangguan + tower sekitar
+  h += '<div class="cc"><div class="cc-title">Peta lokasi & tower sekitar</div>'
+     + '<div id="fl-map" style="height:380px;border-radius:8px;overflow:hidden;border:1px solid var(--border)"></div>'
+     + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px">🔴 titik estimasi gangguan · 🟠 tower terdekat · 🔵 tower sekitar · garis biru = jalur saluran</div></div>';
+
   // Tabel kandidat tower di sekitar lokasi (±3 tower)
   const center = idx===-1 ? (outRange==='kurang'?0:T.length-1) : idx;
   const lo = Math.max(0, center-3), hi = Math.min(T.length-1, center+4);
@@ -5772,14 +5777,22 @@ function flHitung() {
   let rowsKer = '';
   for (let i = lo; i <= hi; i++) {
     const t = T[i];
-    const risks = flRisks(t.r);
+    const cats = flRisks(t.r);
     const sel = (t.num === nearest.num);
-    const chips = risks.length
-      ? risks.sort((a,b)=>b.sev-a.sev).map(rk => '<span style="display:inline-block;background:'+rk.color+'22;color:'+rk.color+';border:1px solid '+rk.color+'55;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);margin:2px 3px 2px 0">'+rk.label+'</span>').join('')
-      : '<span style="display:inline-block;background:rgba(0,212,170,0.12);color:var(--accent);border:1px solid rgba(0,212,170,0.35);padding:2px 8px;border-radius:4px;font-size:10px;font-family:var(--mono)">✓ NIHIL — tidak ada kerawanan tercatat</span>';
-    risks.forEach(rk => { const key = rk.label.replace(/[\d.,]+.*$/,'').trim() || rk.label; agg[key] = (agg[key]||0)+1; });
+    const nRisk = cats.filter(c=>!c.ok).length;
+    // Chip per kategori: berwarna bila kerawanan, hijau "✓" bila aman/nihil
+    const chips = cats.sort((a,b)=> (a.ok===b.ok ? b.sev-a.sev : (a.ok?1:-1)) ).map(c => {
+      const col = c.ok ? 'var(--accent)' : c.color;
+      const bg  = c.ok ? 'rgba(0,212,170,0.10)' : c.color+'22';
+      const bd  = c.ok ? 'rgba(0,212,170,0.30)' : c.color+'55';
+      return '<span style="display:inline-block;background:'+bg+';color:'+col+';border:1px solid '+bd+';padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);margin:2px 3px 2px 0">'+(c.ok?'✓ ':'⚠ ')+c.label+'</span>';
+    }).join('');
+    cats.forEach(c => { if(!c.ok) agg[c.cat] = (agg[c.cat]||0)+1; });
+    const headNote = nRisk===0
+      ? '<span style="color:var(--accent);font-size:11px;font-family:var(--mono)">✓ NIHIL kerawanan</span>'
+      : '<span style="color:var(--warn);font-size:11px;font-family:var(--mono)">'+nRisk+' kerawanan</span>';
     rowsKer += '<div style="padding:8px 10px;border:1px solid '+(sel?'var(--danger)':'var(--border)')+';border-radius:6px;margin-bottom:6px;'+(sel?'background:rgba(232,64,64,0.06)':'background:var(--bg2)')+'">'
-      + '<div style="font-family:var(--mono);font-size:12px;font-weight:600;color:'+(sel?'var(--danger)':'var(--text)')+';margin-bottom:4px">#'+t.label+(sel?' — tower terdekat':'')+'</div>'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><span style="font-family:var(--mono);font-size:12px;font-weight:600;color:'+(sel?'var(--danger)':'var(--text)')+'">#'+t.label+(sel?' — tower terdekat':'')+'</span>'+headNote+'</div>'
       + '<div>'+chips+'</div></div>';
   }
   const aggChips = Object.keys(agg).length
