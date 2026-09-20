@@ -5612,6 +5612,25 @@ function flCircuitsOf(pht) {
   return Object.keys(ckt).sort((a,b)=>(+a)-(+b)).map(k=>({ ckt:k, n:ckt[k] }));
 }
 
+// Potong daftar tower terurut pada lompatan span abnormal, ambil segmen terpanjang.
+function pruneToLongestSegment(list) {
+  if (list.length < 4) return list;
+  const spans = [];
+  for (let i = 1; i < list.length; i++) spans.push(flHaversineKm(list[i-1].lat, list[i-1].lng, list[i].lat, list[i].lng));
+  const sorted = [...spans].sort((a,b)=>a-b);
+  const median = sorted[Math.floor(sorted.length/2)] || 0.1;
+  const threshold = Math.max(1.5, median * 8); // gap dianggap "putus" bila > 8x median atau > 1.5 km
+  // Bagi jadi segmen kontinu
+  const segs = [[list[0]]];
+  for (let i = 1; i < list.length; i++) {
+    if (spans[i-1] > threshold) segs.push([]);
+    segs[segs.length-1].push(list[i]);
+  }
+  if (segs.length === 1) return list;
+  segs.sort((a,b)=>b.length-a.length);
+  return segs[0];
+}
+
 // Bangun profil tower berurut + jarak kumulatif (km) sepanjang saluran
 function flBuildProfil(pht, arah, offsetKm, circuitSel) {
   const rows = RAW.ahiRows.filter(r => r[A_PHT] === pht);
@@ -5654,6 +5673,13 @@ function flBuildProfil(pht, arah, offsetKm, circuitSel) {
   const useNum = nums.length === withCoord.length && distinct >= Math.max(3, Math.floor(withCoord.length*0.8));
   if (useNum) withCoord.sort((a,b)=>a.num-b.num);
   else if (withCoord.every(o=>o.seq!=null)) withCoord.sort((a,b)=>a.seq-b.seq);
+
+  // ── PENGAMAN: buang lompatan span abnormal (batas sirkuit / gap data) ──
+  // Kalau dua tower berurutan jaraknya jauh di atas normal, itu bukan 1 jalur.
+  // Potong jadi segmen kontinu, ambil yang TERPANJANG (jalur utama).
+  let seg = pruneToLongestSegment(withCoord);
+  withCoord.length = 0; seg.forEach(o=>withCoord.push(o));
+
   // Label: nomor tower bila dipakai, selain itu urutan posisi (1..N)
   withCoord.forEach((o,i)=>{ o.label = useNum ? flPad(o.num) : flPad(i+1); });
   if (arah === 'akhir') withCoord.reverse();
