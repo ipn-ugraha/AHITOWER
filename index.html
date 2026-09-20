@@ -5591,41 +5591,65 @@ function flBuildProfil(pht, arah, offsetKm) {
   return { towers: withCoord, total, noCoord, panjangGeo: withCoord.length ? withCoord[withCoord.length-1].cumGeo : 0 };
 }
 
-// Ambil kerawanan aktif 1 tower dari ahiRow → array {label, sev, color}
+// Status SEMUA kategori kerawanan 1 tower → array {cat, label, ok, sev, color}
+// ok=true → aman (tampil hijau "nihil/baik"); ok=false → ada kerawanan (tampil berwarna)
 function flRisks(r) {
   const out = [];
   if (!r) return out;
   const thD = +document.getElementById('th-density-val')?.value || 12;
   const thO = +document.getElementById('th-ohm-val')?.value || 10;
   const thP = +document.getElementById('th-petir100-val')?.value || 0;
+
   // Density petir (maks semua tahun)
   let d = r[A_DENSITY];
   if (typeof d === 'string') d = parseFloat(d.replace(',', '.'));
-  if (d != null && !isNaN(d) && d >= thD) out.push({ label:'Density petir '+Number(d).toFixed(1), sev:2, color:'#e84040' });
+  const dOk = !(d != null && !isNaN(d) && d >= thD);
+  out.push({ cat:'Density petir', ok:dOk, sev:2, color:'#e84040',
+             label: dOk ? 'Density aman'+(d!=null&&!isNaN(d)?' ('+Number(d).toFixed(1)+')':'') : 'Density petir '+Number(d).toFixed(1) });
+
   // Tahanan pentanahan
   let ohm = r[A_OHM];
   if (typeof ohm === 'string') ohm = parseFloat(ohm.replace(',', '.'));
-  if (ohm != null && !isNaN(ohm) && ohm >= thO) out.push({ label:'Pentanahan '+Number(ohm).toFixed(1)+'Ω', sev:2, color:'#f5a623' });
+  const oOk = !(ohm != null && !isNaN(ohm) && ohm >= thO);
+  out.push({ cat:'Pentanahan', ok:oOk, sev:2, color:'#f5a623',
+             label: oOk ? 'Pentanahan baik'+(ohm!=null&&!isNaN(ohm)?' ('+Number(ohm).toFixed(1)+'Ω)':'') : 'Pentanahan '+Number(ohm).toFixed(1)+'Ω' });
+
   // Petir >100kA (maks over tahun + tahun puncak)
   const pAll = r[A_PETIR100] || {};
   let pMax = 0, pYear = '';
   Object.keys(pAll).forEach(y => { const v = +pAll[y]; if (!isNaN(v) && v > pMax) { pMax = v; pYear = y; } });
-  if (pMax > thP) out.push({ label:'Petir >100kA '+pMax.toFixed(0)+'kA'+(pYear?' ('+pYear+')':''), sev:2, color:'#e91e8c' });
+  const pOk = !(pMax > thP);
+  out.push({ cat:'Petir >100kA', ok:pOk, sev:2, color:'#e91e8c',
+             label: pOk ? 'Petir >100kA nihil' : 'Petir >100kA '+pMax.toFixed(0)+'kA'+(pYear?' ('+pYear+')':'') });
+
   // Kondisi struktur (1 = perlu tindak lanjut)
-  if (r[A_STRUKT] === 1) out.push({ label:'Struktur perlu tindak lanjut', sev:2, color:'#f5a623' });
-  // Anti binatang (1 = terpasang/baik; kerawanan bila BELUM terpasang)
-  if (r[A_ANTIB] === 0) out.push({ label:'Anti-binatang belum terpasang', sev:1, color:'#c9a227' });
-  // TLA / arrester (1 = terpasang; kerawanan bila BELUM terpasang)
-  if (r[A_TLA] === 0) out.push({ label:'TLA belum terpasang', sev:1, color:'#3b7aff' });
+  const stOk = r[A_STRUKT] !== 1;
+  out.push({ cat:'Struktur', ok:stOk, sev:2, color:'#f5a623',
+             label: stOk ? 'Struktur baik' : 'Struktur perlu tindak lanjut' });
+
+  // Anti binatang (1 = terpasang/baik)
+  const abOk = r[A_ANTIB] === 1;
+  out.push({ cat:'Anti-binatang', ok:abOk, sev:1, color:'#c9a227',
+             label: abOk ? 'Anti-binatang terpasang' : 'Anti-binatang belum terpasang' });
+
+  // TLA / arrester (1 = terpasang)
+  const tlaOk = r[A_TLA] === 1;
+  out.push({ cat:'TLA', ok:tlaOk, sev:1, color:'#3b7aff',
+             label: tlaOk ? 'TLA terpasang' : 'TLA belum terpasang' });
+
   // Rawan layangan
-  if (r[A_LAYANGAN] === 1) out.push({ label:'Rawan layang-layang', sev:1, color:'#9c6ade' });
+  const lyOk = r[A_LAYANGAN] !== 1;
+  out.push({ cat:'Layang-layang', ok:lyOk, sev:1, color:'#9c6ade',
+             label: lyOk ? 'Nihil layang-layang' : 'Rawan layang-layang' });
+
   // Hotspot (aktif / riwayat)
   const hs = r[A_HOTSPOT];
-  if (hs) {
-    const aktif = String(hs.hotspot||'').trim().toUpperCase() === 'ADA';
-    if (aktif) out.push({ label:'🔥 Hotspot AKTIF'+(hs.jarak!=null?' '+hs.jarak+'km':''), sev:3, color:'#e84040' });
-    else if (hs.histDays && hs.histDays > 0) out.push({ label:'Riwayat hotspot '+hs.histDays+' hari', sev:1, color:'#f5a623' });
-  }
+  const hsAktif = hs && String(hs.hotspot||'').trim().toUpperCase() === 'ADA';
+  const hsRiwayat = hs && hs.histDays && hs.histDays > 0;
+  out.push({ cat:'Hotspot', ok:!(hsAktif||hsRiwayat), sev: hsAktif?3:1, color:'#e84040',
+             label: hsAktif ? '🔥 Hotspot AKTIF'+(hs.jarak!=null?' '+hs.jarak+'km':'')
+                            : hsRiwayat ? 'Riwayat hotspot '+hs.histDays+' hari'
+                            : 'Hotspot nihil' });
   return out;
 }
 
