@@ -1583,7 +1583,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             <input class="fs" id="fl-jarak" type="number" step="0.001" min="0" placeholder="mis. 12.4" oninput="flHitung()">
           </div>
           <div class="fg"><span class="fl">Offset GI→tower awal (km)</span>
-            <input class="fs" id="fl-offset" type="number" step="0.01" min="0" value="0" oninput="flHitung()">
+            <input class="fs" id="fl-offset" type="number" step="0.01" min="0" value="0.4" oninput="flHitung()">
           </div>
           <div class="fg"><span class="fl">Panjang saluran resmi (km)</span>
             <input class="fs" id="fl-panjang" type="number" step="0.01" min="0" placeholder="opsional (kalibrasi)" oninput="flHitung()">
@@ -5560,7 +5560,7 @@ function flOnPenghantarChange() {
 
 function flReset() {
   ['fl-jarak','fl-panjang'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  const off=document.getElementById('fl-offset'); if(off) off.value='0';
+  const off=document.getElementById('fl-offset'); if(off) off.value='0.4';
   document.getElementById('fl-hasil').innerHTML='';
   flHitung();
 }
