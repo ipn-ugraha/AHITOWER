@@ -5783,9 +5783,12 @@ function flHitung() {
   h += '</div>';
 
   // Peta mini: titik gangguan + tower sekitar
-  h += '<div class="cc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem">'
+  h += '<div class="cc"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;gap:8px;flex-wrap:wrap">'
      + '<div class="cc-title" style="margin:0">Peta lokasi & tower sekitar</div>'
-     + '<button class="btn-sm" onclick="flSaveMapImage()" style="border-color:rgba(0,212,170,.4);color:var(--accent)">💾 Simpan gambar</button></div>'
+     + '<div style="display:flex;gap:8px">'
+     + '<button class="btn-sm" id="fl-toggle-all" onclick="flToggleMapAll()" style="border-color:rgba(59,122,255,.4);color:var(--accent2)">🗺️ Semua tower</button>'
+     + '<button class="btn-sm" onclick="flSaveMapImage()" style="border-color:rgba(0,212,170,.4);color:var(--accent)">💾 Simpan gambar</button>'
+     + '</div></div>'
      + '<div id="fl-map" style="height:380px;border-radius:8px;overflow:hidden;border:1px solid var(--border)"></div>'
      + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px">🔴 titik estimasi gangguan · 🟠 tower terdekat · 🔵 tower sekitar · garis biru = jalur saluran · toggle Satelit/Jalan di pojok kanan atas peta</div></div>';
 
@@ -5841,24 +5844,37 @@ function flHitung() {
      + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px;line-height:1.5">💡 Kerawanan dinilai dari ambang panel Kriteria Prioritas TLA (density, pentanahan, petir &gt;100kA) + status layangan &amp; hotspot. Gunakan untuk memperkirakan penyebab gangguan (mis. sambaran petir bila density/petir&gt;100kA tinggi, atau layang-layang).</div></div>';
 
   hasil.innerHTML = h;
+  // Simpan konteks utk render/toggle peta
+  _flCtx = { T, lo, hi, estLat, estLng, nearest };
   // Render peta setelah DOM siap (tunggu container punya tinggi)
-  flScheduleMap(T, lo, hi, estLat, estLng, nearest, 0);
+  flScheduleMap(0);
 }
 
 let _flMap = null;
-function flScheduleMap(T, lo, hi, estLat, estLng, nearest, tries) {
+let _flCtx = null;
+let _flMapShowAll = false;
+
+function flToggleMapAll() {
+  _flMapShowAll = !_flMapShowAll;
+  const btn = document.getElementById('fl-toggle-all');
+  if (btn) btn.textContent = _flMapShowAll ? '🎯 Sekitar lokasi' : '🗺️ Semua tower';
+  flScheduleMap(0);
+}
+
+function flScheduleMap(tries) {
   const el = document.getElementById('fl-map');
-  if (!el) return;
+  if (!el || !_flCtx) return;
   // Tunggu sampai container benar-benar punya tinggi (tab/animasi selesai)
   if (el.clientHeight < 40 && tries < 20) {
-    setTimeout(() => flScheduleMap(T, lo, hi, estLat, estLng, nearest, tries+1), 80);
+    setTimeout(() => flScheduleMap(tries+1), 80);
     return;
   }
-  flRenderMap(T, lo, hi, estLat, estLng, nearest);
+  flRenderMap();
 }
-function flRenderMap(T, lo, hi, estLat, estLng, nearest) {
+function flRenderMap() {
   const el = document.getElementById('fl-map');
-  if (!el || typeof L === 'undefined') return;
+  if (!el || typeof L === 'undefined' || !_flCtx) return;
+  const { T, lo, hi, estLat, estLng, nearest } = _flCtx;
   if (_flMap) { try { _flMap.remove(); } catch(e){} _flMap = null; }
   _flMap = L.map('fl-map', { scrollWheelZoom: true, attributionControl: true });
   const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: '© Esri World Imagery', crossOrigin: true });
@@ -5868,21 +5884,26 @@ function flRenderMap(T, lo, hi, estLat, estLng, nearest) {
   satGroup.addTo(_flMap); // default: satelit + label
   L.control.layers({ 'Satelit': satGroup, 'Jalan': streetLayer }, null, { position:'topright', collapsed:false }).addTo(_flMap);
 
-  const pts = [];
-  // Jalur saluran (semua tower dalam jendela) — polyline biru
-  const line = [];
-  for (let i = lo; i <= hi; i++) { line.push([T[i].lat, T[i].lng]); }
-  if (line.length >= 2) L.polyline(line, { color:'#3b7aff', weight:3, opacity:0.7 }).addTo(_flMap);
+  // Rentang tower yang ditampilkan
+  const rLo = _flMapShowAll ? 0 : lo;
+  const rHi = _flMapShowAll ? T.length-1 : hi;
+  const showLabels = !_flMapShowAll || (rHi-rLo) <= 40; // sembunyikan label permanen bila terlalu banyak
 
-  // Marker tiap tower kandidat
-  for (let i = lo; i <= hi; i++) {
+  const pts = [];
+  // Jalur saluran (polyline biru) — selalu gambar seluruh saluran sbagai konteks
+  const fullLine = T.map(t=>[t.lat, t.lng]);
+  if (fullLine.length >= 2) L.polyline(fullLine, { color:'#3b7aff', weight:2.5, opacity:0.55 }).addTo(_flMap);
+
+  // Marker tiap tower dalam rentang
+  for (let i = rLo; i <= rHi; i++) {
     const t = T[i];
     const isNear = (t.num === nearest.num);
     const risks = flRisks(t.r).filter(c=>!c.ok).length;
     const col = isNear ? '#f5a623' : (risks>0 ? '#e84040' : '#3b7aff');
-    const rad = isNear ? 9 : 6;
+    const rad = isNear ? 9 : (_flMapShowAll ? 4 : 6);
     const m = L.circleMarker([t.lat, t.lng], { radius:rad, color:'#fff', weight:1.5, fillColor:col, fillOpacity:0.9 }).addTo(_flMap);
-    m.bindTooltip('#'+t.label, { permanent:true, direction:'top', className:'fl-tip', offset:[0,-4] });
+    if (showLabels || isNear) m.bindTooltip('#'+t.label, { permanent:true, direction:'top', className:'fl-tip', offset:[0,-4] });
+    else m.bindTooltip('#'+t.label, { direction:'top', className:'fl-tip', offset:[0,-4] });
     m.bindPopup('<b>Tower #'+t.label+'</b><br>km-FL: '+t.cum.toFixed(3)+' km<br>'+(risks>0? risks+' kerawanan':'✓ nihil kerawanan')+'<br>'+t.lat.toFixed(5)+', '+t.lng.toFixed(5));
     pts.push([t.lat, t.lng]);
   }
