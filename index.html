@@ -8506,12 +8506,16 @@ function toggleAcc(id) {
   } else {
     body.style.height = inner.scrollHeight + 'px';
     icon.classList.add('open');
-    body.addEventListener('transitionend', () => {
+    let done = false;
+    const finish = () => {
+      if (done) return; done = true;
       body.style.height = 'auto';
       acc.querySelectorAll('canvas').forEach(c => {
         if (charts[c.id]) charts[c.id].resize();
       });
-    }, { once: true });
+    };
+    body.addEventListener('transitionend', finish, { once: true });
+    setTimeout(finish, 400); // fallback: kalau transitionend tak terpicu, tetap resize grafik
   }
 }
 
