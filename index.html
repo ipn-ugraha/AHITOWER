@@ -1568,7 +1568,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-pane" id="tab-fl">
       <div class="sl sl-info">🎯 Fault Locator — Estimasi Lokasi Gangguan (Trip)</div>
       <div class="cc">
-        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v9</span></div>
+        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v10</span></div>
         <div class="filter-bar" style="margin-bottom:12px;align-items:flex-end">
           <div class="fg" style="min-width:280px"><span class="fl">Penghantar</span>
             <select class="fs" id="fl-pht" onchange="flOnPenghantarChange()"><option value="">— pilih penghantar —</option></select>
@@ -1895,6 +1895,22 @@ let REF={};            // referensi penghantar — diisi saat loadRef()
 let F_ROWS=null;       // towerRows setelah filter
 let F_AHI=null;        // ahiRows setelah filter UPT
 let charts={};
+// Auto-resize grafik saat kontainernya jadi terlihat (buka tab/accordion),
+// supaya grafik tidak "kosong" karena dibuat saat kontainer masih tersembunyi.
+const _chartLastW = {};
+const _chartRO = (typeof ResizeObserver !== 'undefined') ? new ResizeObserver(function(entries){
+  entries.forEach(function(e){
+    const id = e.target.id;
+    const w = e.contentRect.width;
+    if (!charts[id]) return;
+    // Hanya resize saat lebar berubah dari 0 → ada (mencegah loop tak henti)
+    if (w > 0 && _chartLastW[id] !== w) {
+      _chartLastW[id] = w;
+      try { charts[id].resize(); } catch(_){}
+    }
+  });
+}) : null;
+function observeChart(id){ if (_chartRO){ const el=document.getElementById(id); if(el) _chartRO.observe(el); } }
 
 // ─── INIT ─────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
@@ -8524,6 +8540,8 @@ function toggleAcc(id) {
 const TC='#8a90a0', GC='rgba(255,255,255,0.05)';
 function dc(id){
   if(charts[id]){charts[id].destroy();delete charts[id];}
+  _chartLastW[id] = -1;   // reset penanda lebar
+  observeChart(id);       // pantau kontainer utk auto-resize saat terlihat
 }
 function getCanvas(id) {
   const el = document.getElementById(id);
