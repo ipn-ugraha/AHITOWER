@@ -1568,7 +1568,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-pane" id="tab-fl">
       <div class="sl sl-info">🎯 Fault Locator — Estimasi Lokasi Gangguan (Trip)</div>
       <div class="cc">
-        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v10</span></div>
+        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v11</span></div>
         <div class="filter-bar" style="margin-bottom:12px;align-items:flex-end">
           <div class="fg" style="min-width:280px"><span class="fl">Penghantar</span>
             <select class="fs" id="fl-pht" onchange="flOnPenghantarChange()"><option value="">— pilih penghantar —</option></select>
@@ -1583,7 +1583,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
             </select>
           </div>
           <div class="fg"><span class="fl">Jarak FL (km)</span>
-            <input class="fs" id="fl-jarak" type="number" step="0.001" min="0" placeholder="mis. 12.4" oninput="flHitung()">
+            <input class="fs" id="fl-jarak" type="number" step="0.001" min="0" placeholder="km" oninput="flHitung()">
           </div>
           <div class="fg"><span class="fl">Offset GI→tower awal (km)</span>
             <input class="fs" id="fl-offset" type="number" step="0.01" min="0" value="0.4" oninput="flHitung()">
@@ -5822,17 +5822,29 @@ function flHitung() {
 
   const cardMini = (val,lbl,color)=>'<div class="stat-card" style="border-left-color:'+(color||'var(--accent)')+'"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+val+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;margin-top:3px">'+lbl+'</div></div>';
 
+  // Placeholder input jarak = maksimal panjang saluran
+  const jarakEl = document.getElementById('fl-jarak');
+  if (jarakEl) jarakEl.placeholder = 'maks ' + panjangPakai.toFixed(2) + ' km';
+
+  // Kartu panjang saluran — SELALU tampil setelah penghantar dipilih
+  let lenCardHtml = '<div class="cc"><div class="cc-title">Panjang saluran terpilih — '+pht+(prof.usedCircuit?' (Sirkuit '+prof.usedCircuit+')':'')+'</div><div class="status-strip" style="margin-bottom:0">';
+  lenCardHtml += cardMini(panjangPakai.toFixed(2)+' km', scale!==1?'Panjang (kalibrasi)':'Panjang saluran', 'var(--accent)');
+  lenCardHtml += cardMini(prof.towers.length, 'Tower berkoordinat', 'var(--accent2)');
+  lenCardHtml += cardMini('#'+prof.towers[0].label+' → #'+prof.towers[prof.towers.length-1].label, 'Rentang tower', 'var(--text3)');
+  lenCardHtml += cardMini((prof.panjangGeo/Math.max(1,prof.towers.length-1)*1000).toFixed(0)+' m', 'Rata-rata span', 'var(--warn)');
+  lenCardHtml += '</div></div>';
+
   if (isNaN(jarak)) {
-    // Belum ada jarak FL → tampilkan ringkasan panjang saluran terpilih
-    let hh = '<div class="cc"><div class="cc-title">Panjang saluran terpilih — '+pht+'</div><div class="status-strip" style="margin-bottom:0">';
-    hh += cardMini(panjangPakai.toFixed(2)+' km', scale!==1?'Panjang (kalibrasi)':'Panjang saluran', 'var(--accent)');
-    hh += cardMini(prof.towers.length, 'Tower berkoordinat', 'var(--accent2)');
-    hh += cardMini('#'+prof.towers[0].label+' → #'+prof.towers[prof.towers.length-1].label, 'Rentang tower', 'var(--text3)');
-    hh += cardMini((prof.panjangGeo/Math.max(1,prof.towers.length-1)*1000).toFixed(0)+' m', 'Rata-rata span', 'var(--warn)');
-    hh += '</div><div style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:10px">Masukkan <b>jarak FL (km)</b> di atas untuk menghitung perkiraan lokasi gangguan.</div></div>';
-    hasil.innerHTML = hh;
+    // Belum ada jarak FL → panjang saluran + rekap kerawanan seluruh saluran
+    if (jarakEl) jarakEl.style.borderColor = '';
+    hasil.innerHTML = lenCardHtml
+      + '<div class="cc"><div style="font-family:var(--mono);font-size:12px;color:var(--text3)">Masukkan <b>jarak FL (km)</b> di atas (rentang 0–'+panjangPakai.toFixed(2)+' km) untuk menghitung perkiraan lokasi gangguan.</div></div>'
+      + flRekapAllHtml(prof.towers, prof);
     return;
   }
+
+  // Tandai input merah bila jarak FL di luar rentang panjang saluran
+  if (jarakEl) jarakEl.style.borderColor = (jarak > panjangPakai + 0.001 || jarak < 0) ? 'var(--danger)' : '';
 
   const T = prof.towers;
   // Cari bracket [i, i+1] dimana cum_i <= jarak <= cum_{i+1}
@@ -5937,12 +5949,22 @@ function flHitung() {
      + rowsKer
      + '<div style="font-size:10px;color:var(--text3);font-family:var(--mono);margin-top:8px;line-height:1.5">💡 Kerawanan dinilai dari ambang panel Kriteria Prioritas TLA (density, pentanahan, petir &gt;100kA) + status layangan &amp; hotspot. Gunakan untuk memperkirakan penyebab gangguan (mis. sambaran petir bila density/petir&gt;100kA tinggi, atau layang-layang).</div></div>';
 
-  // ── Rekap kerawanan SELURUH saluran (muncul saat mode "Semua tower") ──
-  const catAgg = {};       // kategori → daftar label tower
+  // Rekap kerawanan seluruh saluran (selalu tampil, di bawah hasil)
+  h += flRekapAllHtml(T, prof);
+
+  hasil.innerHTML = lenCardHtml + h;
+  // Simpan konteks utk render/toggle peta
+  _flCtx = { T, lo, hi, estLat, estLng, nearest };
+  // Render peta setelah DOM siap (tunggu container punya tinggi)
+  flScheduleMap(0);
+}
+
+// Rekap kerawanan SELURUH saluran (semua tower) — selalu ditampilkan
+function flRekapAllHtml(T, prof) {
+  const catAgg = {};
   let nihilAll = 0;
   T.forEach(t => {
-    const cs = flRisks(t.r);
-    const bad = cs.filter(c=>!c.ok);
+    const bad = flRisks(t.r).filter(c=>!c.ok);
     if (bad.length === 0) nihilAll++;
     bad.forEach(c => { if (!catAgg[c.cat]) catAgg[c.cat] = { list:[], color:c.color }; catAgg[c.cat].list.push(t.label); });
   });
@@ -5962,14 +5984,8 @@ function flHitung() {
     + '<div class="stat-card" style="border-left-color:var(--accent)"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+nihilAll+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:3px">Tower nihil</div></div>'
     + '<div class="stat-card" style="border-left-color:var(--accent2)"><div style="font-size:22px;font-weight:600;font-family:var(--mono)">'+T.length+'</div><div style="font-size:10px;color:var(--text3);font-family:var(--mono);text-transform:uppercase;margin-top:3px">Total tower</div></div>'
     + '</div>';
-  h += '<div class="cc" id="fl-rekap-all" style="display:'+(_flMapShowAll?'block':'none')+'"><div class="cc-title">📋 Rekap kerawanan seluruh saluran'+(prof.usedCircuit?' — Sirkuit '+prof.usedCircuit:'')+' ('+T.length+' tower)</div>'
+  return '<div class="cc" id="fl-rekap-all"><div class="cc-title">📋 Rekap kerawanan seluruh saluran'+(prof.usedCircuit?' — Sirkuit '+prof.usedCircuit:'')+' ('+T.length+' tower)</div>'
      + rekapHead + rekapRows + '</div>';
-
-  hasil.innerHTML = h;
-  // Simpan konteks utk render/toggle peta
-  _flCtx = { T, lo, hi, estLat, estLng, nearest };
-  // Render peta setelah DOM siap (tunggu container punya tinggi)
-  flScheduleMap(0);
 }
 
 let _flMap = null;
@@ -5980,8 +5996,6 @@ function flToggleMapAll() {
   _flMapShowAll = !_flMapShowAll;
   const btn = document.getElementById('fl-toggle-all');
   if (btn) btn.textContent = _flMapShowAll ? '🎯 Sekitar lokasi' : '🗺️ Semua tower';
-  const rekap = document.getElementById('fl-rekap-all');
-  if (rekap) rekap.style.display = _flMapShowAll ? 'block' : 'none';
   flScheduleMap(0);
 }
 
