@@ -1569,7 +1569,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="tab-pane" id="tab-fl">
       <div class="sl sl-info">🎯 Fault Locator — Estimasi Lokasi Gangguan (Trip)</div>
       <div class="cc">
-        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v11</span></div>
+        <div class="cc-title">Parameter dari relai proteksi (Fault Locator / FL) · <span style="color:var(--accent)">v12</span></div>
         <div class="filter-bar" style="margin-bottom:12px;align-items:flex-end">
           <div class="fg" style="min-width:280px"><span class="fl">Penghantar</span>
             <select class="fs" id="fl-pht" onchange="flOnPenghantarChange()"><option value="">— pilih penghantar —</option></select>
@@ -5777,6 +5777,20 @@ function flRisks(r) {
              label: hsAktif ? '🔥 Hotspot AKTIF'+(hs.jarak!=null?' '+hs.jarak+'km':'')
                             : hsRiwayat ? 'Riwayat hotspot '+hs.histDays+' hari'
                             : 'Hotspot nihil' });
+
+  // Cleaning insulator (belum / kadaluarsa = kerawanan; OK/baru/polimer = aman)
+  const kc1 = cleaningKategori(r[A_CLEAN1], r, 1);
+  const kc2 = cleaningKategori(r[A_CLEAN2], r, 2);
+  const cleanBadSet = { belum:1, exp2:1, exp1:1 };
+  const cleanBad = cleanBadSet[kc1] || cleanBadSet[kc2];
+  const kcShort = { belum:'belum', exp2:'kadaluarsa', exp1:'hampir kadaluarsa', ok:'OK', baru:'baru', polimer:'polimer' };
+  let cleanLabel;
+  if (cleanBad) cleanLabel = 'Cleaning L1 '+(kcShort[kc1]||kc1)+' · L2 '+(kcShort[kc2]||kc2);
+  else if (kc1==='polimer' && kc2==='polimer') cleanLabel = 'Isolator polimer — tanpa cleaning';
+  else if (kc1==='polimer' || kc2==='polimer') cleanLabel = 'Sebagian polimer — cleaning terjaga';
+  else cleanLabel = 'Cleaning terjaga';
+  out.push({ cat:'Cleaning isolator', ok:!cleanBad, sev:(kc1==='belum'||kc2==='belum')?2:1, color:'#16A085', label: cleanLabel });
+
   return out;
 }
 
@@ -5969,7 +5983,7 @@ function flRekapAllHtml(T, prof) {
     if (bad.length === 0) nihilAll++;
     bad.forEach(c => { if (!catAgg[c.cat]) catAgg[c.cat] = { list:[], color:c.color }; catAgg[c.cat].list.push(t.label); });
   });
-  const catOrder = ['Density petir','Pentanahan','Petir >100kA','Struktur','Anti-binatang','TLA','Layang-layang','Hotspot'];
+  const catOrder = ['Density petir','Pentanahan','Petir >100kA','Struktur','Anti-binatang','TLA','Layang-layang','Hotspot','Cleaning isolator'];
   let rekapRows = '';
   catOrder.forEach(cat => {
     const a = catAgg[cat];
