@@ -735,7 +735,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         <div id="density-ranking" style="display:none;margin-bottom:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">
             <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text)">⚡ Peringkat Penghantar Paling Rawan Petir <span id="rank-filter-note" style="font-size:10px;font-weight:400;color:var(--text3)"></span></div>
-            <div style="display:flex;align-items:center;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <label style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);font-family:var(--mono);cursor:pointer"><input type="checkbox" id="rank-show-all" onchange="densRankPage=0;renderDensityRanking()" style="accent-color:var(--accent);width:13px;height:13px"> Tampilkan semua (termasuk tanpa density)</label>
               <span style="font-size:10px;color:var(--text3);font-family:var(--mono)">klik penghantar untuk profil</span>
               <select id="rank-per-page" onchange="densRankPage=0;renderDensityRanking()" style="background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--text2);padding:3px 6px;font-size:10px;font-family:var(--mono)">
                 <option value="15">15/hal</option>
@@ -7568,9 +7569,11 @@ function renderDensityRanking() {
     filterNote.textContent = aktif > 0 ? '· ' + aktif + ' filter aktif' : '';
   }
 
-  // Urutkan semua (rank penuh)
+  // Urutkan semua (rank penuh). Default: hanya density > 0.
+  // Checkbox "Tampilkan semua" → sertakan penghantar tanpa density (v===0).
+  const showAllRank = document.getElementById('rank-show-all')?.checked;
   const rankedAll = Object.entries(perPht)
-    .filter(([,v]) => v > 0)
+    .filter(([,v]) => showAllRank ? true : v > 0)
     .sort((a,b) => b[1] - a[1]);
 
   if (rankedAll.length === 0) {
