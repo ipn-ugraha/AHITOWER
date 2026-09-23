@@ -4852,7 +4852,7 @@ function renderCleaningCharts() {
   const uD = buildUPTData(activeCol);
   const pD = buildPHTData(activeCol);
   makeStackedBar('c-cleaning-upt', uD.labels, uD.datasets);
-  makeStackedBarH('c-cleaning-pht', pD.labels, pD.datasets);
+  makeStackedBarH('c-cleaning-pht', pD.labels, pD.datasets, null, 'cleaning');
   // Update judul chart sesuai line
   const uptTitle = document.getElementById('cc-clean-upt-title');
   const phtTitle = document.getElementById('cc-clean-pht-title');
@@ -8314,13 +8314,15 @@ const MODAL_COL_DEFS = {
   layangan:['ultg','bay','layangan'],
   gap1:    ['ultg','bay','gap1','gap2'],
   gap2:    ['ultg','bay','gap1','gap2'],
+  cleaning:['ultg','bay','density','clean1','clean2','isolator'],
 };
 const COL_HEADERS = {
   ultg:'ULTG', bay:'BAY', ce:'AHI', ohm:'Tahanan (Ω)',
   pentnh:'Pentanahan', strukt:'Struktur', antib:'Anti Binatang',
   tla1:'TLA Line I', tla2:'TLA Line II',
   density:'Density', katpetir:'Kategori', layangan:'Rawan Layangan',
-  gap1:'Gap Arching 1', gap2:'Gap Arching 2'
+  gap1:'Gap Arching 1', gap2:'Gap Arching 2',
+  clean1:'Cleaning Line I', clean2:'Cleaning Line II', isolator:'Jenis Isolator'
 };
 
 let MODAL_COLS = MODAL_COL_DEFS.default;
@@ -8340,11 +8342,25 @@ function showBayModal(phtName, chartType) {
     : chartType === 'layangan' ? 'layangan'
     : chartType === 'strukt' ? 'strukt'
     : chartType === 'antib' ? 'antib'
+    : chartType === 'cleaning' ? 'clean1'
     : 'ce';
-  MODAL_SORT = { col: defaultSort, dir: -1 }; // desc untuk lihat yang paling kritis dulu
+  // Cleaning: asc (belum cleaning dulu). Lainnya: desc (paling kritis dulu).
+  MODAL_SORT = { col: defaultSort, dir: chartType === 'cleaning' ? 1 : -1 };
   renderModalTable();
   document.getElementById('modal-bay').style.display = 'flex';
 }
+
+// Badge status cleaning untuk modal (pakai kategori & warna global)
+function cleanBadgeModal(c, r, line) {
+  const k = cleaningKategori(c, r, line);
+  const col = CLEAN_COLORS[k] || 'var(--text3)';
+  const icon = k==='belum'?'🔴':k==='exp2'?'🔴':k==='exp1'?'🟠':k==='ok'?'🟢':k==='baru'?'🔵':'🔷';
+  const lbl = CLEAN_LABELS[k] || k;
+  const det = (c && c.tgl) ? (' · ' + c.tgl + (c.umurHari!=null?' · '+c.umurHari+' hari':'')) : (k==='polimer' ? '' : ' · belum');
+  return '<span style="color:'+col+'">'+icon+' '+lbl+det+'</span>';
+}
+// Urutan keparahan cleaning utk sorting (belum paling atas)
+const CLEAN_SEV = { belum:0, exp2:1, exp1:2, ok:3, baru:4, polimer:5 };
 
 function renderModalTable() {
   const rows = [...MODAL_ROWS];
@@ -8365,6 +8381,8 @@ function renderModalTable() {
     else if (col==='density'){ av=a[A_DENSITY]??-1;     bv=b[A_DENSITY]??-1; }
     else if (col==='katpetir'){ av=a[A_PETIR]||'';      bv=b[A_PETIR]||''; }
     else if (col==='layangan'){ av=a[A_LAYANGAN];       bv=b[A_LAYANGAN]; }
+    else if (col==='clean1') { av=CLEAN_SEV[cleaningKategori(a[A_CLEAN1],a,1)]??9; bv=CLEAN_SEV[cleaningKategori(b[A_CLEAN1],b,1)]??9; }
+    else if (col==='clean2') { av=CLEAN_SEV[cleaningKategori(a[A_CLEAN2],a,2)]??9; bv=CLEAN_SEV[cleaningKategori(b[A_CLEAN2],b,2)]??9; }
     else { av=0; bv=0; }
     return av<bv ? -dir : av>bv ? dir : 0;
   });
@@ -8428,6 +8446,9 @@ function renderModalTable() {
       case 'layangan':return `<td>${layFmt(r[A_LAYANGAN])}</td>`;
       case 'gap1':    return `<td style="font-size:11px">${gapBadge(r[A_GAP]?.gap1||'perhatian')}</td>`;
       case 'gap2':    return `<td style="font-size:11px">${gapBadge(r[A_GAP]?.gap2||'perhatian')}</td>`;
+      case 'clean1':  return `<td style="font-size:10px;font-family:var(--mono)">${cleanBadgeModal(r[A_CLEAN1], r, 1)}</td>`;
+      case 'clean2':  return `<td style="font-size:10px;font-family:var(--mono)">${cleanBadgeModal(r[A_CLEAN2], r, 2)}</td>`;
+      case 'isolator':return `<td style="font-size:10px;font-family:var(--mono)">${jenisIsolator(r)}</td>`;
       default: return '<td>–</td>';
     }
   };
